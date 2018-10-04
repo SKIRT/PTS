@@ -125,30 +125,17 @@ class ColoursSSFRMapsMaker(Configurable):
 
         # Get maps that have already been created
         if "maps" in kwargs: self.maps = kwargs.pop("maps")
-        
 
     # -----------------------------------------------------------------
 
     @property
     def has_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.colours_origins is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.colours_methods is not None
 
     # -----------------------------------------------------------------

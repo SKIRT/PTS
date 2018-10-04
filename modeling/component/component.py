@@ -92,168 +92,84 @@ class ModelingComponent(Configurable):
 
     @property
     def history_file_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.history_file_path
 
     # -----------------------------------------------------------------
 
     @property
     def commands_file_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.commands_file_path
 
     # -----------------------------------------------------------------
 
     @property
     def fit_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.fit_path
 
     # -----------------------------------------------------------------
 
     @property
     def analysis_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.analysis_path
 
     # -----------------------------------------------------------------
 
     @property
     def reports_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.reports_path
 
     # -----------------------------------------------------------------
 
     @property
     def visualisation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.visualisation_path
 
     # -----------------------------------------------------------------
 
     @property
     def plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.plot_path
 
     # -----------------------------------------------------------------
 
     @property
     def log_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.log_path
 
     # -----------------------------------------------------------------
 
     @property
     def config_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.config_path
 
     # -----------------------------------------------------------------
 
     @property
     def show_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.show_path
 
     # -----------------------------------------------------------------
 
     @property
     def build_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.build_path
 
     # -----------------------------------------------------------------
 
     @property
     def html_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.html_path
 
     # -----------------------------------------------------------------
 
     @property
     def object_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_configuration.name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Return the observed SED
         if self.is_galaxy_modeling: return self.environment.observed_sed
         elif self.is_sed_modeling: return self.environment.observed_sed
@@ -263,12 +179,6 @@ class ModelingComponent(Configurable):
 
     @lazyproperty
     def truncated_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.is_galaxy_modeling: raise RuntimeError("Something went wrong")
         return self.environment.truncated_sed
 
@@ -276,12 +186,6 @@ class ModelingComponent(Configurable):
 
     @lazyproperty
     def observed_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Return the correct path
         if self.is_galaxy_modeling: return self.environment.observed_sed_path
         elif self.is_sed_modeling: return self.environment.sed_path
@@ -291,12 +195,6 @@ class ModelingComponent(Configurable):
 
     @lazyproperty
     def truncated_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.is_galaxy_modeling: raise RuntimeError("Something went wrong")
         return self.environment.truncated_sed_path
 
@@ -318,72 +216,36 @@ class ModelingComponent(Configurable):
 
     @lazyproperty
     def observed_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_sed.filters()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.observed_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_filter_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.wavelength for fltr in self.observed_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sed_filters(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.observed_sed.filters()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sed_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.sed_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sed_filter_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.pivot for fltr in self.sed_filters]
 
     # -----------------------------------------------------------------
@@ -406,288 +268,150 @@ class ModelingComponent(Configurable):
 
     @lazyproperty
     def modeling_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_configuration.modeling_type
 
     # -----------------------------------------------------------------
 
     @property
     def is_galaxy_modeling(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_configuration.modeling_type == "galaxy"
 
     # -----------------------------------------------------------------
 
     @property
     def is_sed_modeling(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_configuration.modeling_type == "sed"
 
     # -----------------------------------------------------------------
 
     @property
     def is_images_modeling(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_configuration.modeling_type == "images"
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def history(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.history
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def status(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.status
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nuv_filter(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return BroadBandFilter("GALEX NUV")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def nuv_wavelength(self):
+        return self.nuv_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def fuv_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("GALEX FUV")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fuv_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fuv_filter.wavelength
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def i1_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("IRAC I1")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def i1_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.i1_filter.wavelength
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def i2_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("IRAC I2")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def pacs_red_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("Pacs 160")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def spire_psw_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("SPIRE PSW")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def spire_pmw_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("SPIRE PMW")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def spire_plw_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return BroadBandFilter("SPIRE PLW")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def spire_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return parsing.lazy_broad_band_filter_list("SPIRE")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def planck_filters(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return parsing.lazy_broad_band_filter_list("Planck")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def iras_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return parsing.lazy_broad_band_filter_list("IRAS")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def iras_and_planck_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.planck_filters + self.iras_filters
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ignore_sed_plot_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.planck_filters + self.iras_filters
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_filters_no_iras(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.observed_filters if fltr not in self.iras_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_filter_names_no_iras(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.observed_filters_no_iras]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_filters_no_iras_planck(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Get the filters
         return [fltr for fltr in self.observed_filters if fltr not in self.iras_and_planck_filters]
 
@@ -695,150 +419,67 @@ class ModelingComponent(Configurable):
 
     @lazyproperty
     def observed_filter_names_no_iras_planck(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.observed_filters_no_iras_planck]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_filter_wavelengths_no_iras_planck(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.wavelength for fltr in self.observed_filters_no_iras_planck]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def v_band_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.55 * Unit("micron")
 
     # -----------------------------------------------------------------
 
     @property
     def maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_collection
 
     # -----------------------------------------------------------------
 
     @property
     def static_maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.static_maps_collection
 
     # -----------------------------------------------------------------
 
     @property
     def maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_selection
 
     # -----------------------------------------------------------------
 
     @property
     def static_maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.static_maps_selection
 
     # -----------------------------------------------------------------
 
     @property
     def model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.model_suite
 
     # -----------------------------------------------------------------
 
     @property
     def static_model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.static_model_suite
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_context(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.fitting_context
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.fitting_runs
-
-# -----------------------------------------------------------------
-
-#def load_fitting_configuration(modeling_path):
-
-    #"""
-    #This function ...
-    #:param modeling_path:
-    #:return:
-    #"""
-
-    # Determine the path to the fitting configuration file
-    #fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
-    #if not fs.is_file(fitting_configuration_path): return None
-
-    # Open the configuration and return it
-    #return Configuration.from_file(fitting_configuration_path)
 
 # -----------------------------------------------------------------
 
@@ -993,19 +634,6 @@ def get_log_file_paths(modeling_path):
 
     # Return the file paths
     return fs.files_in_path(log_path, extension="txt")
-
-# -----------------------------------------------------------------
-
-#def get_spectral_convolution_flag(modeling_path):
-
-    #"""
-    #This function ...
-    #:param modeling_path:
-    #:return:
-    #"""
-
-    #fitting_configuration = load_fitting_configuration(modeling_path)
-    #return fitting_configuration.spectral_convolution
 
 # -----------------------------------------------------------------
 

@@ -18,24 +18,32 @@
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-import sys
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
 from pts.core.plot.grids import plotgrids
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
-print "Starting plotgrids..."
+# Create configuration definition
+definition = ConfigurationDefinition()
+definition.add_positional_optional("simulation", "string", "simulation specification", default="")
+definition.add_optional("linewidth", "positive_real", "line width", 0.1)
+definition.add_optional("maxlevel", "positive_integer", "maximum tree level")
 
-# get the command-line argument specifying the simulation(s)
-argument = sys.argv[1] if len(sys.argv) > 1 else ""
+# Read the command line arguments
+config = parse_arguments("plotgrids", definition, description="Unmount a remote mounted with PTS")
+
+# -----------------------------------------------------------------
+
+print("Starting plotgrids...")
 
 # construct the list of simulation objects and make the plots
-for simulation in createsimulations(argument):
-    plotgrids(simulation)
+for simulation in createsimulations(config.simulation): plotgrids(simulation, linewidth=config.linewidth, maxlevel=config.maxlevel)
 
-print "Finished plotgrids"
+print("Finished plotgrids")
 
 # -----------------------------------------------------------------

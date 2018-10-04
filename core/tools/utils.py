@@ -72,6 +72,20 @@ class LazyDictionary(OrderedDict):
 
     # -----------------------------------------------------------------
 
+    def set_kwargs(self, name, **kwargs):
+
+        """
+        This function ...
+        :param name:
+        :param kwargs:
+        :return:
+        """
+
+        if name not in self.kwargs: self.kwargs[name] = dict()
+        self.kwargs[name].update(**kwargs)
+
+    # -----------------------------------------------------------------
+
     def get_raw(self, name):
 
         """
@@ -297,7 +311,7 @@ class lazyfileproperty(object):
       ...     return 1
     """
 
-    def __init__(self, cls, path, is_attribute=False, write=True):
+    def __init__(self, cls, path, is_attribute=False, write=True, fsave=None, fload=None):
 
         """
         This function ...
@@ -305,6 +319,8 @@ class lazyfileproperty(object):
         :param path:
         :param is_attribute:
         :param write:
+        :param fsave:
+        :param fload:
         """
 
         # Set things
@@ -312,6 +328,22 @@ class lazyfileproperty(object):
         self.path = path
         self.is_attribute = is_attribute # is the path actually the name of an attribute of the object?
         self.write = write
+
+        # Set save and load functions
+        self.fsave = fsave
+        self.fload = fload
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fsave(self):
+        return self.fsave is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fload(self):
+        return self.fload is not None
 
     # -----------------------------------------------------------------
 
@@ -336,17 +368,24 @@ class lazyfileproperty(object):
 
             #print("Checking path '" + filepath + "' ...")
 
-            # Check whether file exists, if so, load it
-            if os.path.isfile(filepath): out = self.cls.from_file(filepath)
+            # Check whether file exist
+            # If so, load it
+            if os.path.isfile(filepath):
+
+                if self.has_fload: out = self.fload(filepath)
+                else: out = self.cls.from_file(filepath)
+
+            # File does not exist yet
             else:
 
                 # Calculate
                 out = func(*args, **kwargs)
 
-                #if self.write: print("Writing to path '" + filepath + "' ...")
-
                 # Save to path
-                if self.write: out.saveto(filepath)
+                if self.write:
+                    print("Writing to path '" + filepath + "' ...")
+                    if self.has_fsave: self.fsave(filepath, out)
+                    else: out.saveto(filepath)
 
             # Return
             return out

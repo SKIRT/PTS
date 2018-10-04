@@ -1,0 +1,11 @@
+topcat -stilts plot2cube \
+   xpix=1309 ypix=453 \
+   xlabel='X coordinates' ylabel='Y coordinate' zlabel='Z coordinate' xcrowd=0.9998301109057076 ycrowd=0.9998301109057076 zcrowd=0.9998301109057076 \
+   xmin=-16192 xmax=16192 ymin=-14324 ymax=15138 zmin=-1942 zmax=1942 phi=-145.32964960906878 theta=33.126610698958075 psi=174.3698041271555 \
+   auxfunc=log auxmin=0 auxmax=639 \
+   auxvisible=true auxlabel=Bd_i1 auxcrowd=0.9998301109057076 \
+   legend=false \
+   layer=Mark \
+      in=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/bd_ratio_complete.dat ifmt=ASCII \
+      x='X coordinates' y='Y coordinate' z='Z coordinate' aux=Bd_i1 \
+      shading=aux opaque=51 

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-import copy
+import warnings
 from scipy.interpolate import interp1d
 
 # Import astronomical modules
@@ -37,8 +37,6 @@ class Curve(Relation):
     """
     This class ...
     """
-
-    # -----------------------------------------------------------------
 
     def add_point(self, x_value, y_value, conversion_info=None, sort=True):
 
@@ -124,63 +122,114 @@ class Curve(Relation):
         :return:
         """
 
-        # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
-        x_name = self.x_name
+        from ..tools import types
+        from ..units.unit import get_converted_value
 
-        # Get the units
-        x_unit = self.x_unit
-        y_unit = self.y_unit
-        if x_unit is not None and other.x_unit is None: raise ValueError("unit of '" + other.x_name + "' is not defined")
-        if y_unit is not None and other.y_unit is None: raise ValueError("unit of '" + other.y_name + "' is not defined")
+        # Real or integer value
+        if types.is_real_or_integer(other):
 
-        # Initialize a list for the x values and y values
-        x_values = []
-        y_values = []
+            # Get real value
+            other = float(other)
 
-        # Loop over the values of this curve and the other curve simultaneously
-        i = 0
-        j = 0
-        while True:
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array + other
 
-            # Get the values
-            x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
-            x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, self.y_unit)
 
-            # Value is the same: add
-            if x_a == x_b:
+        # Add quantity
+        elif types.is_quantity(other):
 
-                result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) + other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
+            # Get value in correct unit
+            other = get_converted_value(other, self.y_unit)
 
-                x_values.append(x_a)
-                y_values.append(result)
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array + other
 
-                # Increment
-                i += 1
-                j += 1
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, self.y_unit)
 
-            # x of a is greater than x of b
-            elif x_a > x_b: j += 1
+        # Add other curve
+        elif isinstance(other, Curve):
 
-            # x of b is greater than x of a
-            else: i += 1
+            # Check whether x name is the same
+            if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
+            x_name = self.x_name
 
-            # Check for termination
-            if i >= self.npoints: break
-            if j >= other.npoints: break
+            # Get the units
+            x_unit = self.x_unit
+            y_unit = self.y_unit
+            if x_unit is not None and other.x_unit is None: raise ValueError("unit of '" + other.x_name + "' is not defined")
+            if y_unit is not None and other.y_unit is None: raise ValueError("unit of '" + other.y_name + "' is not defined")
 
-        # Set the new y name
-        if self.y_name == other.y_name: y_name = self.y_name
-        else: y_name = self.y_name + " + " + other.y_name
+            # Initialize a list for the x values and y values
+            x_values = []
+            y_values = []
 
-        # Set the names and units
-        names = (x_name, y_name)
-        units = (x_unit, y_unit)
-        #print("names", names)
-        #print("units", units)
+            # Loop over the values of this curve and the other curve simultaneously
+            i = 0
+            j = 0
+            while True:
+
+                # Get the values
+                x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
+                x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
+
+                # Value is the same: add
+                if x_a == x_b:
+
+                    result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) + other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
+
+                    x_values.append(x_a)
+                    y_values.append(result)
+
+                    # Increment
+                    i += 1
+                    j += 1
+
+                # x of a is greater than x of b
+                elif x_a > x_b: j += 1
+
+                # x of b is greater than x of a
+                else: i += 1
+
+                # Check for termination
+                if i >= self.npoints: break
+                if j >= other.npoints: break
+
+            # Set the new y name
+            if self.y_name == other.y_name: y_name = self.y_name
+            else: y_name = self.y_name + " + " + other.y_name
+
+            # Set the names and units
+            names = (x_name, y_name)
+            units = (x_unit, y_unit)
+
+        # Invalid type
+        else: raise TypeError("Cannot add " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
+
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
+
+    # -----------------------------------------------------------------
+
+    def __radd__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.__add__(other)
 
     # -----------------------------------------------------------------
 
@@ -192,63 +241,114 @@ class Curve(Relation):
         :return:
         """
 
-        # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
-        x_name = self.x_name
+        from ..tools import types
+        from ..units.unit import get_converted_value
 
-        # Get the units
-        x_unit = self.x_unit
-        y_unit = self.y_unit
-        if x_unit is not None and other.x_unit is None: raise ValueError("unit of '" + other.x_name + "' is not defined")
-        if y_unit is not None and other.y_unit is None: raise ValueError("unit of '" + other.y_name + "' is not defined")
+        # Real or integer value
+        if types.is_real_or_integer(other):
 
-        # Initialize a list for the x values and y values
-        x_values = []
-        y_values = []
+            # Get real value
+            other = float(other)
 
-        # Loop over the values of this curve and the other curve simultaneously
-        i = 0
-        j = 0
-        while True:
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array - other
 
-            # Get the values
-            x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
-            x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, self.y_unit)
 
-            # Value is the same: add
-            if x_a == x_b:
+        # Add quantity
+        elif types.is_quantity(other):
 
-                result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
+            # Get value in correct unit
+            other = get_converted_value(other, self.y_unit)
 
-                x_values.append(x_a)
-                y_values.append(result)
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array - other
 
-                # Increment
-                i += 1
-                j += 1
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, self.y_unit)
 
-            # x of a is greater than x of b
-            elif x_a > x_b: j += 1
+        # Add other curve
+        elif isinstance(other, Curve):
 
-            # x of b is greater than x of a
-            else: i += 1
+            # Check whether x name is the same
+            if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
+            x_name = self.x_name
 
-            # Check for termination
-            if i >= self.npoints: break
-            if j >= other.npoints: break
+            # Get the units
+            x_unit = self.x_unit
+            y_unit = self.y_unit
+            if x_unit is not None and other.x_unit is None: raise ValueError("unit of '" + other.x_name + "' is not defined")
+            if y_unit is not None and other.y_unit is None: raise ValueError("unit of '" + other.y_name + "' is not defined")
 
-        # Set the new y name
-        if self.y_name == other.y_name: y_name = self.y_name
-        else: y_name = self.y_name + " - " + other.y_name
+            # Initialize a list for the x values and y values
+            x_values = []
+            y_values = []
 
-        # Set the names and units
-        names = (x_name, y_name)
-        units = (x_unit, y_unit)
-        #print("names", names)
-        #print("units", units)
+            # Loop over the values of this curve and the other curve simultaneously
+            i = 0
+            j = 0
+            while True:
+
+                # Get the values
+                x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
+                x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
+
+                # Value is the same: add
+                if x_a == x_b:
+
+                    result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
+
+                    x_values.append(x_a)
+                    y_values.append(result)
+
+                    # Increment
+                    i += 1
+                    j += 1
+
+                # x of a is greater than x of b
+                elif x_a > x_b: j += 1
+
+                # x of b is greater than x of a
+                else: i += 1
+
+                # Check for termination
+                if i >= self.npoints: break
+                if j >= other.npoints: break
+
+            # Set the new y name
+            if self.y_name == other.y_name: y_name = self.y_name
+            else: y_name = self.y_name + " - " + other.y_name
+
+            # Set the names and units
+            names = (x_name, y_name)
+            units = (x_unit, y_unit)
+
+        # Invalid type
+        else: raise TypeError("Cannot subtract " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
+
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
+
+    # -----------------------------------------------------------------
+
+    def __rsub__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.__sub__(other) * -1
 
     # -----------------------------------------------------------------
 
@@ -260,51 +360,118 @@ class Curve(Relation):
         :return:
         """
 
-        # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
-        x_name = self.x_name
+        from ..tools import types
+        from ..units.quantity import is_scalar, get_scalar
 
-        # Initialize a list for the x values and y values
-        x_values = []
-        y_values = []
+        # Real or integer value
+        if types.is_real_or_integer(other):
 
-        # Loop over the values of this curve and the other curve simultaneously
-        i = 0
-        j = 0
-        while True:
+            # Get real value
+            other = float(other)
 
-            # Get the values
-            x_a = self.get_value(self.x_name, i)
-            x_b = other.get_value(other.x_name, j)
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array * other
 
-            # Value is the same: add
-            if x_a == x_b:
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, self.y_unit)
 
-                result = self.get_value(self.y_name, i) * other.get_value(other.y_name, j)
+        # Add quantity
+        elif types.is_quantity(other):
 
-                x_values.append(x_a)
-                y_values.append(result)
+            # Get value in correct unit
+            #other = get_converted_value(other, self.y_unit)
+            value = other.value
+            unit = other.unit
+            new_unit = self.y_unit * unit
 
-                # Increment
-                i += 1
-                j += 1
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array * value
 
-            # x of a is greater than x of b
-            elif x_a > x_b: j += 1
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, new_unit)
 
-            # x of b is greater than x of a
-            else: i += 1
+        # Add other curve
+        elif isinstance(other, Curve):
 
-            # Check for termination
-            if i >= self.npoints: break
-            if j >= other.npoints: break
+            # Check whether x name is the same
+            if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
+            x_name = self.x_name
 
-        # Set the new y name
-        if self.y_name == other.y_name: y_name = self.y_name + "1" + " * " + other.y_name + "2"
-        else: y_name = self.y_name + " * " + other.y_name
+            # Initialize a list for the x values and y values
+            x_values = []
+            y_values = []
+
+            # Loop over the values of this curve and the other curve simultaneously
+            i = 0
+            j = 0
+            while True:
+
+                # Get the values
+                x_a = self.get_value(self.x_name, i)
+                x_b = other.get_value(other.x_name, j)
+
+                # Value is the same: add
+                if x_a == x_b:
+
+                    result = self.get_value(self.y_name, i) * other.get_value(other.y_name, j)
+
+                    # Convert from dimensionless quantity to scalar if necessary
+                    if is_scalar(result): result = get_scalar(result)
+
+                    x_values.append(x_a)
+                    y_values.append(result)
+
+                    # Increment
+                    i += 1
+                    j += 1
+
+                # x of a is greater than x of b
+                elif x_a > x_b: j += 1
+
+                # x of b is greater than x of a
+                else: i += 1
+
+                # Check for termination
+                if i >= self.npoints: break
+                if j >= other.npoints: break
+
+            # Set the new y name
+            if self.y_name == other.y_name: y_name = self.y_name + "1" + " * " + other.y_name + "2"
+            else: y_name = self.y_name + " * " + other.y_name
+
+            # Set the new units
+            x_unit = self.x_unit
+            y_unit = self.y_unit * other.y_unit
+
+            # Set the names and units
+            names = (x_name, y_name)
+            units = (x_unit, y_unit)
+
+        # Invalid type
+        else: raise TypeError("Cannot multiply " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
+
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
 
         # Create new curve
-        return self.__class__.from_columns(x_values, y_values, names=[x_name, y_name])
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
+
+    # -----------------------------------------------------------------
+
+    def __rmul__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.__mul__(other)
 
     # -----------------------------------------------------------------
 
@@ -316,55 +483,249 @@ class Curve(Relation):
         :return:
         """
 
-        # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
-        x_name = self.x_name
+        from ..units.quantity import is_scalar, get_scalar
+        from ..tools import types
 
-        # Initialize a list for the x values and y values
-        x_values = []
-        y_values = []
+        # Real or integer value
+        if types.is_real_or_integer(other):
 
-        # Loop over the values of this curve and the other curve simultaneously
-        i = 0
-        j = 0
-        while True:
+            # Get real value
+            other = float(other)
 
-            # Get the values
-            x_a = self.get_value(self.x_name, i)
-            x_b = other.get_value(other.x_name, j)
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array / other
 
-            # Value is the same: add
-            if x_a == x_b:
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, self.y_unit)
 
-                result = self.get_value(self.y_name, i) / other.get_value(other.y_name, j)
+        # Add quantity
+        elif types.is_quantity(other):
 
-                x_values.append(x_a)
-                y_values.append(result)
+            # Get value in correct unit
+            value = other.value
+            unit = other.unit
+            new_unit = self.y_unit / unit
 
-                # Increment
-                i += 1
-                j += 1
+            # Set columns
+            x_values = self.x_array
+            y_values = self.y_array / value
 
-            # x of a is greater than x of b
-            elif x_a > x_b: j += 1
+            # Set the names and units
+            names = (self.x_name, self.y_name)
+            units = (self.x_unit, new_unit)
 
-            # x of b is greater than x of a
-            else: i += 1
+        # Add other curve
+        elif isinstance(other, Curve):
 
-            # Check for termination
-            if i >= self.npoints: break
-            if j >= other.npoints: break
+            # Check whether x name is the same
+            if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
+            x_name = self.x_name
 
-        # Set the new y name
-        if self.y_name == other.y_name: y_name = self.y_name + "1" + " / " + other.y_name + "2"
-        else: y_name = self.y_name + " / " + other.y_name
+            # Initialize a list for the x values and y values
+            x_values = []
+            y_values = []
+
+            # Loop over the values of this curve and the other curve simultaneously
+            i = 0
+            j = 0
+            while True:
+
+                # Get the values
+                x_a = self.get_value(self.x_name, i)
+                x_b = other.get_value(other.x_name, j)
+
+                # Value of x is the same
+                if x_a == x_b:
+
+                    result = self.get_value(self.y_name, i) / other.get_value(other.y_name, j)
+
+                    # Convert from dimensionless quantity to scalar if necessary
+                    if is_scalar(result): result = get_scalar(result)
+
+                    x_values.append(x_a)
+                    y_values.append(result)
+
+                    # Increment
+                    i += 1
+                    j += 1
+
+                # x of a is greater than x of b
+                elif x_a > x_b: j += 1
+
+                # x of b is greater than x of a
+                else: i += 1
+
+                # Check for termination
+                if i >= self.npoints: break
+                if j >= other.npoints: break
+
+            # Set the new y name
+            if self.y_name == other.y_name: y_name = self.y_name + "1" + " / " + other.y_name + "2"
+            else: y_name = self.y_name + " / " + other.y_name
+
+            # Set units
+            x_unit = self.x_unit
+            y_unit = self.y_unit / other.y_unit
+
+            # Set the names and units
+            names = (x_name, y_name)
+            units = (x_unit, y_unit)
+
+        # Invalid type
+        else: raise TypeError("Cannot multiply " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
+
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
 
         # Create new curve
-        return self.__class__.from_columns(x_values, y_values, names=[x_name, y_name])
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
     # -----------------------------------------------------------------
 
     __truediv__ = __div__
+
+    # -----------------------------------------------------------------
+
+    def extrapolate_from(self, from_x, regression_from_x, xlog=False, ylog=False, degree=1):
+
+        """
+        This function ...
+        :param from_x:
+        :param regression_from_x:
+        :param xlog:
+        :param ylog:
+        :param degree: 1 is default, means linear regression
+        :return:
+        """
+
+        # Get the monotonic decreasing or increasing part (or fittable part in general)
+        main_part = self.splice(regression_from_x, from_x)
+
+        # Get x and y values for this part
+        x_values = main_part.get_x(unit=main_part.x_unit, asarray=True)
+        y_values = main_part.get_y(unit=main_part.y_unit, asarray=True)
+
+        # To log?
+        if xlog: x_values = np.log10(x_values)
+        if ylog: y_values = np.log10(y_values)
+
+        # Plot
+        #from ...magic.tools import plotting
+        #plotting.plot_xy(x_values, y_values)
+
+        # Polynomial regression
+        polyfun = np.poly1d(np.polyfit(x_values, y_values, degree))
+
+        # Extrapolate to larger x
+        larger_x, indices = self.get_x_splice(x_min=from_x, return_indices=True)
+        if xlog: larger_x = np.log10(larger_x)
+        larger_y = polyfun(larger_x) # is array
+
+        # Correct offset
+        original_first = self.get_value(self.y_name, indices[0], add_unit=False)
+        if ylog: original_first = np.log10(original_first)
+        longer_y_first = larger_y[0]
+        diff = longer_y_first - original_first
+        larger_y = larger_y - diff
+
+        # Plot
+        #plotting.plot_xy(larger_x, larger_y)
+
+        # Replace with extrapolated data
+        for index, y in zip(indices, larger_y):
+
+            # Set
+            if ylog: self.y_data[index] = 10 ** y
+            else: self.y_data[index] = y
+
+    # -----------------------------------------------------------------
+
+    def extrapolated_from(self, from_x, regression_from_x, xlog=False, ylog=False):
+
+        """
+        This function ...
+        :param from_x:
+        :param regression_from_x:
+        :param xlog:
+        :param ylog:
+        :return:
+        """
+
+        # Get copy
+        sed = self.copy()
+
+        # Extrapolate
+        sed.extrapolate_from(from_x, regression_from_x, xlog=xlog, ylog=ylog)
+
+        # Return
+        return sed
+
+    # -----------------------------------------------------------------
+
+    def get_nonzero_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.nonzero(values)
+
+    # -----------------------------------------------------------------
+
+    def get_positive_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values > 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_negative_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values < 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonnegative_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values >= 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonpositive_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values <= 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def stripped_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get indices
+        indices = self.get_nonzero_indices()
+        first = self.get_value(self.x_name, indices[0])
+        last = self.get_value(self.x_name, indices[-1])
+
+        # Return the new curve
+        return self.splice(first, last, include_min=True, include_max=True)
+
+    # -----------------------------------------------------------------
+
+    def stripped_negatives_and_zeroes(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Get indices
+        indices = self.get_positive_indices()
+        first = self.get_value(self.x_name, indices[0])
+        last = self.get_value(self.x_name, indices[-1])
+
+        # Return the new curve
+        return self.splice(first, last, include_min=True, include_max=True)
 
 # -----------------------------------------------------------------
 
@@ -525,24 +886,12 @@ class WavelengthCurve(Curve):
 
     @property
     def unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.y_unit
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.x_unit
 
     # -----------------------------------------------------------------
@@ -610,7 +959,7 @@ class WavelengthCurve(Curve):
     # -----------------------------------------------------------------
 
     def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False,
-                             interpolate=True, conversion_info=None):
+                             interpolate=True, conversion_info=None, distance=None):
 
         """
         This function ...
@@ -621,6 +970,7 @@ class WavelengthCurve(Curve):
         :param brightness:
         :param interpolate:
         :param conversion_info:
+        :param distance:
         :return:
         """
 
@@ -638,7 +988,8 @@ class WavelengthCurve(Curve):
             # Create conversion info
             if conversion_info is None: conversion_info = dict()
             conversion_info["wavelength"] = wavelength
-            if self.distance is not None: conversion_info["distance"] = self.distance
+            if distance is not None: conversion_info["distance"] = distance
+            elif self.distance is not None: conversion_info["distance"] = self.distance
 
             unit = u(unit, density=density, brightness=brightness)
             value = value.to(unit, **conversion_info)
@@ -675,24 +1026,12 @@ class WavelengthCurve(Curve):
 
     @property
     def min_wavelength(self):
-
-        """
-        This ufnction ...
-        :return:
-        """
-
         return self.get_value("Wavelength", 0)
 
     # -----------------------------------------------------------------
 
     @property
     def max_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_value("Wavelength", -1)
 
     # -----------------------------------------------------------------
@@ -945,23 +1284,11 @@ class FilterCurve(WavelengthCurve):
     # -----------------------------------------------------------------
 
     def instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return arrays.array_as_list(self["Instrument"])
 
     # -----------------------------------------------------------------
 
     def bands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return arrays.array_as_list(self["Band"])
 
     # -----------------------------------------------------------------
@@ -1075,6 +1402,11 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def has_broad_band(self):
+        return self.nbroad_band_filters > 0
+
+    # -----------------------------------------------------------------
+
     def only_narrow_band(self):
 
         """
@@ -1095,25 +1427,30 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def has_narrow_band(self):
+        return self.nnarrow_band_filters > 0
+
+    # -----------------------------------------------------------------
+
     def broad_band_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [isinstance(fltr, BroadBandFilter) for fltr in self.filters()]
 
     # -----------------------------------------------------------------
 
+    @property
+    def nbroad_band_filters(self):
+        return len(self.broad_band_filters())
+
+    # -----------------------------------------------------------------
+
     def narrow_band_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [isinstance(fltr, NarrowBandFilter) for fltr in self.filters()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnarrow_band_filters(self):
+        return len(self.narrow_band_filters())
 
     # -----------------------------------------------------------------
 

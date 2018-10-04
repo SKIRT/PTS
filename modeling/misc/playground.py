@@ -36,36 +36,45 @@ colors = ('c','b','r','m')
 
 # -----------------------------------------------------------------
 
-def plot_mappings_examples(path):
+def plot_mappings_examples(path, pressure=True, compactness=True, fpdr=True, metallicity=True, format="pdf",
+                           temp_path=None):
 
     """
     This function ...
     :param path:
+    :param pressure:
+    :param covering_factor:
+    :param fpdr:
+    :param metallicity:
+    :param format:
+    :param temp_path:
     :return:
     """
 
     # Create the playground
-    playground = MappingsPlayground()
+    playground = MappingsPlayground(temp_path=temp_path)
+
+    # Define plot paths
+    pressure_path = fs.join(path, "hiiregion-logP." + format)
+    compactness_path = fs.join(path, "hiiregion-logC." + format)
+    fpdr_path = fs.join(path, "hiiregion-fpdr.pdf")
+    metallicity_path = fs.join(path, "hiiregion-z-a.pdf")
+    metallicity2_path = fs.join(path, "hiiregion-z-b.pdf")
 
     # Produce plot of varying pressure
-    plot_path = fs.join(path, "hiiregion-logP.pdf")
-    playground.vary_pressure(4., 8., 1., Zsun, 5., 1., path=plot_path)
+    if pressure: playground.vary_pressure(4., 8., 1., Zsun, 5., 1., path=pressure_path)
 
-    # Produce plot of varying covering factor
-    plot_path = fs.join(path, "hiiregion-logC.pdf")
-    playground.vary_covering(4., 6.5, 1., Zsun, 5., 1., path=plot_path)
+    # Produce plot of varying compactness
+    if compactness: playground.vary_compactness(4., 6.5, 1., Zsun, 5., 1., path=compactness_path)
 
-    # Produce plot of varying fPDR
-    plot_path = fs.join(path, "hiiregion-fpdr.pdf")
-    playground.vary_covering(0., 1., 1., Zsun, 5., 5., path=plot_path)
+    # Produce plot of varying fPDR (cloud covering factor)
+    if fpdr: playground.vary_fpdr(0., 1., 1., Zsun, 5., 5., path=fpdr_path)
 
     # Produce plot of varying metallicity
-    plot_path = fs.join(path, "hiiregion-z-a.pdf")
-    playground.vary_metallicity(0.05 * Zsun, 2. * Zsun, 1., 5., 5., 0., path=plot_path)
+    if metallicity: playground.vary_metallicity(0.05 * Zsun, 2. * Zsun, 1., 5., 5., 0., path=metallicity_path)
 
     # Another with varying metallicity
-    plot_path = fs.join(path, "hiiregion-z-b.pdf")
-    playground.vary_metallicity(0.05 * Zsun, 2. * Zsun, 1., 5., 5., 1., path=plot_path)
+    if metallicity: playground.vary_metallicity(0.05 * Zsun, 2. * Zsun, 1., 5., 5., 1., path=metallicity2_path)
 
 # -----------------------------------------------------------------
 
@@ -75,10 +84,11 @@ class MappingsPlayground(object):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, temp_path=None):
 
         """
         The constructor ...
+        :param temp_path:
         :return:
         """
 
@@ -88,7 +98,7 @@ class MappingsPlayground(object):
         # -- Attributes --
 
         # Determine the path to a temporary directory
-        self.temp_path = tempfile.gettempdir()
+        self.temp_path = tempfile.gettempdir() if temp_path is None else temp_path
 
         # Load the template ski file
         self.ski = get_oneparticle_template()
@@ -130,7 +140,7 @@ class MappingsPlayground(object):
 
     # -----------------------------------------------------------------
 
-    def vary_covering(self, min_logc, max_logc, sfr, met, logp, fpdr, nvalues=3, path=None):
+    def vary_compactness(self, min_logc, max_logc, sfr, met, logp, fpdr, nvalues=3, path=None):
 
         """
         This function ...
@@ -302,7 +312,7 @@ class MappingsPlayground(object):
         for (logp, sfr, met, logc, fpdr), sed in seds.items():
 
             wavelengths = sed.wavelengths(unit="micron", add_unit=False)
-            luminosities = sed.photometry(unit="erg/s", add_unit=False)
+            luminosities = sed.photometry(unit="erg/s", density=True, add_unit=False)
 
             # plot the SED
             plt.plot(wavelengths, luminosities, color=colors[counter], label="SFR={} Z={} logC={} logP={} fPDR={}".format(sfr, met/Zsun, logc, logp, fpdr))

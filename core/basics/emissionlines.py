@@ -124,12 +124,6 @@ class EmissionLine(object):
 
     @property
     def identifier(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.id
 
     # -----------------------------------------------------------------

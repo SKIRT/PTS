@@ -1242,24 +1242,12 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PixelCoordinate(x=self.x_center, y=self.y_center)
 
     # -----------------------------------------------------------------
 
     @property
     def filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.absolute_or_in(self.filename, self.dirpath)
 
     # -----------------------------------------------------------------
@@ -1278,12 +1266,6 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def map_is_loaded(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._map is not None
 
     # -----------------------------------------------------------------
@@ -1346,132 +1328,66 @@ class DeprojectionModel3D(Model3D):
 
     @lazyproperty
     def map_zeros(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.map.zeroes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def map_nonzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.map.nonzeroes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def map_zeros_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.map.zeroes_pixels
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def map_nonzeroes_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.map.nonzeroes_pixels
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def map_nonzeroes_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.map.nonzeroes_x
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def map_nonzeroes_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.map.nonzeroes_y
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def min_nonzero_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.min(self.map_nonzeroes_x)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def max_nonzero_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.max(self.map_nonzeroes_x)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def min_nonzero_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.min(self.map_nonzeroes_y)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def max_nonzero_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.max(self.map_nonzeroes_y)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ntruncated_min_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.truncate_zeros: return self.min_nonzero_x
         else: return 0.
 
@@ -1479,12 +1395,6 @@ class DeprojectionModel3D(Model3D):
 
     @lazyproperty
     def ntruncated_max_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.truncate_zeros: return self.xsize - self.max_nonzero_x
         else: return 0.
 
@@ -1492,12 +1402,6 @@ class DeprojectionModel3D(Model3D):
 
     @lazyproperty
     def ntruncated_min_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.truncate_zeros: return self.min_nonzero_y
         else: return 0.
 
@@ -1505,12 +1409,6 @@ class DeprojectionModel3D(Model3D):
 
     @lazyproperty
     def ntruncated_max_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.truncate_zeros: return self.ysize - self.max_nonzero_y
         else: return 0.0
 
@@ -1518,12 +1416,6 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         ## NO: don't return the map xsize, return the deprojected xsize? -> NO: not needed so far
         assert self.map.xsize == self.x_size
         return self.map.xsize
@@ -1532,12 +1424,6 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         ## NO: don't return the map ysize, return the deprojected ysize? -> NO: not needed so far
         assert self.map.ysize == self.y_size
         return self.map.ysize
@@ -1546,12 +1432,6 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.distance is not None: return self.distance
         else: return self.map.distance
 
@@ -1559,24 +1439,12 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def has_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distance is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_distance or (self.has_map and self.map.distance is not None)
 
     # -----------------------------------------------------------------
@@ -1650,156 +1518,78 @@ class DeprojectionModel3D(Model3D):
 
     @lazyproperty
     def frame_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FrameInstrument.from_projection(self.projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def simple_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SimpleInstrument.from_projection(self.projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sed_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SEDInstrument.from_projection(self.projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def full_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FullInstrument.from_projection(self.projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_frame_instrument(self):
-        
-        """
-        This function ...
-        :return: 
-        """
-        
         return FrameInstrument.from_projection(self.faceon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_simple_instrument(self):
-        
-        """
-        This function ...
-        :return: 
-        """
-
         return SimpleInstrument.from_projection(self.faceon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_sed_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SEDInstrument.from_projection(self.faceon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_full_instrument(self):
-        
-        """
-        This function ...
-        :return: 
-        """
-
         return FullInstrument.from_projection(self.faceon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_frame_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FrameInstrument.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_simple_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SimpleInstrument.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_sed_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SEDInstrument.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_full_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FullInstrument.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
     @property
     def xmax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #print("ntruncated max x: " + str(self.ntruncated_max_x) + " of " + str(self.xsize))
         return (self.x_size - self.x_center - self.ntruncated_max_x) * self.pixelscale
 
@@ -1807,24 +1597,12 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def map_xmax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.x_size - self.x_center) * self.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def xmin(self):
-
-        """
-        This ufnction ...
-        :return:
-        """
-
         #print("ntruncated min x: " + str(self.ntruncated_min_x) + " of " + str(self.xsize))
         return - (self.x_center - self.ntruncated_min_x) * self.pixelscale
 
@@ -1832,36 +1610,18 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def map_xmin(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
         return - self.x_center * self.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def xrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.xmin, self.xmax)
 
     # -----------------------------------------------------------------
 
     @property
     def ymax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #print("ntruncated max y: " + str(self.ntruncated_max_y) + " of " + str(self.ysize))
         return (self.y_size - self.y_center - self.ntruncated_max_y) * self.pixelscale
 
@@ -1869,24 +1629,12 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def map_ymax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.y_size - self.y_center) * self.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def ymin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #print("ntruncated min y: " + str(self.ntruncated_min_y) + " of " + str(self.ysize))
         return - (self.y_center - self.ntruncated_min_y) * self.pixelscale
 
@@ -1894,96 +1642,48 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def map_ymin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.y_center * self.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def yrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.ymin, self.ymax)
 
     # -----------------------------------------------------------------
 
     @property
     def zmin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.axial_truncation * self.scale_height
 
     # -----------------------------------------------------------------
 
     @property
     def zmax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.axial_truncation * self.scale_height
 
     # -----------------------------------------------------------------
 
     @property
     def zrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.zmin, self.zmax)
 
     # -----------------------------------------------------------------
 
     @property
     def position_angle_radians(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.position_angle.to("rad").value
 
     # -----------------------------------------------------------------
 
     @property
     def inclination_radians(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.inclination.to("rad").value
 
     # -----------------------------------------------------------------
 
     @property
     def cospa(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Calculate the sines and cosines of the position angle and inclination
         return np.cos(self.position_angle_radians)
 
@@ -1991,60 +1691,30 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def sinpa(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sin(self.position_angle_radians)
 
     # -----------------------------------------------------------------
 
     @property
     def cosi(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.cos(self.inclination_radians)
 
     # -----------------------------------------------------------------
 
     @property
     def sini(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sin(self.inclination_radians)
 
     # -----------------------------------------------------------------
 
     @property
     def deltay(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def deltax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Calculate the physical pixel size in the x direction of the galactic plane
         return self.pixelscale / self.cosi
 
@@ -2052,48 +1722,24 @@ class DeprojectionModel3D(Model3D):
 
     @lazyproperty
     def corner1(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.derotate(self.xmax, self.ymax)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def corner2(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.derotate(self.xmin, self.ymax)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def corner3(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.derotate(self.xmin, self.ymin)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def corner4(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.derotate(self.xmax, self.ymin)
 
     # -----------------------------------------------------------------
@@ -2224,12 +1870,6 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def density_normalization(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 1. / (2. * self.scale_height) / (self.deltax * self.deltay)
 
     # -----------------------------------------------------------------
@@ -2252,24 +1892,12 @@ class DeprojectionModel3D(Model3D):
 
     @property
     def shape(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PixelShape(self.ysize, self.xsize)
 
     # -----------------------------------------------------------------
 
     @property
     def npixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.shape.ntotalpixels
 
     # -----------------------------------------------------------------

@@ -56,6 +56,10 @@ _components_command_name = "components"
 # Other
 _project_command_name = "project"
 _parameters_command_name = "parameters"
+_sfr_command_name = "sfr"
+_ssfr_command_name = "ssfr"
+_stellar_mass_command_name = "stellar_mass"
+_luminosities_command_name = "luminosities"
 
 # -----------------------------------------------------------------
 
@@ -72,6 +76,10 @@ commands[_components_command_name] = ("show_components", False, "show model comp
 # Other
 commands[_project_command_name] = ("project_command", True, "project the model from one or multiple orientations", "component")
 commands[_parameters_command_name] = ("show_parameters_command", True, "show model parameters", None)
+commands[_sfr_command_name] = ("show_sfr", True, "show SFR parameters", None)
+commands[_ssfr_command_name] = ("show_ssfr", True, "show sSFR parameters", None)
+commands[_stellar_mass_command_name] = ("show_stellar_mass", True, "show stellar mass parameters", None)
+commands[_luminosities_command_name] = ("show_luminosities", True, "show component luminosities", None)
 
 # -----------------------------------------------------------------
 
@@ -93,7 +101,12 @@ young_name = "young"
 sfr_name = "sfr"
 unevolved_name = "unevolved"
 dust_name = "dust"
-parameter_categories = [all_name, intrinsic_name, free_name, other_name, derived_name, stellar_name, bulge_name, disk_name, old_name, young_name, sfr_name, unevolved_name, dust_name]
+
+star_formation_rate_name = "star_formation"
+ssfr_name = "ssfr"
+stellar_mass_name = "stellar_mass"
+
+parameter_categories = [all_name, intrinsic_name, free_name, other_name, derived_name, stellar_name, bulge_name, disk_name, old_name, young_name, sfr_name, unevolved_name, dust_name, star_formation_rate_name, ssfr_name, stellar_mass_name]
 
 # -----------------------------------------------------------------
 
@@ -942,6 +955,15 @@ class ModelExamination(InteractiveConfigurable):
         # Dust
         elif config.category == dust_name: self.show_dust_parameters()
 
+        # Star formation
+        elif config.category == star_formation_rate_name: self.show_star_formation_rates()
+
+        # Specific star formation
+        elif config.category == ssfr_name: self.show_ssfr_values()
+
+        # Stellar mass
+        elif config.category == stellar_mass_name: self.show_stellar_masses()
+
         # Invalid
         else: raise ValueError("Invalid category: '" + config.category + "'")
 
@@ -1237,6 +1259,160 @@ class ModelExamination(InteractiveConfigurable):
         print(fmt.cyan + fmt.underlined + "Derived parameter values of dust component:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values_dust: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_dust[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def star_formation_rates(self):
+        return self.model.sfr_parameter_values
+
+    # -----------------------------------------------------------------
+
+    def show_star_formation_rates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print(fmt.cyan + fmt.underlined + "Star formation rates:" + fmt.reset)
+        print("")
+        for label in self.star_formation_rates: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.star_formation_rates[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_values(self):
+        return self.model.ssfr_parameter_values
+
+    # -----------------------------------------------------------------
+
+    def show_ssfr_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print(fmt.cyan + fmt.underlined + "Specific star formation rates:" + fmt.reset)
+        print("")
+        for label in self.ssfr_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.ssfr_values[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_masses(self):
+        return self.model.stellar_mass_parameter_values
+
+    # -----------------------------------------------------------------
+
+    def show_stellar_masses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print(fmt.cyan + fmt.underlined + "Stellar masses:" + fmt.reset)
+        print("")
+        for label in self.stellar_masses: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.stellar_masses[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_sfr(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Parameters
+        self.show_star_formation_rates()
+
+    # -----------------------------------------------------------------
+
+    def show_ssfr(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Parameters
+        self.show_ssfr_values()
+
+    # -----------------------------------------------------------------
+
+    def show_stellar_mass(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Parameters
+        self.show_stellar_masses()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_distance(self):
+        return self.model.distance
+
+    # -----------------------------------------------------------------
+
+    def show_luminosities(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Bulge
+        bulge_intrinsic = self.model.intrinsic_bolometric_luminosity_old_bulge.to("Lsun", distance=self.galaxy_distance)
+        bulge_observed = self.model.observed_bolometric_luminosity_old_bulge.to("Lsun", distance=self.galaxy_distance)
+        bulge_reldiff = abs(bulge_intrinsic.value - bulge_observed.value) / bulge_intrinsic.value
+
+        # Disk
+        disk_intrinsic = self.model.intrinsic_bolometric_luminosity_old_disk.to("Lsun", distance=self.galaxy_distance)
+        disk_observed = self.model.observed_bolometric_luminosity_old_disk.to("Lsun", distance=self.galaxy_distance)
+        disk_reldiff = abs(disk_intrinsic.value - disk_observed.value) / disk_intrinsic.value
+
+        # Young
+        young_intrinsic = self.model.intrinsic_bolometric_luminosity_young.to("Lsun", distance=self.galaxy_distance)
+        young_observed = self.model.observed_bolometric_luminosity_young.to("Lsun", distance=self.galaxy_distance)
+        young_reldiff = abs(young_intrinsic.value - young_observed.value) / young_intrinsic.value
+
+        # SFR
+        sfr_intrinsic = self.model.intrinsic_bolometric_luminosity_sfr.to("Lsun", distance=self.galaxy_distance)
+        sfr_observed = self.model.observed_bolometric_luminosity_sfr.to("Lsun", distance=self.galaxy_distance)
+        sfr_reldiff = abs(sfr_intrinsic.value - sfr_observed.value) / sfr_intrinsic.value
+
+        print("")
+        print(" - " + fmt.bold + "bulge intrinsic: " + fmt.reset_bold + tostr(bulge_intrinsic))
+        print(" - " + fmt.bold + "bulge observed: " + fmt.reset_bold + tostr(bulge_observed))
+        print("     rel. difference: " + tostr(bulge_reldiff*100, round=True) + "%")
+        print(" - " + fmt.bold + "disk intrinsic: " + fmt.reset_bold + tostr(disk_intrinsic))
+        print(" - " + fmt.bold + "disk observed: " + fmt.reset_bold + tostr(disk_observed))
+        print("     rel. difference: " + tostr(disk_reldiff * 100, round=True) + "%")
+        print(" - " + fmt.bold + "young intrinsic: " + fmt.reset_bold + tostr(young_intrinsic))
+        print(" - " + fmt.bold + "young observed: " + fmt.reset_bold + tostr(young_observed))
+        print("     rel. difference: " + tostr(young_reldiff * 100, round=True) + "%")
+        print(" - " + fmt.bold + "sfr intrinsic: " + fmt.reset_bold + tostr(sfr_intrinsic))
+        print(" - " + fmt.bold + "sfr observed: " + fmt.reset_bold + tostr(sfr_observed))
+        print("     rel. difference: " + tostr(sfr_reldiff * 100, round=True) + "%")
         print("")
 
     # -----------------------------------------------------------------

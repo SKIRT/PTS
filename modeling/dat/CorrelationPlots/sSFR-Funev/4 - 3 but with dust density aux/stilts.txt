@@ -1,0 +1,95 @@
+topcat -stilts plot2plane \
+   xpix=1228 ypix=559 \
+   xlog=true ylog=true xlabel=sSFR ylabel=Funev xcrowd=0.9998301109057076 ycrowd=0.9998301109057076 \
+   xmin=2.0E-20 xmax=1.236899390486394E-9 ymin=0.001739157575398118 ymax=3.500225423736683 \
+   auxfunc=sqrt auxmin=3.0E-12 auxmax=1.090335523174305E-4 \
+   auxvisible=true auxlabel='Dust density' auxcrowd=0.9998301109057076 \
+   legend=true \
+   ifmt=ASCII x=sSFR y=Funev aux='Dust density' \
+   layer_01=Mark \
+      in_01=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_01='select "$4 > 5e-12 & $5 > 1"' \
+      shading_01=aux \
+      leglabel_01='2: sfr10Bulge' \
+   layer_02=LinearFit \
+      in_02=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_02='select "$4 > 5e-12 & $5 > 1"' \
+      color_02=orange \
+      leglabel_02='2: sfr10Bulge' \
+   layer_03=Mark \
+      in_03=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_03='select "$4 < 1e-17 & $4 > 1e-18 & $5 > 1"' \
+      shading_03=aux \
+      leglabel_03='2: sfr3Bulge' \
+   layer_04=LinearFit \
+      in_04=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_04='select "$4 < 1e-17 & $4 > 1e-18 & $5 > 1"' \
+      color_04=cyan \
+      leglabel_04='2: sfr3Bulge' \
+   layer_05=Mark \
+      in_05=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_05='select "$4 < 1e-16 & $4 > 1e-17 & $5 > 1"' \
+      shading_05=aux \
+      leglabel_05='2: sfr4Bulge' \
+   layer_06=LinearFit \
+      in_06=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_06='select "$4 < 1e-16 & $4 > 1e-17 & $5 > 1"' \
+      color_06=pink \
+      leglabel_06='2: sfr4Bulge' \
+   layer_07=Mark \
+      in_07=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_07='select "$4 < 1e-15 & $4 > 1e-16 & $5 > 1"' \
+      shading_07=aux \
+      leglabel_07='2: sfr5Bulge' \
+   layer_08=LinearFit \
+      in_08=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_08='select "$4 < 1e-15 & $4 > 1e-16 & $5 > 1"' \
+      leglabel_08='2: sfr5Bulge' \
+   layer_09=Mark \
+      in_09=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_09='select "$4 < 1e-14 & $4 > 1e-15 & $5 > 1"' \
+      shading_09=aux \
+      leglabel_09='2: sfr6Bulge' \
+   layer_10=LinearFit \
+      in_10=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_10='select "$4 < 1e-14 & $4 > 1e-15 & $5 > 1"' \
+      color_10=green \
+      leglabel_10='2: sfr6Bulge' \
+   layer_11=Mark \
+      in_11=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_11='select "$4 < 1e-13 & $4 > 1e-14 & $5 > 1"' \
+      shading_11=aux \
+      leglabel_11='2: sfr7Bulge' \
+   layer_12=LinearFit \
+      in_12=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_12='select "$4 < 1e-13 & $4 > 1e-14 & $5 > 1"' \
+      color_12=magenta \
+      leglabel_12='2: sfr7Bulge' \
+   layer_13=Mark \
+      in_13=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_13='select "$4 < 1e-12 & $4 > 1e-13 & $5 > 1"' \
+      shading_13=aux \
+      leglabel_13='2: sfr8Bulge' \
+   layer_14=LinearFit \
+      in_14=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_14='select "$4 < 1e-12 & $4 > 1e-13 & $5 > 1"' \
+      color_14=orange \
+      leglabel_14='2: sfr8Bulge' \
+   layer_15=Mark \
+      in_15=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_15='select "$4 < 5e-12 & $4 > 1e-12 & $5 > 1"' \
+      shading_15=aux \
+      leglabel_15='2: sfr9Bulge' \
+   layer_16=LinearFit \
+      in_16=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+       icmd_16='select "$4 < 5e-12 & $4 > 1e-12 & $5 > 1"' \
+      color_16=yellow \
+      leglabel_16='2: sfr9Bulge' \
+   layer_17=Mark \
+      in_17=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/m31.dat \
+      shading_17=auto color_17=magenta \
+      leglabel_17='3: All' \
+   layer_18=Mark \
+      in_18=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/m51.dat \
+      shading_18=auto color_18=blue \
+      leglabel_18='4: All' 

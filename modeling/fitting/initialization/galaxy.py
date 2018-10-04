@@ -130,84 +130,42 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     @lazyproperty
     def model_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.suite.get_model_definition(self.model_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def metallicity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.metallicity
 
     # -----------------------------------------------------------------
 
     @property
     def old_age(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.old_stars_age
 
     # -----------------------------------------------------------------
 
     @property
     def young_age(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.young_stars_age
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.fitting_filters
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.fitting_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_filter_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.wavelength for fltr in self.fitting_filters]
 
     # -----------------------------------------------------------------
@@ -389,60 +347,30 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     @lazyproperty
     def min_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return get_min_wavelength(self.config.range.min, self.observed_filters_no_iras_planck)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def max_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return get_max_wavelength(self.config.range.max, self.observed_filters_no_iras_planck)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_npoints_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.wg.npoints_range_basic.linear(self.config.wg.ngrids_basic)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def refined_npoints_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.wg.npoints_range_refined.linear(self.config.wg.ngrids_refined)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def highres_npoints_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.wg.npoints_range_highres.linear(self.config.wg.ngrids_highres)
 
     # -----------------------------------------------------------------
@@ -524,24 +452,12 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
     @property
     def normalization_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_filters
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_wavelengths
 
     # -----------------------------------------------------------------

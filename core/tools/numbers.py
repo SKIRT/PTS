@@ -38,40 +38,16 @@ inf_values = [float("inf"), float("-inf"), np.Inf, -np.Inf, np.inf, -np.inf]
 # -----------------------------------------------------------------
 
 def is_multiple_of(number, other_number):
-
-    """
-    This function ...
-    :param number:
-    :param other_number:
-    :return:
-    """
-
     return number % other_number == 0
 
 # -----------------------------------------------------------------
 
 def is_divisor_of(number, other_number):
-
-    """
-    This function ...
-    :param number:
-    :param other_number:
-    :return:
-    """
-
     return other_number % number == 0
 
 # -----------------------------------------------------------------
 
 def is_multiple_or_divisor_of(number, other_number):
-
-    """
-    This function ...
-    :param number:
-    :param other_number:
-    :return:
-    """
-
     return is_multiple_of(number, other_number) or is_divisor_of(number, other_number)
 
 # -----------------------------------------------------------------
@@ -162,25 +138,11 @@ def is_close_to_zero(value, atol=1.e-8):
 # -----------------------------------------------------------------
 
 def is_even(integer):
-
-    """
-    This function ...
-    :param integer: 
-    :return: 
-    """
-    
     return integer % 2 == 0
 
 # -----------------------------------------------------------------
 
 def is_odd(integer):
-    
-    """
-    This functio n...
-    :param integer: 
-    :return: 
-    """
-
     return integer % 2 != 0
 
 # -----------------------------------------------------------------
@@ -204,6 +166,11 @@ def is_nan(value):
 
 def is_inf(value):
     return value in inf_values or is_numpy_inf(value)
+
+# -----------------------------------------------------------------
+
+def is_invalid(value):
+    return is_nan(value) or is_inf(value)
 
 # -----------------------------------------------------------------
 
@@ -1347,13 +1314,14 @@ def weighed_arithmetic_mean_numpy(data, weights=None):
     #return np.dot(np.array(data), weights)
 
     if ndim_weights > 1:
+
+        weights = np.copy(weights)
         divisors = np.sum(weights, axis=-1)
         #norm_weights = weights /
         norm_weights = np.moveaxis(weights, -1, 0) # move last to first axis
         #print("1", norm_weights.shape)
         # Loop over
-        for index in range(norm_weights.shape[0]):
-            norm_weights[index] /= divisors
+        for index in range(norm_weights.shape[0]): norm_weights[index] /= divisors
         #print(norm_weights.shape)
         norm_weights = np.moveaxis(norm_weights, 0, 1)
         #print("2", norm_weights.shape)

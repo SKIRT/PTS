@@ -1559,6 +1559,8 @@ class DataCube(Image):
         :param error_on_max:
         :param return_masks:
         :param replace_nans:
+        :param dilation_rank:
+        :param dilation_connectivity:
         :return:
         """
 
@@ -1638,7 +1640,8 @@ class DataCube(Image):
         arrays = [delta*data for delta, data in zip(deltas, data_list)]
 
         # Calculate the integral
-        frame = Frame(np.sum(arrays, axis=0), wcs=self.wcs, distance=self.distance, unit=bolometric_unit)
+        frame = Frame(np.sum(arrays, axis=0), wcs=self.wcs, distance=self.distance, unit=bolometric_unit,
+                      psf_filter=self.psf_filter, fwhm=self.fwhm, pixelscale=self.pixelscale)
 
         # Return the frame
         return frame
@@ -1769,19 +1772,35 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def get_frame_for_wavelength(self, wavelength, copy=False):
+    def get_frame_for_wavelength(self, wavelength, copy=False, interpolate=False):
 
         """
         This function ...
         :param wavelength:
         :param copy:
+        :param interpolate:
         :return:
         """
 
+        # Interpolation is not yet supported
+        if interpolate: raise NotImplementedError("Interpolation is not yet implemented")
+
+        # Get frame index
         index = self.get_frame_index_for_wavelength(wavelength)
 
-        if copy: return self.frames[index].copy()
-        else: return self.frames[index]
+        if copy: frame = self.frames[index].copy()
+        else: frame = self.frames[index]
+
+        # Set properties
+        frame.unit = self.unit
+        frame.wcs = self.wcs
+        frame.psf_filter = self.psf_filter
+        frame.fwhm = self.fwhm
+        frame.pixelscale = self.pixelscale
+        frame.distance = self.distance
+
+        # Return
+        return frame
 
     # -----------------------------------------------------------------
 

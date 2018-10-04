@@ -577,3 +577,66 @@ def is_integer_sequence_or_tuple(value):
     return is_integer_sequence(value) or is_integer_tuple(value)
 
 # -----------------------------------------------------------------
+
+def is_frame(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from ...magic.core.frame import Frame
+    return isinstance(value, Frame)
+
+# -----------------------------------------------------------------
+
+def is_image(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from ...magic.core.image import Image
+    return isinstance(value, Image)
+
+# -----------------------------------------------------------------
+
+def is_datacube(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from ...magic.core.datacube import DataCube
+    return isinstance(value, DataCube)
+
+# -----------------------------------------------------------------
+
+def is_2d_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_array_like(value) and value.ndim == 2
+
+# -----------------------------------------------------------------
+
+def is_3d_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_array_like(value) and value.ndim == 3
+
+# -----------------------------------------------------------------`

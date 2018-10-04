@@ -368,72 +368,36 @@ class Distribution(Curve):
 
     @property
     def value_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.x_name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_x(asarray=True, unit=self.x_unit)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frequencies(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_y(asarray=True)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.column_unit(self.x_name)
 
     # -----------------------------------------------------------------
 
     @property
     def has_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_column_unit(self.x_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mean_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.weighed_arithmetic_mean(self.values, weights=self.frequencies)
 
@@ -441,12 +405,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def mean(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.mean_value * self.unit
         else: return self.mean_value
 
@@ -454,12 +412,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def stddev_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.weighed_standard_deviation(self.values, weights=self.frequencies)
 
@@ -467,12 +419,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.stddev_value * self.unit
         else: return self.stddev_value
 
@@ -480,12 +426,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def geometric_mean_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.weighed_geometric_mean(self.values, weights=self.frequencies)
 
@@ -493,12 +433,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def geometric_mean(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.geometric_mean_value * self.unit
         else: return self.geometric_mean_value
 
@@ -506,12 +440,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def median_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.median(self.values)
 
@@ -519,12 +447,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def median(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.median_value * self.unit
         else: return self.median_value
 
@@ -532,24 +454,12 @@ class Distribution(Curve):
 
     @lazyproperty
     def percentile_16_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return find_percentile_16(self.values, self.frequencies)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def percentile_16(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.percentile_16_value * self.unit
         else: return self.percentile_16_value
 
@@ -557,24 +467,12 @@ class Distribution(Curve):
 
     @lazyproperty
     def percentile_84_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return find_percentile_84(self.values, self.frequencies)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def percentile_84(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.percentile_84_value * self.unit
         else: return self.percentile_84_value
 
@@ -582,12 +480,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def fwhm_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.fwhm(self.values, self.frequencies)
 
@@ -595,12 +487,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def fwhm(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_unit: return self.fwhm_value * self.unit
         else: return self.fwhm_value
 
@@ -608,60 +494,30 @@ class Distribution(Curve):
 
     @property
     def nvalues(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.values)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nvalues == 1
 
     # -----------------------------------------------------------------
 
     @property
     def nbins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nvalues
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_bin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nbins == 1
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def bin_widths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         widths = []
         for i in range(self.nedges - 1): widths.append(self.edges[i+1] - self.edges[i])
         return widths
@@ -670,12 +526,6 @@ class Distribution(Curve):
 
     @lazyproperty
     def bin_widths_log(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         widths = []
         for i in range(self.nedges - 1): widths.append(self.edges_log[i+1] - self.edges[i])
         return widths

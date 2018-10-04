@@ -1235,12 +1235,39 @@ def open_mapping(filepath):
 
 # -----------------------------------------------------------------
 
-def load_mapping(mappingfile, mapping, indent=""):
+def open_box(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    from box import Box
+    parameters = Box()
+    with open(filepath, "r") as fh: load_box(fh, parameters)
+    return parameters
+
+# -----------------------------------------------------------------
+
+def load_mapping(fh, parameters, indent=""):
+    return load_parameters(fh, parameters, Map, indent=indent)
+
+# -----------------------------------------------------------------
+
+def load_box(fh, parameters, indent=""):
+    from box import Box
+    return load_parameters(fh, parameters, Box, indent=indent)
+
+# -----------------------------------------------------------------
+
+def load_parameters(mappingfile, mapping, cls, indent=""):
 
     """
     This function ...
     :param mappingfile
     :param mapping:
+    :param cls:
     :param indent:
     :return:
     """
@@ -1374,7 +1401,7 @@ def load_mapping(mappingfile, mapping, indent=""):
             else: name = before
 
             # Initialize the submapping
-            mapping[name] = Map()
+            mapping[name] = cls()
 
             # Load the submapping
             load_mapping(mappingfile, mapping[name], indent=indent+"    ")
@@ -1397,6 +1424,19 @@ def save_mapping(path, mapping):
     """
 
     with open(path, 'w') as fh: write_mapping(fh, mapping)
+
+# -----------------------------------------------------------------
+
+def save_box(path, box):
+
+    """
+    This function ...
+    :param path:
+    :param box:
+    :return:
+    """
+
+    with open(path, 'w') as fh: write_box(fh, box)
 
 # -----------------------------------------------------------------
 
@@ -1433,6 +1473,44 @@ def write_mapping(mappingfile, mapping, indent=""):
             print(indent + name + " [" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
+        index += 1
+
+# -----------------------------------------------------------------
+
+def write_box(boxfile, box, indent=""):
+
+    """
+    This function ...
+    :param boxfile:
+    :param box:
+    :param indent:
+    :return:
+    """
+
+    from box import Box
+
+    index = 0
+    length = len(box)
+    for name in box:
+
+        # Skip internal stuff
+        if name.startswith("_"): continue
+
+        value = box[name]
+
+        if isinstance(value, Box):
+
+            print(indent + name + ":", file=boxfile)
+            print(indent + "{", file=boxfile)
+            write_mapping(boxfile, value, indent=indent+"    ")
+            print(indent + "}", file=boxfile)
+
+        else:
+            ptype, string = stringify.stringify(box[name])
+            if ptype is None: ptype = "UNKNOWN"
+            print(indent + name + " [" + ptype + "]: " + string, file=boxfile)
+
+        if index != length - 1: print("", file=boxfile)
         index += 1
 
 # -----------------------------------------------------------------
@@ -5068,7 +5146,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 try:
                     value = parsing.boolean(answer) # if this passes without error, we have valid input
                     break
-                except ValueError, e:
+                except ValueError as e:
                     # Give warning and go to the next iteration
                     log.warning("Invalid input: " + str(e) + ". Try again.")
 

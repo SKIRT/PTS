@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
+from .component import AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
@@ -30,7 +30,7 @@ from ...magic.tools import plotting
 
 # -----------------------------------------------------------------
 
-class ResidualAnalyser(AnalysisComponent):
+class ResidualAnalyser(AnalysisRunComponent):
     
     """
     This class...
@@ -48,9 +48,6 @@ class ResidualAnalyser(AnalysisComponent):
         super(ResidualAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
-
-        # The analysis run
-        self.analysis_run = None
 
         # The simulated images
         self.simulated = dict()
@@ -80,30 +77,25 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
-        # TODO: check whether the total simulation is analysed, so that the mock images are produced
+        # Get the observed and simulated images
+        self.get_images()
 
-        # 2. Load the observed and simulated images
-        self.load_images()
-
-        # 3. Rebin the images
+        # Rebin the images
         self.rebin_images()
 
-        # 4. Crop the images
+        # Crop the images
         self.crop_images()
 
-        # 3. Calculate the residual images
-        self.calculate_residuals()
+        # Calculate residuals
+        self.calculate()
 
-        # 4. Calculate the weighed residual images
-        self.calculate_weighed()
-
-        # 5. Create distributions of the residual values
+        # Create distributions of the residual values
         self.create_distributions()
 
-        # 6. Writing
+        # Writing
         self.write()
 
-        # 7. Plotting
+        # Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -118,12 +110,27 @@ class ResidualAnalyser(AnalysisComponent):
         # Call the setup function of the base class
         super(ResidualAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filters(self):
+        return sequences.sorted_by_attribute(sequences.get_values_in_all(self.observed_filters_no_iras_planck, self.static_photometry_dataset.filters), "wavelength")
 
     # -----------------------------------------------------------------
 
-    def load_run(self):
+    @lazyproperty
+    def filter_names(self):
+        return [str(fltr) for fltr in self.filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_names_for_filters(self):
+        return self.static_photometry_dataset.get_names_for_filters(self.filters)
+
+    # -----------------------------------------------------------------
+
+    def get_images(self):
 
         """
         This function ...
@@ -131,31 +138,16 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the analysis run " + self.config.run + " ...")
+        log.info("Getting the images ...")
 
-        # Get the run
-        self.analysis_run = self.get_run(self.config.run)
-
-    # -----------------------------------------------------------------
-
-    def load_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the images ...")
-
-        # 1. Observed images
+        # Observed images
         self.load_observed_images()
 
-        # 2. Simulated images
+        # Simulated images
         self.load_simulated_images()
 
-        # 3. Error maps
-        self.load_errors()
+        # Error maps
+        if self.config.errors: self.load_errors()
 
     # -----------------------------------------------------------------
 
@@ -169,22 +161,25 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Loading the observed images ...")
 
-        # Load all data
-        for name in self.dataset.names:
+        # Loop over the filters
+        for fltr in self.filters:
 
             # Get filter name
-            filter_name = self.dataset.get_filter_name(name) # should be the same?
+            filter_name = str(fltr)
 
             # Check whether residual frames already created
             if self.has_residuals(filter_name) and self.has_weighed_residuals(filter_name):
                 log.success("Residual and weighed residual map for the '" + filter_name + "' filter already created")
                 continue
 
+            # Get observed image name
+            name = self.observed_names_for_filters[fltr]
+
             # Debugging
             log.debug("Loading the observed " + name + " image ...")
 
             # Load the frame, not truncated
-            frame = self.dataset.get_frame(name, masked=False)
+            frame = self.photometry_dataset.get_frame(name, masked=False)
 
             # Add the image frame to the dictionary
             self.observed[filter_name] = frame
@@ -327,6 +322,21 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def calculate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the residual images
+        self.calculate_residuals()
+
+        # Calculate the weighed residual images
+        if self.config.errors: self.calculate_weighed()
+
+    # -----------------------------------------------------------------
+
     def calculate_residuals(self):
 
         """
@@ -381,36 +391,16 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def significance_masks_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "significance")
 
     # -----------------------------------------------------------------
 
     def get_significance_mask_path(self, filter_name):
-
-        """
-        This function ...
-        :param filter_name:
-        :return:
-        """
-
         return fs.join(self.significance_masks_path, filter_name + ".fits")
 
     # -----------------------------------------------------------------
 
     def has_significance_mask(self, filter_name):
-
-        """
-        This function ...
-        :param filter_name:
-        :return:
-        """
-
         return fs.is_file(self.get_significance_mask_path(filter_name))
 
     # -----------------------------------------------------------------
@@ -477,7 +467,7 @@ class ResidualAnalyser(AnalysisComponent):
         self.create_residuals_distributions()
 
         # Weighed residuals
-        self.create_weighed_distributions()
+        if self.config.errors: self.create_weighed_distributions()
 
     # -----------------------------------------------------------------
 
@@ -585,7 +575,7 @@ class ResidualAnalyser(AnalysisComponent):
         self.write_residuals()
 
         # Write the weighed residual frames
-        self.write_weighed()
+        if self.config.errors: self.write_weighed()
 
         # Write distributions
         self.write_distributions()
@@ -641,12 +631,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def residual_maps_path(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "maps")
 
     # -----------------------------------------------------------------
@@ -738,12 +722,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def weighed_residual_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_maps")
 
     # -----------------------------------------------------------------
@@ -801,7 +779,7 @@ class ResidualAnalyser(AnalysisComponent):
         self.write_residuals_distributions()
 
         # Weighed residuals
-        self.write_weighed_distributions()
+        if self.config.errors: self.write_weighed_distributions()
 
     # -----------------------------------------------------------------
 
@@ -850,12 +828,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def distributions_path(self):
-
-        """
-        this function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "distributions")
 
     # -----------------------------------------------------------------
@@ -944,12 +916,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def weighed_distributions_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_distributions")
 
     # -----------------------------------------------------------------
@@ -1013,13 +979,7 @@ class ResidualAnalyser(AnalysisComponent):
         self.plot_absolute_residuals()
 
         # Plot the weighed rsiduals
-        self.plot_weighed_residuals()
-
-        # Plot a grid with the observed, simulated and residual images
-        #self.plot_image_grid()
-
-        # Plot a grid with the observed, simulated and weighed residual images
-        #self.plot_image_grid_weighed()
+        if self.config.errors: self.plot_weighed_residuals()
 
     # -----------------------------------------------------------------
 
@@ -1037,7 +997,7 @@ class ResidualAnalyser(AnalysisComponent):
         self.plot_residuals_distributions()
 
         # Weighed residuals
-        self.plot_weighed_distributions()
+        if self.config.errors: self.plot_weighed_distributions()
 
     # -----------------------------------------------------------------
 
@@ -1069,12 +1029,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def distributions_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "distribution_plots")
 
     # -----------------------------------------------------------------
@@ -1095,37 +1049,19 @@ class ResidualAnalyser(AnalysisComponent):
 
     @property
     def distribution_x_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return -4
 
     # -----------------------------------------------------------------
 
     @property
     def distribution_x_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 4
 
     # -----------------------------------------------------------------
 
     @property
     def distribution_x_limits(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return (self.distribution_x_min, self.distribution_x_max)  # because should be less than an order of magnitude (10)
+        return (self.distribution_x_min, self.distribution_x_max,)  # because should be less than an order of magnitude (10)
 
     # -----------------------------------------------------------------
 
@@ -1182,12 +1118,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def weighed_distributions_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_distribution_plots")
 
     # -----------------------------------------------------------------
@@ -1208,12 +1138,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @property
     def weighed_distribution_x_limits(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return None
 
     # -----------------------------------------------------------------
@@ -1271,12 +1195,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def residuals_plot_path(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "plots")
 
     # -----------------------------------------------------------------
@@ -1295,24 +1213,12 @@ class ResidualAnalyser(AnalysisComponent):
 
     @property
     def residuals_plot_interval(self):
-
-        """
-        This functio n...
-        :return:
-        """
-
-        return (-100., 100.)
+        return (-100., 100.,)
 
     # -----------------------------------------------------------------
 
     @property
     def residuals_plot_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "RdBu_r"
 
     # -----------------------------------------------------------------
@@ -1378,12 +1284,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def absolute_residuals_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "absolute_plots")
 
     # -----------------------------------------------------------------
@@ -1402,24 +1302,12 @@ class ResidualAnalyser(AnalysisComponent):
 
     @property
     def residuals_absolute_plot_interval(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (0, 100.)
 
     # -----------------------------------------------------------------
 
     @property
     def residuals_absolute_plot_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "viridis"
 
     # -----------------------------------------------------------------
@@ -1479,12 +1367,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @lazyproperty
     def weighed_residuals_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.analysis_run.residuals_path, "weighed_plots")
 
     # -----------------------------------------------------------------
@@ -1503,12 +1385,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     @property
     def weighed_residuals_plot_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "RdBu_r"
 
     # -----------------------------------------------------------------
@@ -1544,97 +1420,84 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_image_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting a grid with the observed, simulated and residual images ...")
-
-        # Create the image grid plotter
-        plotter = ResidualImageGridPlotter(title="Image residuals")
-
-        # Loop over the filter names, add a row to the image grid plotter for each filter
-        for filter_name in self.filter_names_sorted:
-
-            # Get input
-            observed = self.observed[filter_name]
-            simulated = self.simulated[filter_name]
-
-            # Add row
-            plotter.add_row(observed, simulated, filter_name)
-
-        # Set the bounding box for the plotter
-        plotter.set_bounding_box(self.truncation_box)
-
-        # Determine the path to the plot file
-        path = fs.join(self.analysis_run.residuals_path, "residuals.pdf")
-
-        # Run the plotter
-        plotter.run(path)
-
-    # -----------------------------------------------------------------
-
-    def plot_image_grid_weighed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting a grid with the observed, simulated and weighed residual images ...")
-
-        # Create the image grid plotter
-        plotter = ResidualImageGridPlotter(title="Weighed image residuals", weighed=True)
-
-        # Loop over the filter names, add a row to the image grid plotter for each filter
-        for filter_name in self.filter_names_sorted:
-
-            # Get input
-            observed = self.observed[filter_name]
-            simulated = self.simulated[filter_name]
-            errors = self.errors[filter_name]
-
-            # Add row
-            plotter.add_row(observed, simulated, filter_name, errors=errors)
-
-        # Set the bounding box for the plotter
-        plotter.set_bounding_box(self.truncation_box)
-
-        # Determine the path to the plot file
-        path = fs.join(self.analysis_run.weighed_residuals_path, "weighed_residuals.pdf")
-
-        # Run the plotter
-        plotter.run(path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        image_names = fs.files_in_path(self.analysis_run.misc_path, extension="fits", returns="name", contains="__")
-        return [name.split("__")[1] for name in image_names]
+    # def plot_image_grid(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Plotting a grid with the observed, simulated and residual images ...")
+    #
+    #     # Create the image grid plotter
+    #     plotter = ResidualImageGridPlotter(title="Image residuals")
+    #
+    #     # Loop over the filter names, add a row to the image grid plotter for each filter
+    #     for filter_name in self.filter_names_sorted:
+    #
+    #         # Get input
+    #         observed = self.observed[filter_name]
+    #         simulated = self.simulated[filter_name]
+    #
+    #         # Add row
+    #         plotter.add_row(observed, simulated, filter_name)
+    #
+    #     # Set the bounding box for the plotter
+    #     plotter.set_bounding_box(self.truncation_box)
+    #
+    #     # Determine the path to the plot file
+    #     path = fs.join(self.analysis_run.residuals_path, "residuals.pdf")
+    #
+    #     # Run the plotter
+    #     plotter.run(path)
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def plot_image_grid_weighed(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Plotting a grid with the observed, simulated and weighed residual images ...")
+    #
+    #     # Create the image grid plotter
+    #     plotter = ResidualImageGridPlotter(title="Weighed image residuals", weighed=True)
+    #
+    #     # Loop over the filter names, add a row to the image grid plotter for each filter
+    #     for filter_name in self.filter_names_sorted:
+    #
+    #         # Get input
+    #         observed = self.observed[filter_name]
+    #         simulated = self.simulated[filter_name]
+    #         errors = self.errors[filter_name]
+    #
+    #         # Add row
+    #         plotter.add_row(observed, simulated, filter_name, errors=errors)
+    #
+    #     # Set the bounding box for the plotter
+    #     plotter.set_bounding_box(self.truncation_box)
+    #
+    #     # Determine the path to the plot file
+    #     path = fs.join(self.analysis_run.weighed_residuals_path, "weighed_residuals.pdf")
+    #
+    #     # Run the plotter
+    #     plotter.run(path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def filter_names_sorted(self):
-
-        """
-        This function returns a list of the filter names, sorted on wavelength
-        :return:
-        """
-
-        #return sorted(self.filter_names, key=lambda key: self.observed[key].filter.pivotwavelength())
-        return sorted(self.filter_names, key=lambda key: parse_filter(key).pivotwavelength())
+    # @lazyproperty
+    # def filter_names(self):
+    #     image_names = fs.files_in_path(self.analysis_run.misc_path, extension="fits", returns="name", contains="__")
+    #     return [name.split("__")[1] for name in image_names]
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @lazyproperty
+    # def filter_names_sorted(self):
+    #     return list(sorted(self.filter_names, key=lambda key: parse_filter(key).pivotwavelength()))
 
 # -----------------------------------------------------------------

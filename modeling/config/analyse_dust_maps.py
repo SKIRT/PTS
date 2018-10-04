@@ -22,7 +22,7 @@ definition = definition.copy()
 # Positional optional
 if runs.empty: raise ValueError("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
-else: definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", runs.last_name, runs.names)
+else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
 

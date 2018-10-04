@@ -22,7 +22,6 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from ..tools import time
 from ..tools import filesystem as fs
-from ..basics.distribution import Distribution
 from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
@@ -763,6 +762,8 @@ class LogFile(object):
         :return:
         """
 
+        from .tree import DustGridTreeDistribution
+
         # Keep track of the levels and corresponding number of cells
         levels = []
         counts = []
@@ -794,7 +795,9 @@ class LogFile(object):
                     level += 1
 
                 # This level does not exist anymore in the tree, return the result as a distribution
-                else: return Distribution.from_counts("Number of cells", counts, levels)
+                else:
+                    #return Distribution.from_counts("Number of cells", counts, levels)
+                    return DustGridTreeDistribution.from_counts("Number of cells", counts, levels)
 
         # If the tree leaf distribution could not be determined, return None
         return None

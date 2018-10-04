@@ -5,158 +5,207 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.plot_correlations Plot correlations between different properties of a galaxy table.
+## \package pts.do.modeling.plot_correlations Plot correlations of a galaxy analysis model.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.basics.table import SmartTable
+from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import filesystem as fs
+from pts.core.tools import introspection
+from pts.core.tools import terminal
+from pts.core.tools import formatting as fmt
+from pts.core.tools import strings
 from pts.core.tools import sequences
-from pts.magic.tools import plotting
+from pts.core.basics.log import log
+from pts.core.basics.plot import plotting_formats
+
+# -----------------------------------------------------------------
+
+# Load modeling environment
+environment = load_modeling_environment_cwd()
+runs = environment.analysis_runs
+
+# -----------------------------------------------------------------
+
+default_format = "png"
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition()
 
-# Required
-definition.add_required("filename", "file_path", "data table filename")
-definition.add_optional("output", "directory_path", "output directory path")
+# The analysis run
+if runs.empty: raise RuntimeError("No analysis runs present (yet)")
+elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
+else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
+
+# Show?
+definition.add_flag("show", "show plot instead of writing")
 
 # Plotting format
-definition.add_optional("format", "string", "plotting format", "pdf")
-
-# Replot
-definition.add_optional("replot", "string_list", "remake plots with these variables")
+definition.add_optional("format", "string", "plotting format", default=default_format, choices=plotting_formats)
 
 # Get configuration
 config = parse_arguments("plot_correlations", definition)
 
 # -----------------------------------------------------------------
 
-# Determine full path
-filepath = fs.absolute_or_in_cwd(config.filename)
-
-# Load the table
-table = SmartTable.from_file(filepath)
-galaxy_names = list(table["name"])
+# Load the analysis run
+context = environment.analysis_context
+analysis_run = context.get_run(config.run)
+correlations_path = analysis_run.correlations_path
 
 # -----------------------------------------------------------------
 
-lums = ["galex_fuv", "galex_nuv", "sdss_u", "sdss_g", "sdss_r", "sdss_i", "sdss_z", "2mass_j", "2mass_h", "2mass_k", "wise_w1", "wise_w2", "wise_w3", "wise_w4", "iras12", "iras25", "iras60", "iras100", "i1", "i2", "i3", "i4", "mips24", "mips70", "mips160", "pblue", "pgreen", "pred", "psw", "pmw", "plw", "hfi_350", "hfi_550", "hfi_850", "hfi_1380", "hfi_2100", "hfi_3000"]
-colours = ["fuv_nuv", "fuv_h", "fuv_j", "fuv_k", "fuv_u", "fuv_g", "fuv_r", "fuv_i", "fuv_z", "fuv_mu3", "fuv_mu4", "nuv_h", "nuv_j", "nuv_k", "nuv_u", "nuv_g", "nuv_r", "nuv_i", "nuv_z", "nuv_mu3", "nuv_mu4", "mu25_mu70", "mu25_mu60", "mu60_mu100", "mu70_mu100", "mu100_mu160", "mu160_mu250", "mu250_mu350", "mu350_mu500", "mu350_mu550", "mu500_mu850", "mu550_mu850", "mu850_mu1380", "mu1380_mu2100", "mu2100_mu3000"]
+# Determine the path to the correlation plots directory
+correlation_plots_path = fs.join(introspection.pts_dat_dir("modeling"), "CorrelationPlots")
 
 # -----------------------------------------------------------------
 
-filternames_for_colours = dict()
-filternames_for_colours["fuv"] = ["galex_fuv"]
-filternames_for_colours["nuv"] = ["galex_nuv"]
-filternames_for_colours["h"] = ["2mass_h"]
-filternames_for_colours["j"] = ["2mass_j"]
-filternames_for_colours["k"] = ["2mass_k"]
-filternames_for_colours["u"] = ["sdss_u"]
-filternames_for_colours["g"] = ["sdss_g"]
-filternames_for_colours["r"] = ["sdss_r"]
-filternames_for_colours["i"] = ["sdss_i"]
-filternames_for_colours["z"] = ["sdss_z"]
-filternames_for_colours["mu3"] = ["wise_w1", "i1"]
-filternames_for_colours["mu4"] = ["wise_w2", "i2"]
-filternames_for_colours["mu25"] = ["iras25", "mips24"]
-filternames_for_colours["mu70"] = ["pblue", "mips70"]
-filternames_for_colours["mu60"] = ["iras60"]
-filternames_for_colours["mu100"] = ["iras100", "pgreen"]
-filternames_for_colours["mu160"] = ["pred", "mips160"]
-filternames_for_colours["mu250"] = ["psw"]
-filternames_for_colours["mu350"] = ["pmw", "hfi_350"]
-filternames_for_colours["mu500"] = ["plw"]
-filternames_for_colours["mu550"] = ["hfi_550"]
-filternames_for_colours["mu850"] = ["hfi_850"]
-filternames_for_colours["mu1380"] = ["hfi_1380"]
-filternames_for_colours["mu2100"] = ["hfi_2100"]
-filternames_for_colours["mu3000"] = ["hfi_3000"]
+print("")
 
-# -----------------------------------------------------------------
+# Loop over the different subdirectories of the correlations path
+for correlation_name, correlation_path in fs.directories_in_path(correlations_path, returns=["name", "path"]):
 
-ignore_columns = ["Name", "Common name", "RA", "DEC", "Inclination", "Ellipticity", "Redshift", "Names", "Distance", "Position angle", "Velocity", "D25", "Effective radius", "Type"]
-column_names = [column_name for column_name in table.colnames if column_name not in ignore_columns and not column_name.startswith("has_") and not column_name.endswith("error")]
+    # Show correlation
+    print(fmt.bold + "CORRELATION: " + correlation_name.upper() + fmt.reset_bold)
+    print("")
 
-# -----------------------------------------------------------------
+    # Correlation plots path
+    plots_reference_path = fs.join(correlation_plots_path, correlation_name)
+    if not fs.is_directory(plots_reference_path): continue # no plotting routines yet for this correlation
 
-linear_scales = ["stage"]
+    # Make plots path
+    plots_path = fs.create_directory_in(correlation_path, "plots")
 
-#print(column_names)
-#print(len(column_names))
+    # Show
+    for reference_name, path in fs.directories_in_path(plots_reference_path, returns=["name", "path"], sort=lambda name: int(name[0])):
 
-# -----------------------------------------------------------------
+        # Show
+        print("    " + fmt.bold + reference_name + fmt.reset_bold)
+        print("")
 
-ncombinations = 0
-for column_a, column_b in sequences.combinations(column_names, 2):
+        # Determine path to the file containing the stilts command
+        filepath = fs.get_filepath(path, "stilts.txt")
 
-    a_is_colour = column_a in colours
-    b_is_colour = column_b in colours
+        # Get the original command
+        lines = fs.get_lines(filepath)
+        command = ""
+        for line in lines: command += line.split(" \\")[0].strip() + " "
 
-    if a_is_colour and b_is_colour: continue
+        # Get filepaths
+        data_filepaths = strings.get_substrings(command, "/Users", ".dat", only_shortest=True)
 
-    a_is_lum = column_a in lums
-    b_is_lum = column_b in lums
+        # Split in internal and external
+        correlation_data_filepaths = OrderedDict()
+        external_data_filepaths = OrderedDict()
+        for data_filepath in data_filepaths:
+            if fs.contains_path(correlation_path, data_filepath):
+                rel_filepath = fs.relative_to(data_filepath, correlation_path)
+                correlation_data_filepaths[rel_filepath] = data_filepath
+            else:
+                rel_filepath = fs.relative_to(data_filepath, correlations_path)
+                external_data_filepaths[rel_filepath] = data_filepath
 
-    if a_is_lum and b_is_lum: continue
+        #print("    CORR", correlation_data_filepaths)
+        #print("    EXT", external_data_filepaths)
 
-    if a_is_lum and b_is_colour:
+        # Only external files (e.g. bd_ratio.dat in cartesian space): skip
+        ncorrelation_files = len(correlation_data_filepaths)
+        nexternal_files = len(external_data_filepaths)
+        nfiles = ncorrelation_files + nexternal_files
+        if nfiles == 0: raise IOError("Something is wrong with command in '" + filepath + "': cannot find data filepaths")
+        if ncorrelation_files == 0:
+            log.warning("No correlation data files in '" + filepath + "' command: skipping ...")
+            continue
 
-        b_part1, b_part2 = column_b.split("_")
-        #b_filters = get_filters_for_colour(column_b)
-        b_filter_names = filternames_for_colours[b_part1] + filternames_for_colours[b_part2]
-        if column_a in b_filter_names: continue
+        # Create directory within plots path for this reference plot
+        plot_path = fs.create_directory_in(plots_path, reference_name)
 
-    elif a_is_colour and b_is_lum:
+        mode = None
+        the_data_filepath = None
+        general_data_filepaths = None
 
-        a_part1, a_part2 = column_a.split("_")
-        #a_filters = get_filters_for_colour(column_a)
-        a_filter_names = filternames_for_colours[a_part1] + filternames_for_colours[a_part2]
-        if column_b in a_filter_names: continue
+        # At least one data file is a cells_xxx.dat one
+        if strings.any_startswith(correlation_data_filepaths.keys(), "cells"):
 
-    #print(column_a, column_b)
+            # Split in specific files and general files
+            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths.keys(), "cells")
+            cells_data_filepaths = strings.get_all_startswith(correlation_data_filepaths.keys(), "cells")
 
-    # Set filename
-    filename = column_a + "__" + column_b
-    output_path = fs.join(config.output_path(), filename + "." + config.format)
+            # Check
+            if sequences.all_equal(cells_data_filepaths): the_data_filepath = cells_data_filepaths[0]
+            else: raise RuntimeError("Don't know what to do") # pairs of files are used for this plot (e.g. cells_a.dat and cells_b.dat)?
 
-    # Check
-    if fs.is_file(output_path):
-        if config.replot is not None and (column_a in config.replot or column_b in config.replot): fs.remove_file(output_path)
-        else: continue
+            # Set mode
+            mode = "cells"
 
-    # Logscales
-    if a_is_colour or column_a in linear_scales: xlog = False
-    else: xlog = True
-    if b_is_colour or column_b in linear_scales: ylog = False
-    else: ylog = True
+        # At least one data file is a pixels_xxx.dat one
+        elif strings.any_startswith(correlation_data_filepaths.keys(), "pixels"):
 
-    # Plot
-    plotting.plot_table(filepath, column_a, column_b, output_path, x_log=xlog, y_log=ylog)
+            # Split in specific files and general files
+            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths.keys(), "pixels")
+            pixels_data_filepaths = strings.get_all_startswith(correlation_data_filepaths.keys(), "pixels")
 
-    ncombinations += 1
+            # Check
+            if sequences.all_equal(pixels_data_filepaths): the_data_filepath = pixels_data_filepaths[0]
+            else: raise RuntimeError("Don't know what to do") # pairs
 
-print(ncombinations)
+            # Set mode
+            mode = "pixels"
 
-# topcat -stilts plot2plane \
-#    xpix=1156 ypix=593 \
-#    xlog=true ylog=true xlabel=mips70 ylabel=sfr xcrowd=0.9998301109057076 \
-#     ycrowd=0.9998301109057076 \
-#    xmin=7.0E26 xmax=1.0498369777416409E35 ymin=2.0E-9 ymax=30.260115332352253 \
-#    auxmin=1.0278138959234115 auxmax=4.879091762160679 \
-#    auxvisible=true auxlabel=nuv_g auxcrowd=0.9998301109057076 \
-#    legend=false \
-#    in=/Users/samverstocken/MODELING/galaxies2.dat ifmt=ASCII x=mips70 y=sfr \
-#    layer_1=Mark \
-#       aux_1=nuv_g \
-#       shading_1=aux size_1=5 \
-#    layer_2=LinearFit out=plot.pdf
+        # No cells or pixels, but clearly one data file per plot (except for external)
+        elif sequences.all_equal(correlation_data_filepaths):
+
+            the_data_filepath = correlation_data_filepaths.keys()[0]
+            general_data_filepaths = []
+            mode = "all"
+
+        # We cannot know what to do
+        else: raise RuntimeError("Don't know what to do")
+
+        # Set full reference data filepath
+        full_original_data_filepath = correlation_data_filepaths[the_data_filepath]
+
+        # Set startswith
+        startswith = mode if mode != "all" else None
+
+        # Loop over the files
+        for data_filename, data_filepath in fs.files_in_path(correlation_path, extension="dat", startswith=startswith, returns=["name", "path"]):
+
+            #print(data_filename)
+            if mode == "all": name = data_filename
+            else:
+                if data_filename.startswith(mode + "_"): name = data_filename.split(mode + "_")[1]
+                else: name = data_filename
+
+            # Debugging
+            log.debug("Plotting " + name + " ...")
+
+            # Determine plot filename
+            plot_filename = name + "." + config.format
+            if fs.has_file(plot_path, plot_filename): continue # Plot already exists
+
+            # Create new command
+            new_command = command.replace(full_original_data_filepath, data_filepath)
+            if not config.show: new_command += " out='" + plot_filename + "'"
+
+            #print(new_command)
+
+            # Execute the plotting command
+            terminal.execute(new_command, show_output=True, cwd=plot_path)
+
+        #print(list(command))
+        #exit()
+
+        print("")
 
 # -----------------------------------------------------------------

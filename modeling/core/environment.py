@@ -26,7 +26,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.configuration import Configuration
 from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
-from ...magic.core.dataset import DataSet
+from ...magic.core.dataset import DataSet, StaticDataSet
 from ...core.basics.range import QuantityRange
 from pts.core.tools.utils import lazyproperty
 from ...core.remote.host import load_host
@@ -363,12 +363,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def modeling_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_configuration.modeling_type
 
     # -----------------------------------------------------------------
@@ -410,12 +404,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..maps.collection import MapsCollection
         return MapsCollection.from_modeling_path(self.path)
 
@@ -423,12 +411,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def static_maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..maps.collection import StaticMapsCollection
         return StaticMapsCollection.from_modeling_path(self.path)
 
@@ -436,12 +418,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..maps.selection import ComponentMapsSelection
         return ComponentMapsSelection.from_modeling_path(self.path)
 
@@ -449,12 +425,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def static_maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..maps.selection import StaticComponentMapsSelection
         return StaticComponentMapsSelection.from_modeling_path(self.path)
 
@@ -462,12 +432,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..build.suite import ModelSuite
         return ModelSuite.from_modeling_path(self.path)
 
@@ -475,12 +439,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def static_model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..build.suite import StaticModelSuite
         return StaticModelSuite.from_modeling_path(self.path)
 
@@ -488,12 +446,6 @@ class ModelingEnvironment(object):
 
     @lazyproperty
     def fitting_context(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..fitting.context import FittingContext
         return FittingContext.from_modeling_path(self.path)
 
@@ -501,12 +453,6 @@ class ModelingEnvironment(object):
 
     @property
     def fitting_runs(self):
-
-        """
-        Thi function ...
-        :return:
-        """
-
         return self.fitting_context.runs
 
 # -----------------------------------------------------------------
@@ -711,84 +657,48 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def truncated_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ObservedSED.from_file(self.truncated_sed_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def asymptotic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ObservedSED.from_file(self.asymptotic_sed_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_dustpedia_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ObservedSED.from_file(self.observed_sed_dustpedia_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def photometry_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return DataSet.from_directory(self.phot_images_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def static_photometry_dataset(self):
+        return StaticDataSet.from_directory(self.phot_images_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def photometry_image_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.phot_images_path, extension="fits", returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def photometry_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(filter_name) for filter_name in self.photometry_image_names]
 
     # -----------------------------------------------------------------
@@ -809,12 +719,6 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def photometry_image_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.phot_images_path, extension="fits", returns="path")
 
     # -----------------------------------------------------------------
@@ -848,12 +752,6 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def photometry_image_paths_for_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return {str(fltr): path for fltr, path in self.photometry_image_paths_for_filters.items()}
 
     # -----------------------------------------------------------------
@@ -1008,420 +906,210 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @property
     def maps_colours_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_colours_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_ssfr_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_ssfr_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_tir_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_tir_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_attenuation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_attenuation_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_old_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_old_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_young_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_young_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_ionizing_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_ionizing_path)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_dust_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.maps_dust_path)
 
     # -----------------------------------------------------------------
 
     @property
     def cache_host_id(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.modeling_configuration.cache_host_id
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cache_host(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_host(self.cache_host_id)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cache_remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Remote(host_id=self.cache_host_id)
 
     # -----------------------------------------------------------------
 
     @property
     def has_initial_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.initial_dataset_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def initial_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return DataSet.from_file(self.initial_dataset_path, check=False)  # don't check whether the file are actually present (caching on remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def preparation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sorted(self.initial_dataset.names, key=lambda filter_name: parse_filter(filter_name).wavelength.to("micron").value)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def preparation_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sorted(self.initial_dataset.path_list, key=lambda path: parse_filter(fs.name(fs.directory_of(path))).wavelength.to("micron").value)
 
     # -----------------------------------------------------------------
 
     @property
     def nimages(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.preparation_names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name) for name in self.preparation_names]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def uv_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_uv(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def optical_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_optical(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ir_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_ir(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nir_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_nir(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mir_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_mir(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fir_filters(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_fir(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def submm_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_submm(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fir_submm_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr for fltr in self.filters if is_fir_or_submm(fltr)]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def uv_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.uv_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def optical_filter_names(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.optical_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ir_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.ir_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nir_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.nir_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mir_filter_names(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.mir_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fir_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.fir_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def submm_filter_names(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return [str(fltr) for fltr in self.submm_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.wavelength for fltr in self.filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def min_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # WARNING: INITIALIZED FILES CAN BE CACHED!
         return self.initial_dataset.min_pixelscale
 
@@ -1429,12 +1117,6 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def max_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # WARNING: INITIALIZED FILES CAN BE CACHED!
         return self.initial_dataset.max_pixelscale
 
@@ -1442,12 +1124,6 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def pixelscale_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # WARNING: INITIALIZED FILES CAN BE CACHED!
         return self.initial_dataset.pixelscale_range
 
@@ -1455,45 +1131,24 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def min_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # WARNING: INITIALIZED FILES CAN BE CACHED!
         #return self.initial_dataset.min_wavelength
-
         return min(fltr.wavelength for fltr in self.filters)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def max_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # WARNING: INITIALIZED FILES CAN BE CACHED!
         #return self.initial_dataset.max_wavelength
-
         return max(fltr.wavelength for fltr in self.filters)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def wavelength_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # WARNING: INITIALIZED FILES CAN BE CACHED!
         #return self.initial_dataset.wavelength_range
-
         return QuantityRange(self.min_wavelength, self.max_wavelength)
 
     # -----------------------------------------------------------------
@@ -1549,36 +1204,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @property
     def has_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.prepared_dataset_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dataset(self):
-
-        """
-        This funtion ...
-        :return:
-        """
-
         return DataSet.from_file(self.prepared_dataset_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dataset.get_framelist(named=False)  # on filter
 
     # -----------------------------------------------------------------
@@ -1611,121 +1248,57 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     def get_frame_path(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
         return self.dataset.get_frame_path(name)
 
     # -----------------------------------------------------------------
 
     def get_frame_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
         return self.dataset.get_frame_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
     def get_frame_path_for_filter(self, fltr):
-
-        """
-        Thisf unction ...
-        :param fltr:
-        :return:
-        """
-
         return self.dataset.get_frame_path_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
     def get_frame(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
         return self.dataset.get_frame(name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def named_frame_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dataset.get_framelist(named=True)  # on name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def errormap_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dataset.get_errormap_list(named=False)  # on filter
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def named_errormap_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dataset.get_errormap_list(named=True)  # on name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_path_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dataset.get_frame_path_list(named=False)  # on filter
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def named_frame_path_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dataset.get_frame_path_list(named=True)  # on name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def analysis_context(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..analysis.context import AnalysisContext
         return AnalysisContext.from_modeling_path(self.path)
 
@@ -1733,24 +1306,12 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @property
     def analysis_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_context.runs
 
     # -----------------------------------------------------------------
 
     @property
     def cached_analysis_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_context.cached_runs
 
     # -----------------------------------------------------------------
@@ -1799,24 +1360,12 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def hubble_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_info["Hubble Type"]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def hubble_stage(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.galaxy_info["Hubble Stage"]
 
     # -----------------------------------------------------------------
@@ -1850,60 +1399,30 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.distance
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.center
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_inclination(self):
-
-         """
-         This function ...
-         :return:
-         """
-
          return self.galaxy_properties.inclination
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.position_angle
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_redshift(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.redshift
 
     # -----------------------------------------------------------------
@@ -1926,36 +1445,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def disk_position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.disk_ellipse.angle
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def disk_axial_ratio(self):
-
-        """
-        This function ....
-        :return:
-        """
-
         return self.disk_ellipse.axial_ratio
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def disk_ellipticity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.disk_ellipse.ellipticity
 
     # -----------------------------------------------------------------
@@ -1977,12 +1478,6 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @property
     def has_truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.truncation_ellipse_path)
 
     # -----------------------------------------------------------------
@@ -2025,60 +1520,28 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def physical_truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.truncation_ellipse.to_physical(distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
     def physical_truncation_ellipse_for_frame(self, frame):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
         return self.physical_truncation_ellipse_for_wcs(frame.wcs)
 
     # -----------------------------------------------------------------
 
     def physical_truncation_ellipse_for_wcs(self, wcs):
-
-        """
-        This function ...
-        :param wcs:
-        :return:
-        """
-
         return self.truncation_ellipse.to_physical(distance=self.galaxy_distance, wcs=wcs)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def truncation_radius(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.truncation_ellipse.semimajor
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def physical_truncation_radius(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return (self.truncation_radius * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
 
     # -----------------------------------------------------------------
@@ -2106,36 +1569,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     @lazyproperty
     def truncation_box(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.truncation_ellipse.bounding_box
 
     # -----------------------------------------------------------------
 
     @property
     def has_significance_levels(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return fs.is_file(self.significance_levels_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def significance_levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_dict(self.significance_levels_path)
 
 # -----------------------------------------------------------------

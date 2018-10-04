@@ -1196,9 +1196,11 @@ class SmartTable(Table):
         This function ...
         :param path:
         :param format:
-        :param lines:
+        :param method:
         :return:
         """
+
+        #print(path)
 
         # Check the path
         if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
@@ -1275,6 +1277,8 @@ class SmartTable(Table):
         :param table_name:
         :return:
         """
+
+        from ..tools import strings
 
         # If format is undefined, read the format from the first line
         if format is None:
@@ -1369,7 +1373,6 @@ class SmartTable(Table):
             if nrows == 0:
                 if column_types is None: raise IOError("The table file doesn't contain the column types and neither does it have any rows")
                 colnames_string = data_lines[0][2:]
-                from ..tools import strings
                 column_names = strings.split_except_within_double_quotes(colnames_string, add_quotes=False)
                 table = cls(data=None, names=column_names, masked=True, dtype=column_types, copy=True)
             else:
@@ -1426,8 +1429,15 @@ class SmartTable(Table):
 
             # Set units
             unit_string = header[-1]
-            unit_strings = unit_string.split()
+            #unit_strings = unit_string.split()
+            unit_strings = strings.split_except_within_round_brackets_and_double_quotes(unit_string)
+            #print(unit_string)
+            #print(unit_strings)
+            #print(table.colnames)
             assert len(unit_strings) == len(table.colnames)
+            #print()
+            #print(unit_strings)
+            #print(table.colnames)
             #print(len(unit_strings), len(table.colnames))
             #print(unit_strings)
             for unit_string, colname in zip(unit_strings, table.colnames):
@@ -2286,7 +2296,7 @@ class SmartTable(Table):
         unit_string = ""
         for name in self.column_names:
             unit = self.column_unit(name)
-            if unit is None: unit_string += ' ""'
+            if unit is None or unit == "": unit_string += ' ""'
             else: unit_string += " " + tostr(unit)
         header.append(unit_string.strip())
 

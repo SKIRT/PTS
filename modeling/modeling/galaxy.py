@@ -67,7 +67,6 @@ from ...core.units.parsing import parse_quantity
 # Define the different modeling methods
 modeling_methods = dict()
 modeling_methods["DL14"] = "High-resolution radiative transfer modeling of face-on galaxies based on De Looze et al. 2014"
-modeling_methods["FitSKIRT"] = "FitSKIRT method for fitting edge-on galaxies"
 modeling_methods["MGE"] = "Panchromatic radiative transfer modeling using Multi-Gaussian expansion"
 
 # -----------------------------------------------------------------
@@ -161,60 +160,30 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def galaxy_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.modeling_config.name
 
     # -----------------------------------------------------------------
 
     @property
     def ngc_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_config.ngc_name
 
     # -----------------------------------------------------------------
 
     @property
     def hyperleda_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_config.hyperleda_name
 
     # -----------------------------------------------------------------
 
     @property
     def needs_decomposition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("decompose")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_photometry(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("photometry")
 
     # -----------------------------------------------------------------
@@ -288,48 +257,24 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def needs_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("fetch_properties")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("fetch_seds")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("fetch_images")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_data_inspection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("inspect_data")
 
     # -----------------------------------------------------------------
@@ -556,48 +501,24 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def needs_preparation_initialization(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("initialize_preparation")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_initialization_inspection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("inspect_initialization")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_preparation(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.check_needs_step("prepare_data")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_preparation_inspection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("inspect_preparation")
 
     # -----------------------------------------------------------------
@@ -809,24 +730,12 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def needs_truncation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("truncate")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_significance_levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("set_significance_levels")
 
     # -----------------------------------------------------------------
@@ -997,120 +906,60 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def needs_colour_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_colours_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_ssfr_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_ssfr_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_tir_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_tir_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_attenuation_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_attenuation_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_old_stellar_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_old_stellar_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_dust_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_dust_map")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_young_stellar_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_young_stellar_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_ionizing_stellar_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_ionizing_stellar_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("select_component_maps")
 
     # -----------------------------------------------------------------
 
     @property
     def needs_component_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("make_component_maps")
 
     # -----------------------------------------------------------------
@@ -1388,12 +1237,6 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def needs_build_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.is_galaxy_modeler: return self.check_needs_step("build_model_galaxy")
         elif self.is_sed_modeler: return self.check_needs_step("build_model_sed")
         elif self.is_images_modeler: return self.check_needs_step("build_model_images")
@@ -1403,12 +1246,6 @@ class GalaxyModeler(ModelerBase):
 
     @property
     def needs_representations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.check_needs_step("generate_representations")
 
     # -----------------------------------------------------------------

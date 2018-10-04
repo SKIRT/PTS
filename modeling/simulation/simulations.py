@@ -199,6 +199,30 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_native_intrinsic_cube(self):
+        return self.has_transparent_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_native_intrinsic_cube_faceon(self):
+        return self.has_transparent_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_native_intrinsic_cube_edgeon(self):
+        return self.has_transparent_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_native_intrinsic_cubes(self):
+        return self.has_native_intrinsic_cube and self.has_native_intrinsic_cube_faceon and self.has_native_intrinsic_cube_edgeon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def wavelength_grid(self):
         return self.observed_sed.wavelength_grid()
@@ -627,6 +651,21 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_sed_absorbed_alternative_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        intrinsic = self.intrinsic_stellar_sed
+        observed = self.observed_stellar_sed
+
+        return intrinsic - observed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_sed_absorbed_uncorrected(self):
 
         """
@@ -636,8 +675,11 @@ class ComponentSimulations(object):
 
         intrinsic = self.intrinsic_stellar_sed
         direct = self.observed_sed_direct
-        scattered = self.observed_sed_scattered
-        return intrinsic - direct - scattered
+
+        #scattered = self.observed_sed_scattered
+        #return intrinsic - direct - scattered
+
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -649,11 +691,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
-        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct, self.observed_cube_scattered)
+        #intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct, self.observed_cube_scattered)
+        #return intrinsic - direct - scattered
 
-        # Return
-        return intrinsic - direct - scattered
+        intrinsic, direct = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct)
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -677,9 +719,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        absorbed = self.observed_sed_absorbed_uncorrected
-        correction = self.absorbed_scattering_correction_factor_sed
-        return absorbed * correction
+        #absorbed = self.observed_sed_absorbed_uncorrected
+        #correction = self.absorbed_scattering_correction_factor_sed
+        #return absorbed * correction
+
+        return self.observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -691,17 +735,17 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
-        absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor, convert=False)
+        #absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor, convert=False)
+        #return absorbed * correction
 
-        # Return
-        return absorbed * correction
+        return self.observed_cube_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_sed_absorbed(self):
-        return self.has_observed_sed_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor_sed
+        #return self.has_observed_sed_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor_sed
+        return self.has_observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -741,10 +785,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
         intrinsic, observed = uniformize(self.intrinsic_stellar_cube, self.observed_stellar_cube, distance=self.distance)
-
-        # Return
         return intrinsic - observed
 
     # -----------------------------------------------------------------
@@ -763,10 +804,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
         absorbed, correction_term, correction_factor = uniformize(self.observed_cube_absorbed_alternative_uncorrected, self.absorbed_scattering_correction_term, self.absorbed_scattering_correction_factor, convert=(0,1,))
-
-        # Return
         return (absorbed - correction_term) * correction_factor
 
     # -----------------------------------------------------------------
@@ -848,10 +886,15 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_sed_absorbed_uncorrected(self):
-        intrinsic = self.intrinsic_stellar_sed # isotropic
+
+        #intrinsic = self.intrinsic_stellar_sed # isotropic
+        #direct = self.faceon_observed_sed_direct
+        #scattered = self.faceon_observed_sed_scattered
+        #return intrinsic - direct - scattered
+
+        intrinsic = self.intrinsic_stellar_sed
         direct = self.faceon_observed_sed_direct
-        scattered = self.faceon_observed_sed_scattered
-        return intrinsic - direct - scattered
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -863,19 +906,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #intrinsic = self.intrinsic_stellar_cube_faceon
-        #direct = self.faceon_observed_cube_direct
-        #scattered = self.faceon_observed_cube_scattered
-
-        # Return
+        #intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct, self.faceon_observed_cube_scattered)
         #return intrinsic - direct - scattered
 
-        # Uniformize
-        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct, self.faceon_observed_cube_scattered)
-
-        # Return
-        return intrinsic - direct - scattered
+        intrinsic, direct = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct)
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -893,9 +928,12 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_sed_absorbed(self):
-        absorbed = self.faceon_observed_sed_absorbed_uncorrected
-        correction = self.faceon_absorbed_scattering_correction_factor_sed
-        return absorbed * correction
+
+        #absorbed = self.faceon_observed_sed_absorbed_uncorrected
+        #correction = self.faceon_absorbed_scattering_correction_factor_sed
+        #return absorbed * correction
+
+        return self.faceon_observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -907,18 +945,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #absorbed = self.faceon_observed_cube_absorbed_uncorrected
-        #correction = self.faceon_absorbed_scattering_correction_factor
-
-        # Return
+        #absorbed, correction = uniformize(self.faceon_observed_cube_absorbed_uncorrected, self.faceon_absorbed_scattering_correction_factor, convert=False)
         #return absorbed * correction
 
-        # Uniformize
-        absorbed, correction = uniformize(self.faceon_observed_cube_absorbed_uncorrected, self.faceon_absorbed_scattering_correction_factor, convert=False)
-
-        # Return
-        return absorbed * correction
+        return self.faceon_observed_cube_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -941,13 +971,6 @@ class ComponentSimulations(object):
         This function ...
         :return:
         """
-
-        # Get
-        #transparent = self.intrinsic_stellar_cube_faceon
-        #observed = self.faceon_observed_stellar_cube
-
-        # Return
-        #return transparent - observed
 
         # Uniformize
         intrinsic, observed = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_stellar_cube, distance=self.distance)
@@ -1097,10 +1120,15 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_sed_absorbed_uncorrected(self):
-        intrinsic = self.intrinsic_stellar_sed # ISOTROPIC
+
+        #intrinsic = self.intrinsic_stellar_sed # ISOTROPIC
+        #direct = self.edgeon_observed_sed_direct
+        #scattered = self.edgeon_observed_sed_scattered
+        #return intrinsic - direct - scattered
+
+        intrinsic = self.intrinsic_stellar_sed
         direct = self.edgeon_observed_sed_direct
-        scattered = self.edgeon_observed_sed_scattered
-        return intrinsic - direct - scattered
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -1112,19 +1140,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #intrinsic = self.intrinsic_stellar_cube_edgeon
-        #direct = self.edgeon_observed_cube_direct
-        #scattered = self.edgeon_observed_cube_scattered
-
-        # Return
+        #intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct, self.edgeon_observed_cube_scattered)
         #return intrinsic - direct - scattered
 
-        # Uniformize
-        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct, self.edgeon_observed_cube_scattered)
-
-        # Return
-        return intrinsic - direct - scattered
+        intrinsic, direct =  uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct)
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -1142,9 +1162,12 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_sed_absorbed(self):
-        absorbed = self.edgeon_observed_sed_absorbed_uncorrected
-        correction = self.edgeon_absorbed_scattering_correction_factor_sed
-        return absorbed * correction
+
+        #absorbed = self.edgeon_observed_sed_absorbed_uncorrected
+        #correction = self.edgeon_absorbed_scattering_correction_factor_sed
+        #return absorbed * correction
+
+        return self.edgeon_observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -1156,18 +1179,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #absorbed = self.edgeon_observed_cube_absorbed_uncorrected
-        #correction = self.edgeon_absorbed_scattering_correction_factor
-
-        # Return
+        #absorbed, correction = uniformize(self.edgeon_observed_cube_absorbed_uncorrected, self.edgeon_absorbed_scattering_correction_factor, convert=False)
         #return absorbed * correction
 
-        # Uniformize
-        absorbed, correction = uniformize(self.edgeon_observed_cube_absorbed_uncorrected, self.edgeon_absorbed_scattering_correction_factor, convert=False)
-
-        # Return
-        return absorbed * correction
+        return self.edgeon_observed_cube_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -1190,13 +1205,6 @@ class ComponentSimulations(object):
         This function ...
         :return:
         """
-
-        # Get
-        #transparent = self.intrinsic_stellar_cube_edgeon
-        #observed = self.edgeon_observed_stellar_cube
-
-        # Return
-        #return transparent - observed
 
         # Uniformize
         intrinsic, observed = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_stellar_cube, distance=self.distance)
@@ -1417,6 +1425,30 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cell_masses(self):
+        return self.observed.cell_masses
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mass_unit(self):
+        return self.observed.cell_mass_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperatures(self):
+        return self.observed.cell_temperatures
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperature_unit(self):
+        return self.observed.cell_temperature_unit
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def cell_x_coordinates(self):
         return self.observed.cell_x_coordinates
@@ -1483,19 +1515,19 @@ class ComponentSimulations(object):
 
     @property
     def has_full_sed(self):
-        return self.has_other_observed_sed_contributions
+        return self.has_observed_sed and self.has_other_observed_sed_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_faceon(self):
-        return self.has_other_observed_sed_contributions_faceon
+        return self.has_faceon_observed_sed and self.has_other_observed_sed_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_edgeon(self):
-        return self.has_other_observed_sed_contributions_edgeon
+        return self.has_edgeon_observed_sed and self.has_other_observed_sed_contributions_edgeon
 
     # -----------------------------------------------------------------
     # CUBES
@@ -1503,19 +1535,19 @@ class ComponentSimulations(object):
 
     @property
     def has_full_cube(self):
-        return self.has_other_observed_cube_contributions
+        return self.has_observed_cube and self.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube_faceon(self):
-        return self.has_other_observed_cube_contributions_faceon
+        return self.has_faceon_observed_cube and self.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube_edgeon(self):
-        return self.has_other_observed_cube_contributions_edgeon
+        return self.has_edgeon_observed_cube and self.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1571,9 +1603,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Has full instrument
+        # Has full SED instrument and has diffuse dust SED
         if self.has_full_sed and self.has_observed_diffuse_dust_sed: return self.observed_sed - self.observed_diffuse_dust_sed
 
+        # Has full SED instrument and has dust SED
         elif self.has_full_sed and self.has_observed_dust_sed: return self.observed_sed - self.observed_dust_sed + self.intrinsic_dust_sed
 
         # No full instrument data: get the stellar part of the total SED
@@ -1583,12 +1616,6 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed and self.has_observed_diffuse_dust_sed) or (self.has_full_sed and self.has_observed_dust_sed and self.has_intrinsic_dust_sed) or self.has_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
@@ -1602,21 +1629,13 @@ class ComponentSimulations(object):
         """
 
         if self.has_full_sed_faceon and self.has_faceon_observed_diffuse_dust_sed: return self.faceon_observed_sed - self.faceon_observed_diffuse_dust_sed
-
         elif self.has_full_sed_faceon and self.has_faceon_observed_dust_sed: return self.faceon_observed_sed - self.faceon_observed_dust_sed + self.faceon_intrinsic_dust_sed
-
         else: return self.get_stellar_part(self.faceon_observed_sed, full=True) + self.faceon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed_faceon and self.has_faceon_observed_diffuse_dust_sed) or (self.has_full_sed_faceon and self.has_faceon_observed_dust_sed and self.has_faceon_intrinsic_dust_sed) or self.has_faceon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
@@ -1630,21 +1649,13 @@ class ComponentSimulations(object):
         """
 
         if self.has_full_sed_edgeon and self.has_edgeon_observed_diffuse_dust_sed: return self.edgeon_observed_sed - self.edgeon_observed_diffuse_dust_sed
-
         elif self.has_full_sed_edgeon and self.has_edgeon_observed_dust_sed: return self.edgeon_observed_sed - self.edgeon_observed_dust_sed + self.edgeon_intrinsic_dust_sed
-
         else: return self.get_stellar_part(self.edgeon_observed_sed, full=True) + self.edgeon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed_edgeon and self.has_edgeon_observed_diffuse_dust_sed) or (self.has_full_sed_edgeon and self.has_edgeon_observed_dust_sed and self.has_edgeon_intrinsic_dust_sed) or self.has_edgeon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
@@ -1686,12 +1697,6 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube and self.has_observed_diffuse_dust_cube) or (self.has_full_cube and self.has_observed_diffuse_dust_cube and self.has_intrinsic_dust_cube) or (self.has_intrinsic_dust_cube)
 
     # -----------------------------------------------------------------
@@ -1729,12 +1734,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_observed_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube_faceon and self.has_faceon_observed_diffuse_dust_cube) or (self.has_full_cube_faceon and self.has_faceon_observed_dust_cube and self.has_faceon_intrinsic_dust_cube) or self.has_faceon_intrinsic_dust_cube
 
     # -----------------------------------------------------------------
@@ -1772,84 +1771,42 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_observed_stellar_cube(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return (self.has_full_cube_edgeon and self.has_edgeon_observed_diffuse_dust_cube) or (self.has_full_cube_edgeon and self.has_edgeon_observed_dust_cube and self.has_edgeon_intrinsic_dust_cube) or self.has_edgeon_intrinsic_dust_cube
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def faceon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def edgeon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def faceon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def edgeon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
@@ -2017,12 +1974,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def observed_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_sed: return self.observed_sed_dust + self.intrinsic_dust_sed
         else: return self.get_dust_part(self.observed_sed, full=True)
 
@@ -2030,12 +1981,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def observed_diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_sed: return self.observed_sed_dust
         else: return self.get_dust_part(self.observed_sed, full=True) - self.intrinsic_dust_sed
 
@@ -2043,12 +1988,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def observed_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_cube: return self.observed_cube_dust + self.intrinsic_dust_cube
         else: return self.get_dust_part(self.observed_cube, full=True)
 
@@ -2056,12 +1995,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def observed_diffuse_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_cube: return self.observed_cube_dust
         else: return self.get_dust_part(self.observed_cube, full=True) - self.intrinsic_dust_cube
 
@@ -2069,12 +2002,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_sed_faceon: return self.faceon_observed_sed_dust + self.faceon_intrinsic_dust_sed
         else: return self.get_dust_part(self.faceon_observed_sed, full=True)
 
@@ -2082,12 +2009,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_sed_faceon: return self.faceon_observed_sed_dust
         else: return self.get_dust_part(self.faceon_observed_sed, full=True) - self.faceon_intrinsic_dust_sed
 
@@ -2095,12 +2016,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_cube_faceon: return self.faceon_observed_cube_dust + self.faceon_intrinsic_dust_cube
         else: return self.get_dust_part(self.faceon_observed_cube, full=True)
 
@@ -2108,12 +2023,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_diffuse_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_cube_faceon: return self.faceon_observed_cube_dust
         else: return self.get_dust_part(self.faceon_observed_cube, full=True) - self.faceon_intrinsic_dust_cube
 
@@ -2121,12 +2030,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_sed_edgeon: return self.edgeon_observed_sed_dust + self.edgeon_intrinsic_dust_sed
         else: return self.get_dust_part(self.edgeon_observed_sed, full=True)
 
@@ -2134,12 +2037,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_diffuse_dust_sed(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         if self.has_full_sed_edgeon: return self.edgeon_observed_sed_dust
         else: return self.get_dust_part(self.edgeon_observed_sed, full=True) - self.edgeon_intrinsic_dust_sed
 
@@ -2147,12 +2044,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_cube_edgeon: return self.edgeon_observed_cube_dust + self.edgeon_intrinsic_dust_cube
         else: return self.get_dust_part(self.edgeon_observed_cube, full=True)
 
@@ -2160,12 +2051,6 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_diffuse_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_full_cube_edgeon: return self.edgeon_observed_cube_dust
         else: return self.get_dust_part(self.edgeon_observed_cube, full=True) - self.edgeon_intrinsic_dust_cube
 

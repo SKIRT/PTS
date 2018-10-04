@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import warnings
 from abc import ABCMeta, abstractproperty
 from collections import defaultdict
 
@@ -23,6 +24,7 @@ from ..tools.utils import lazyproperty, memoize_method
 from ..units.unit import parse_unit as u
 from ..basics.log import log
 from ..tools import sequences
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -357,6 +359,30 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Flags
+        self.has_cached_files = False
+        self.has_cached_directories = False
+
+        # Dictionary of filepaths
+        self.files = defaultdict(list)
+
+        # Dictionary of directory paths
+        self.directories = defaultdict(list)
+
+        # Set directory
+        if kwargs.get("directory", None) is not None: self.directory = kwargs.pop("directory")
+        if kwargs.get("root_directory", None) is not None: self.root_directory = kwargs.pop("root_directory")
+
+    # -----------------------------------------------------------------
+
     @staticmethod
     def get_type(filename, directory=None):
 
@@ -395,7 +421,9 @@ class Output(object):
         """
 
         # Debugging
-        log.debug("Loading " + self.output_kind + " file paths ...")
+        common_directory = strings.common_part(*args)
+        if common_directory is None: log.debug("Loading " + self.output_kind + " file paths ...")
+        else: log.debug("Loading " + self.output_kind + " file paths '" + common_directory + "...'")
 
         # Get flag
         get_prefix = kwargs.pop("get_prefix", False)
@@ -503,33 +531,8 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
-
-        """
-        The constructor ...
-        :param args:
-        """
-
-        # Flags
-        self.has_cached_files = False
-        self.has_cached_directories = False
-
-        # Dictionary of filepaths
-        self.files = defaultdict(list)
-
-        # Dictionary of directory paths
-        self.directories = defaultdict(list)
-
-    # -----------------------------------------------------------------
-
     @property
     def has_cached(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_cached_files or self.has_cached_directories
 
     # -----------------------------------------------------------------
@@ -780,6 +783,12 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_directory(self):
+        return self.directory is not None
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def root_directory(self):
 
@@ -791,6 +800,12 @@ class Output(object):
         dirpath = fs.common_directory(self.all_paths)
         if dirpath == "": return None # no single common directory (different at the very root level of the filesystem (e.g. scattered acros disk and external volume)
         else: return dirpath
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_root_directory(self):
+        return self.root_directory is not None
 
     # -----------------------------------------------------------------
 
@@ -808,60 +823,30 @@ class Output(object):
 
     @lazyproperty
     def nother_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.files[other_name])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nother_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.directories[other_name])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_other_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return other_name in self.files and self.nother_files > 0
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_other_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return other_name in self.directories and self.nother_directories > 0
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def other_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_other_files: return []
         else: return self.files[other_name]
 
@@ -869,12 +854,6 @@ class Output(object):
 
     @lazyproperty
     def other_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_other_directories: return []
         else: return self.directories[other_name]
 
@@ -913,12 +892,6 @@ class Output(object):
 
     @lazyproperty
     def all_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self.__iter__())
 
     # -----------------------------------------------------------------
@@ -1070,12 +1043,6 @@ class Output(object):
 
     @property
     def loose_file_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.all_file_paths_not_in_directory
 
     # -----------------------------------------------------------------
@@ -1153,12 +1120,6 @@ class Output(object):
     # -----------------------------------------------------------------
 
     def __len__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.nfiles + self.ndirectories
         return self.nfiles
 
@@ -1166,12 +1127,6 @@ class Output(object):
 
     @lazyproperty
     def output_type_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._output_types.values()
 
     # -----------------------------------------------------------------
@@ -1215,22 +1170,19 @@ class Output(object):
     # -----------------------------------------------------------------
 
     def __str__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.to_string()
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix="", dense=False):
+    def to_string(self, line_prefix="", dense=False, formatting=True, descriptions=True, absolute=False):
 
         """
         This function ...
         :param line_prefix:
         :param dense:
+        :param formatting:
+        :param descriptions:
+        :param absolute:
         :return:
         """
 
@@ -1244,9 +1196,17 @@ class Output(object):
             # Skip?
             if not self.has_files(output_type) and not self.has_directories(output_type): continue
 
-            # Add title
+            # Whitespace
             if not dense: lines.append(line_prefix)
-            title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset
+
+            # Set label
+            if descriptions: label = self._output_type_choices[output_type].capitalize()
+            else: label = output_type
+
+            # Set title
+            if formatting: title = fmt.green + fmt.underlined + label + fmt.reset
+            else: title = label
+
             if self.has_files(output_type):
                 nfiles = self.get_nfiles(output_type)
                 title += " (" + str(nfiles) + ")"
@@ -1263,7 +1223,9 @@ class Output(object):
                 #print(self.files[output_type])
 
                 # Add paths
-                for path in self.files[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
+                for path in self.files[output_type]:
+                    if absolute: lines.append(line_prefix + " - " + path)
+                    else: lines.append(line_prefix + " - " + self.relative_path(path))
 
             #print(output_type, self.has_directories(output_type))
 
@@ -1273,7 +1235,9 @@ class Output(object):
                 if not dense: lines.append(line_prefix)
                 lines.append(line_prefix + fmt.red + "directories:" + fmt.reset)
                 if not dense: lines.append(line_prefix)
-                for path in self.directories[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
+                for path in self.directories[output_type]:
+                    if absolute: lines.append(line_prefix + " - " + path)
+                    else: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Other
         if self.has_other_files:
@@ -1284,13 +1248,22 @@ class Output(object):
             # Get number of files
             nfiles = self.nother_files
 
+            # Set label
+            if descriptions: label = "Other output"
+            else: label = other_name
+
+            # Set title
+            if formatting: title = fmt.green + fmt.underlined + label + fmt.reset + " (" + str(nfiles) + "):"
+            else: title = label + " (" + str(nfiles) + "):"
+
             # Add title
-            title = fmt.green + fmt.underlined + "Other output" + fmt.reset + " (" + str(nfiles) + "):"
             lines.append(line_prefix + title)
             if not dense: lines.append(line_prefix)
 
             # Add paths
-            for path in self.other_files: lines.append(line_prefix + " - " + self.relative_path(path))
+            for path in self.other_files:
+                if absolute: lines.append(line_prefix + " - " + path)
+                else: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Add new line
         if not dense: lines.append(line_prefix)
@@ -1310,6 +1283,82 @@ class Output(object):
         """
 
         print(self.to_string(line_prefix=line_prefix, dense=dense))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        # Read lines
+        lines = fs.get_lines(filepath)
+
+        directory = None
+        root_directory = None
+        for line in lines:
+            if not line.startswith("#"): break
+            key = line.split("# ")[1].split(":")[0]
+            if key == "directory": directory = line.split(": ")[1]
+            elif key == "root directory": root_directory = line.split(": ")[1]
+            else: raise IOError("Something went wrong reading the file")
+
+        # Create output object
+        output = cls(directory=directory, root_directory=root_directory)
+
+        # Add files
+        output_type = None
+        for line in lines:
+            if line.startswith("#"): continue
+
+            # New output type
+            if "(" in line and line.endswith("):"): output_type = line.split(" (")[0]
+
+            # Filename(path)
+            elif line.startswith(" - "):
+
+                filepath = line.split(" - ")[1]
+                if root_directory is not None: filepath = fs.absolute_or_in(filepath, root_directory)
+                output.files[output_type].append(filepath)
+
+            # Invalid
+            else: raise IOError("Invalid line: '" + line + "'")
+
+        # Return
+        return output
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, filepath, relative=None):
+
+        """
+        This function ...
+        :param filepath:
+        :param relative:
+        :return:
+        """
+
+        # Relative
+        if relative is None: relative = self.has_root_directory
+
+        # With relative paths
+        if relative:
+
+            text = self.to_string(dense=True, formatting=False, descriptions=False)
+            header = []
+            if self.has_directory: header.append("# directory: " + self.directory)
+            if self.has_root_directory: header.append("# root directory: " + self.root_directory)
+            text = "\n".join(header) + "\n" + text
+
+        # With absolute paths
+        else: text = self.to_string(dense=True, formatting=False, descriptions=False, absolute=True)
+
+        # Write
+        fs.write_text(filepath, text)
 
 # -----------------------------------------------------------------
 
@@ -1334,13 +1383,34 @@ class SimulationOutput(Output):
         """
 
         # Call the constructor of the base class
-        super(SimulationOutput, self).__init__()
+        super(SimulationOutput, self).__init__(**kwargs)
 
-        if kwargs.get("prefix",None) is not None:
+        # Get prefix
+        if kwargs.get("prefix", None) is not None:
             self.prefix = kwargs.pop("prefix")
-            self.load_files(*args, get_prefix=False)
+            if len(args) > 0: self.load_files(*args, get_prefix=False)
+
         # Load the file paths, set the simulation prefix
-        else: self.prefix = self.load_files(*args, get_prefix=True)
+        elif len(args) > 0: self.prefix = self.load_files(*args, get_prefix=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def prefixes(self):
+        prefixes = []
+        for filepath in self.all_file_paths:
+            filename = fs.name(filepath)
+            prefixes.append(filename.split("_")[0])
+        return prefixes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def prefix(self):
+        try: return sequences.most_present_value(self.prefixes)
+        except ValueError:
+            warnings.warn("Could not determine the simulation prefix from the output files.")
+            return None
 
     # -----------------------------------------------------------------
 
@@ -1404,123 +1474,67 @@ class SimulationOutput(Output):
         return cls(*filepaths, prefix=prefix)
 
     # -----------------------------------------------------------------
+    # ISRF
+    # -----------------------------------------------------------------
 
     @property
     def nisrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.isrf)
 
     # -----------------------------------------------------------------
 
     @property
     def has_isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.isrf)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.isrf)
 
     # -----------------------------------------------------------------
 
     @property
     def isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.isrf)
 
     # -----------------------------------------------------------------
 
     @property
     def single_isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.isrf)
 
+    # -----------------------------------------------------------------
+    # ABSORPTION
     # -----------------------------------------------------------------
 
     @property
     def nabsorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.absorption)
 
     # -----------------------------------------------------------------
 
     @property
     def has_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.absorption)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.absorption)
 
     # -----------------------------------------------------------------
 
     @property
     def absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.absorption)
 
     # -----------------------------------------------------------------
 
     @property
     def single_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.absorption)
 
     # -----------------------------------------------------------------
@@ -1593,98 +1607,54 @@ class SimulationOutput(Output):
 
     @property
     def ntemperature(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.temperature)
 
     # -----------------------------------------------------------------
 
     @property
     def has_temperature(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.temperature)
 
     # -----------------------------------------------------------------
 
     @property
     def temperature(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.temperature)
 
+    # -----------------------------------------------------------------
+    # SEDs
     # -----------------------------------------------------------------
 
     @property
     def nseds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.seds)
 
     # -----------------------------------------------------------------
 
     @property
     def has_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.seds)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.seds)
 
     # -----------------------------------------------------------------
 
     @property
     def seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.seds)
 
     # -----------------------------------------------------------------
 
     @property
     def single_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.seds)
 
+    # -----------------------------------------------------------------
+    # IMAGES
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1709,12 +1679,6 @@ class SimulationOutput(Output):
 
     @lazyproperty
     def has_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nimages > 0
 
     # -----------------------------------------------------------------
@@ -1738,916 +1702,522 @@ class SimulationOutput(Output):
         return paths
 
     # -----------------------------------------------------------------
+    # TOTAL IMAGES
+    # -----------------------------------------------------------------
 
     @property
     def ntotal_images(self):
-
-        """
-        Thisf unctin ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.total_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_total_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.total_images)
 
     # -----------------------------------------------------------------
 
     @property
     def total_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.total_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_total_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.total_images)
 
     # -----------------------------------------------------------------
 
     @property
     def single_total_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.total_images)
 
+    # -----------------------------------------------------------------
+    # COUNT IMAGES
     # -----------------------------------------------------------------
 
     @property
     def ncount_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.count_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_count_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.count_images)
 
     # -----------------------------------------------------------------
 
     @property
     def count_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.count_images)
 
+    # -----------------------------------------------------------------
+    # DIRECT IMAGES
     # -----------------------------------------------------------------
 
     @property
     def ndirect_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.direct_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.direct_images)
 
     # -----------------------------------------------------------------
 
     @property
     def direct_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.direct_images)
 
+    # -----------------------------------------------------------------
+    # TRANSPARENT IMAGES
     # -----------------------------------------------------------------
 
     @property
     def ntransparent_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.transparent_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_transparent_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.transparent_images)
 
     # -----------------------------------------------------------------
 
     @property
     def transparent_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.transparent_images)
 
+    # -----------------------------------------------------------------
+    # SCATTERED IMAGES
     # -----------------------------------------------------------------
 
     @property
     def nscattered_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.scattered_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_scattered_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.scattered_images)
 
     # -----------------------------------------------------------------
 
     @property
     def scattered_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.scattered_images)
 
+    # -----------------------------------------------------------------
+    # DUST IMAGES
     # -----------------------------------------------------------------
 
     @property
     def ndust_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.dust_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.dust_images)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.dust_images)
 
+    # -----------------------------------------------------------------
+    # SCATTERED IMAGES
     # -----------------------------------------------------------------
 
     @property
     def ndust_scattered_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.dust_scattered_images)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_scattered_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.dust_scattered_images)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_scattered_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.dust_scattered_images)
 
+    # -----------------------------------------------------------------
+    # CELL TEMPERATURE
     # -----------------------------------------------------------------
 
     @property
     def ncell_temperature(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.cell_temperature)
 
     # -----------------------------------------------------------------
 
     @property
     def has_cell_temperature(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.cell_temperature)
 
     # -----------------------------------------------------------------
 
     @property
+    def has_single_cell_temperature(self):
+        return self.has_single_file(self._output_types.cell_temperature)
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_temperature(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.cell_temperature)
 
     # -----------------------------------------------------------------
 
     @property
+    def single_cell_temperature(self):
+        return self.get_single_file(self._output_types.cell_temperature)
+
+    # -----------------------------------------------------------------
+    # LOGFILES
+    # -----------------------------------------------------------------
+
+    @property
     def nlogfiles(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.logfiles)
 
     # -----------------------------------------------------------------
 
     @property
     def has_logfiles(self):
-
-        """
-        This funtion ...
-        :return:
-        """
-
         return self.has_files(self._output_types.logfiles)
 
     # -----------------------------------------------------------------
 
     @property
     def logfiles(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.logfiles)
 
+    # -----------------------------------------------------------------
+    # WAVELENGTHS
     # -----------------------------------------------------------------
 
     @property
     def nwavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.wavelengths)
 
     # -----------------------------------------------------------------
 
     @property
     def has_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.wavelengths)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.wavelengths)
 
     # -----------------------------------------------------------------
 
     @property
     def wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.wavelengths)
 
     # -----------------------------------------------------------------
 
     @property
     def single_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.wavelengths)
 
+    # -----------------------------------------------------------------
+    # GRID
     # -----------------------------------------------------------------
 
     @property
     def ngrid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.grid)
 
     # -----------------------------------------------------------------
 
     @property
     def has_grid(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_files(self._output_types.grid)
 
     # -----------------------------------------------------------------
 
     @property
     def grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.grid)
 
+    # -----------------------------------------------------------------
+    # GRID DENSITY
     # -----------------------------------------------------------------
 
     @property
     def ngdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.gdensity)
 
     # -----------------------------------------------------------------
 
     @property
     def has_gdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.gdensity)
 
     # -----------------------------------------------------------------
 
     @property
     def gdensity(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.get_files(self._output_types.gdensity)
 
+    # -----------------------------------------------------------------
+    # THEORETICAL DENSITY
     # -----------------------------------------------------------------
 
     @property
     def ntdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.tdensity)
 
     # -----------------------------------------------------------------
 
     @property
     def has_tdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.tdensity)
 
     # -----------------------------------------------------------------
 
     @property
     def tdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.tdensity)
 
+    # -----------------------------------------------------------------
+    # CELL PROPERTIES
     # -----------------------------------------------------------------
 
     @property
     def ncell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.cell_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def has_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.cell_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.cell_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.cell_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def single_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.cell_properties)
 
+    # -----------------------------------------------------------------
+    # STELLAR DENSITY
     # -----------------------------------------------------------------
 
     @property
     def nstellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.stellar_density)
 
     # -----------------------------------------------------------------
 
     @property
     def has_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.stellar_density)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.stellar_density)
 
     # -----------------------------------------------------------------
 
     @property
     def stellar_density(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.stellar_density)
 
     # -----------------------------------------------------------------
 
     @property
     def single_stellar_density(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.stellar_density)
 
+    # -----------------------------------------------------------------
+    # TREE
     # -----------------------------------------------------------------
 
     @property
     def ntree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.tree)
 
     # -----------------------------------------------------------------
 
     @property
     def has_tree(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_files(self._output_types.tree)
 
     # -----------------------------------------------------------------
 
     @property
     def tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.tree)
 
+    # -----------------------------------------------------------------
+    # CONVERGENCE
     # -----------------------------------------------------------------
 
     @property
     def nconvergence(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.convergence)
 
     # -----------------------------------------------------------------
 
     @property
     def has_convergence(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.convergence)
 
     # -----------------------------------------------------------------
 
     @property
     def convergence(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.convergence)
 
+    # -----------------------------------------------------------------
+    # DUST MASS
     # -----------------------------------------------------------------
 
     @property
     def ndust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.dust_mass)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.dust_mass)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.dust_mass)
 
+    # -----------------------------------------------------------------
+    # DUST MIX
     # -----------------------------------------------------------------
 
     @property
     def ndust_mix_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.dust_mix_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_mix_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.dust_mix_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_mix_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.dust_mix_properties)
 
+    # -----------------------------------------------------------------
+    # OPTICAL PROPERTIES
     # -----------------------------------------------------------------
 
     @property
     def ndust_optical_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.dust_optical_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_optical_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.dust_optical_properties)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_optical_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.dust_optical_properties)
 
+    # -----------------------------------------------------------------
+    # GRAIN SIZES
     # -----------------------------------------------------------------
 
     @property
     def ndust_grain_sizes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.dust_grain_sizes)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_grain_sizes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.dust_grain_sizes)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grain_sizes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.dust_grain_sizes)
 
+    # -----------------------------------------------------------------
+    # PARAMETERS
     # -----------------------------------------------------------------
 
     @property
     def nparameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_nfiles(self._output_types.parameters)
 
     # -----------------------------------------------------------------
 
     @property
     def has_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_files(self._output_types.parameters)
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_single_file(self._output_types.parameters)
 
     # -----------------------------------------------------------------
 
     @property
     def parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_files(self._output_types.parameters)
 
     # -----------------------------------------------------------------
 
     @property
     def single_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_single_file(self._output_types.parameters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameters_xml(self):
+        return sequences.find_unique_endswith(self.parameters, "xml")
 
 # -----------------------------------------------------------------
 
@@ -2699,15 +2269,16 @@ class ExtractionOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
         :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ExtractionOutput, self).__init__()
+        super(ExtractionOutput, self).__init__(**kwargs)
 
         # Load the file paths
         self.load_files(*args)
@@ -2928,15 +2499,16 @@ class PlottingOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
         :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(PlottingOutput, self).__init__()
+        super(PlottingOutput, self).__init__(**kwargs)
 
         # Load the file paths
         self.load_files(*args)
@@ -3149,16 +2721,17 @@ class MiscOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, files, directories):
+    def __init__(self, files, directories, **kwargs):
 
         """
         This function ...
-        :param args:
+        :param files:
         :param directories:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(MiscOutput, self).__init__()
+        super(MiscOutput, self).__init__(**kwargs)
 
         # Load the file paths
         self.load_files(*files)

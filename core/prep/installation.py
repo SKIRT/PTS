@@ -461,11 +461,11 @@ class SKIRTInstaller(Installer):
         self.git_version = git.get_short_git_version(self.skirt_repo_path)
 
         # Determine path of SKIRT and FitSKIRT main directories with executable
-        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For SKIRT, added by PTS (Python Toolkit for SKIRT)"
         skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
-        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+        #fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
         if skirt_main_path in terminal.paths_in_path_variable(): terminal.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
-        if fitskirt_main_path in terminal.paths_in_path_variable(): terminal.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
+        #if fitskirt_main_path in terminal.paths_in_path_variable(): terminal.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")
@@ -652,15 +652,15 @@ class SKIRTInstaller(Installer):
         log.info("The git version to be installed is '" + self.git_version + "'")
 
         # Determine path of SKIRT and FitSKIRT main directories with executable
-        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For SKIRT, added by PTS (Python Toolkit for SKIRT)"
         skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
-        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+        #fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
         if skirt_main_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(skirt_main_path)
-        if fitskirt_main_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(fitskirt_main_path)
+        #if fitskirt_main_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(fitskirt_main_path)
 
         # Add to path, also execute in current shell to make SKIRT (and FtiSKIRT) visible
         terminal.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
-        terminal.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
+        #terminal.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")
@@ -713,12 +713,12 @@ class SKIRTInstaller(Installer):
 
         # Determine SKIRT and FitSKIRT main paths
         skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
-        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+        #fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
 
         # Add to environment variables
-        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For SKIRT, added by PTS (Python Toolkit for SKIRT)"
         if skirt_main_path not in self.remote.paths_in_path_variable: self.remote.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
-        if fitskirt_main_path not in self.remote.paths_in_path_variable: self.remote.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
+        #if fitskirt_main_path not in self.remote.paths_in_path_variable: self.remote.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")
@@ -1082,14 +1082,14 @@ class SKIRTInstaller(Installer):
 
         # Determine SKIRT and FitSKIRT main paths
         skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
-        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+        #fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
 
         # Add
-        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For SKIRT, added by PTS (Python Toolkit for SKIRT)"
         if skirt_main_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(skirt_main_path)
-        if fitskirt_main_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(fitskirt_main_path)
+        #if fitskirt_main_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(fitskirt_main_path)
         self.remote.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
-        self.remote.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
+        #self.remote.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")

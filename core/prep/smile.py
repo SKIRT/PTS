@@ -824,12 +824,6 @@ class SKIRTSmileSchema(object):
 
     @lazyproperty
     def quantities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [quantity.get("name") for quantity in self.get_quantities()]
 
     # -----------------------------------------------------------------
@@ -876,12 +870,6 @@ class SKIRTSmileSchema(object):
 
     @lazyproperty
     def unit_systems(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [system.get("name") for system in self.get_unit_systems()]
 
     # -----------------------------------------------------------------
@@ -928,60 +916,30 @@ class SKIRTSmileSchema(object):
 
     @property
     def root(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.tree.getroot()
 
     # -----------------------------------------------------------------
 
     @property
     def schema(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return xml.get_unique_element_direct(self.root, "Schema")
 
     # -----------------------------------------------------------------
 
     @property
     def ski_root_name(self):
-
-        """
-        Thi function ...
-        :return: 
-        """
-
         return self.schema.get("root")
 
     # -----------------------------------------------------------------
 
     @property
     def ski_root_type(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.schema.get("type")
 
     # -----------------------------------------------------------------
 
     @property
     def ski_root_format(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.schema.get("format")
 
     # -----------------------------------------------------------------
@@ -1171,49 +1129,24 @@ class SKIRTSmileSchema(object):
 
     @property
     def supports_writing_stellar_density(self):
-
-        """
-        his function ...
-        :return:
-        """
-
-        # Check
         return self.has_property("DustSystem", "writeStellarDensity")
 
     # -----------------------------------------------------------------
 
     @property
     def supports_writing_absorption(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_property("PanDustSystem", "writeAbsorption")
 
     # -----------------------------------------------------------------
 
     @property
     def supports_writing_spectral_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_property("PanDustSystem", "writeSpectralAbsorption")
 
     # -----------------------------------------------------------------
 
     @property
     def supports_writing_spectral_emission(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_property("PanDustSystem", "writeSpectralEmission")
 
 # -----------------------------------------------------------------

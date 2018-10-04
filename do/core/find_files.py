@@ -32,6 +32,10 @@ definition.add_positional_optional("remote_path", "string", "path of remote dire
 definition.add_optional("contains", "string", "a string that should be contained in the file names")
 definition.add_optional("not_contains", "string", "a string that should not be contained in the file names")
 definition.add_optional("extension", "string", "the file extension")
+definition.add_optional("exact_name", "string", "exact filename (for recursive search)")
+definition.add_optional("exact_not_name", "string", "not files with exactly this name")
+definition.add_optional("directory_not_contains", "string_list", "directory_not_contains")
+definition.add_optional("directory_exact_not_name", "string_list", "directory_exact_not_name")
 
 # Add flags
 definition.add_flag("recursive", "search recursively", False)
@@ -60,10 +64,12 @@ if config.remote is not None:
     #print(remote.items_in_path(find_path, recursive=True))
 
     # Loop over the files
-    paths = remote.files_in_path(find_path, contains=config.contains, not_contains=config.not_contains, extension=config.extension, recursive=config.recursive)
+    paths = remote.files_in_path(find_path, contains=config.contains, not_contains=config.not_contains, extension=config.extension, recursive=config.recursive, exact_name=config.exact_name, exact_not_name=config.exact_not_name)
+    nfiles = len(paths)
 
-    if len(paths) == 0: log.warning("No files found")
+    if nfiles == 0: log.warning("No files found")
     else:
+        log.info(str(nfiles) + " files found")
         for path in paths:
             if config.full: print(path)
             else: print(path.split(find_path)[1])
@@ -76,10 +82,14 @@ else:
     find_path = fs.cwd()
 
     # Loop over the files
-    paths = fs.files_in_path(find_path, contains=config.contains, extension=config.extension, recursive=config.recursive)
+    paths = fs.files_in_path(find_path, contains=config.contains, extension=config.extension, recursive=config.recursive,
+                             exact_name=config.exact_name, exact_not_name=config.exact_not_name,
+                             directory_not_contains=config.directory_not_contains, directory_exact_not_name=config.directory_exact_not_name)
+    nfiles = len(paths)
 
-    if len(paths) == 0: log.warning("No files found")
+    if nfiles == 0: log.warning("No files found")
     else:
+        log.info(str(nfiles) + " files found")
         for path in paths:
             if config.full: print(path)
             else: print(path.split(find_path)[1])

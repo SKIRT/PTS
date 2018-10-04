@@ -50,7 +50,7 @@ component_names = {bulge: bulge_component_label,
 
 # -----------------------------------------------------------------
 
-class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
+class AnalysisLauncher(AnalysisComponent):
 
     """
     This class...
@@ -65,9 +65,6 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         """
 
         # Call the constructor of the base class
-        #AnalysisComponent.__init__(self, no_config=True)
-        #ModelSimulationInterface.__init__(self, no_config=True)
-        #ModelSimulationInterface.__init__(self, *args, **kwargs)
         AnalysisComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
@@ -109,28 +106,28 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         :return:
         """
 
-        # 2. Get the model
+        # Get the model
         self.get_model()
 
-        # 3. Load the ski file
+        # Load the ski file
         self.load_ski()
 
-        # 4. Create the ski files for the different contributions
+        # Create the ski files for the different contributions
         self.adjust_ski()
 
-        # 5. Set the simulation input paths
+        # Set the simulation input paths
         self.set_input_paths()
 
-        # 6. Set the parallelization scheme
+        # Set the parallelization scheme
         self.set_parallelization()
 
-        # 7. Set analysis options
+        # Set analysis options
         self.set_analysis_options()
 
-        # 8. Writing
+        # Writing
         self.write()
 
-        # 9. Launch the simulations
+        # Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -635,8 +632,9 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         #if self.config.isrf: self.ski.set_write_isrf()
 
         # Write absorption
-        if not self.smile.supports_writing_absorption: raise RuntimeError("Writing absorption luminosities is not supported in your version of SKIRT")
-        if self.skirt7: self.ski.set_write_absorption()
+        if self.skirt7:
+            if not self.smile.supports_writing_absorption: raise RuntimeError("Writing absorption luminosities is not supported in your version of SKIRT7")
+            self.ski.set_write_absorption()
         elif self.skirt8: self.ski.set_write_isrf()
         else: raise ValueError("Invalid SKIRT version: " + str(self.local_skirt_version))
 
@@ -707,84 +705,42 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
     @property
     def sed_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.sed_earth_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def simple_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simple_earth_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def full_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.full_earth_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def simple_faceon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simple_faceon_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def full_faceon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.full_faceon_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def simple_edgeon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simple_edgeon_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def full_edgeon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.full_edgeon_instrument
 
     # -----------------------------------------------------------------
@@ -1616,6 +1572,7 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         # Convolution kernels
         #self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_psfs_auto = True # automatically determine the PSF for each filter
+
         # FWHMS
         self.analysis_options.misc.fwhms_dataset = self.dataset_path
 

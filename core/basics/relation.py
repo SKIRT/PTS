@@ -176,9 +176,9 @@ class Relation(SmartTable):
         #else: x_unit = y_unit = None
 
         # Add auxilary axes?
-        if kwargs.get("aux", None) is not None:
+        aux = kwargs.pop("aux", None)
+        if aux is not None:
             from .containers import sequence_from_dict
-            aux = kwargs.pop("aux")
             naux = len(aux)
             columns = list(columns) + aux.values()  # columns = [x, y] + aux.values()
             column_names = [kwargs["x_name"], kwargs["y_name"]] + aux.keys()
@@ -189,6 +189,7 @@ class Relation(SmartTable):
             kwargs["names"] = column_names
             kwargs["units"] = column_units
         # else: #columns = [x, y]
+        if "aux_units" in kwargs: kwargs.pop("aux_units")
 
         # x and y descriptions
         #if kwargs.get("descriptions", None) is not None:
@@ -296,8 +297,20 @@ class Relation(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def x_array(self):
+        return np.asarray(self.x_data)
+
+    # -----------------------------------------------------------------
+
+    @property
     def y_data(self):
         return self[self.y_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_array(self):
+        return np.asarray(self.y_data)
 
     # -----------------------------------------------------------------
 
@@ -441,12 +454,6 @@ class Relation(SmartTable):
 
     @property
     def npoints(self):
-
-        """
-        Thisf unction
-        :return:
-        """
-
         return len(self)
 
     # -----------------------------------------------------------------
@@ -507,6 +514,19 @@ class Relation(SmartTable):
         # Get the indices
         indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max) # don't name arguments because of re-definition of function in WavelengthCurve class
 
+        # Return
+        return self.splice_indices(indices)
+
+    # -----------------------------------------------------------------
+
+    def splice_indices(self, indices):
+
+        """
+        This function ...
+        :param indices:
+        :return:
+        """
+
         # Set the x and y unit
         x_unit = self.x_unit
         y_unit = self.y_unit
@@ -521,6 +541,58 @@ class Relation(SmartTable):
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
+
+    # -----------------------------------------------------------------
+
+    def get_x_splice(self, x_min=None, x_max=None, include_min=True, include_max=True, asarray=False, return_indices=False):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param include_min:
+        :param include_max:
+        :param asarray:
+        :param return_indices:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max)  # don't name arguments because of re-definition of function in WavelengthCurve class
+
+        # Get the values
+        x_values = [self.get_value(self.x_name, index, unit=self.x_unit, add_unit=False) for index in indices]
+
+        # Return
+        if asarray: x_values =  np.array(x_values)
+        if return_indices: return x_values, indices
+        else: return x_values
+
+    # -----------------------------------------------------------------
+
+    def get_y_splice(self, x_min=None, x_max=None, include_min=True, include_max=True, asarray=False, return_indices=False):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param include_min:
+        :param include_max:
+        :param asarray:
+        :param return_indices:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max)  # don't name arguments because of re-definition of function in WavelengthCurve class
+
+        # Get the values
+        y_values = [self.get_value(self.y_name, index, unit=self.y_unit, add_unit=False) for index in indices]
+
+        # Return
+        if asarray: return np.array(y_values)
+        if return_indices: return y_values, indices
+        else: return y_values
 
     # -----------------------------------------------------------------
 

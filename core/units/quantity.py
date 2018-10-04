@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import numpy as np
 
 # Import astronomical modules
 from astropy.units import Quantity
@@ -81,6 +82,34 @@ def zero_mass_quantity(): return 0.0 * parse_unit("kg")
 # -----------------------------------------------------------------
 
 def zero_mass_density_quantity(): return 0.0 * parse_unit("kg/m3")
+
+# -----------------------------------------------------------------
+
+def is_scalar(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if types.is_real_type(value): return True
+    elif types.is_quantity(value): return value.unit == ""
+    else: raise ValueError("Value type not recognized: must be real value or quantity")
+
+# -----------------------------------------------------------------
+
+def get_scalar(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if types.is_real_type(value): return value
+    elif types.is_quantity(value): return value.value
+    else: raise ValueError("Value type not recognized: must be real value or quantity")
 
 # -----------------------------------------------------------------
 
@@ -693,6 +722,22 @@ def multiply_with_units(value, unit, other, other_unit=None):
 
 # -----------------------------------------------------------------
 
+def get_dimension(data):
+
+    """
+    This function ...
+    :param data:
+    :return:
+    """
+
+    if types.is_datacube(data): return 3
+    elif types.is_frame(data): return 2
+    elif types.is_real_or_integer(data): return 1
+    elif types.is_array_like(data): return data.ndim
+    else: raise ValueError("Unknown type")
+
+# -----------------------------------------------------------------
+
 def float_division(a, b):
 
     """
@@ -702,8 +747,23 @@ def float_division(a, b):
     :return:
     """
 
-    if b == 0: return math.copysign(float("inf"), a)
-    else: return float(a) / float(b)
+    # Divide by zero, and not array like?
+    if b == 0 and get_dimension(a) == 1: return math.copysign(float("inf"), a)
+
+    # Create float of a
+    if types.is_frame(a): pass
+    elif types.is_array_like(a): a = a.astype(float)
+    elif types.is_real_or_integer(a): a = float(a) # make regular float
+    else: raise ValueError("Type of 'a' not recognized")
+
+    # Create float of b
+    if types.is_frame(b): pass
+    elif types.is_array_like(b): b = b.astype(float)
+    elif types.is_real_or_integer(b): b = float(b) # make regular float
+    else: raise ValueError("Type of 'b' not recognized")
+
+    # Return the result
+    return a / b
 
 # -----------------------------------------------------------------
 
@@ -770,11 +830,12 @@ def divide_with_units(value, unit, other, other_unit=None):
 
         if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
 
+        #print("UNIT", unit)
         #print("OTHER", other)
 
         other = parse_quantity(other)
         if has_unit: new_unit = divide_units(unit, other.unit)
-        else: new_unit = 1./other.unit
+        else: new_unit = other.unit**-1
 
         #print("NU", new_unit)
 
@@ -782,26 +843,38 @@ def divide_with_units(value, unit, other, other_unit=None):
         if isinstance(new_unit, PhotometricUnit):
 
             if new_unit.has_scale:
+                #if types.is_real_or_integer(value): new_value = float_division(value, other.value) * new_unit.scale_factor
+                #elif types.is_real_or_integer_array(value): new_value = value / float(other.value) * new_unit.scale_factor
+                #else: raise RuntimeError("Something went wrong")
                 new_value = float_division(value, other.value) * new_unit.scale_factor
                 new_unit = new_unit.reduced_root  # without scale
             else:
+                #if types.is_real_or_integer(value): new_value = float_division(value, other.value)
+                #elif types.is_real_or_integer_array(value): new_value = value / float(other.value)
+                #else: raise RuntimeError("Something went wrong")
                 new_value = float_division(value, other.value)
                 new_unit = new_unit.reduced
 
         # Not photometric, but still unit
         elif types.is_unit(new_unit):
 
+            #if types.is_real_or_integer(value): new_value = float_division(value, other.value) * new_unit.scale
+            #elif types.is_real_or_integer_array(value): new_value = value / float(other.value) * new_unit.scale
+            #else: raise RuntimeError("Something went wrong")
             new_value = float_division(value, other.value) * new_unit.scale
             new_unit._scale = 1
 
         # NOT A UNIT: UNITS DIVIDED AWAY?
         elif types.is_real_or_integer(new_unit):
 
+            #if types.is_real_or_integer(value): new_value = float_division(value, other.value) * new_unit
+            #elif types.is_real_or_integer_array(value): new_value = value / float(other.value) * new_unit
+            #else: raise RuntimeError("Something went wrong")
             new_value = float_division(value, other.value) * new_unit
             new_unit = None
 
         # Invalid new unit
-        else: raise RuntimeError("Something went wrong")
+        else: raise RuntimeError("Something went wrong: type of unit: '" + type(new_unit).__name__ + "'")
 
     # Divide by array
     elif types.is_real_or_integer_array(other):

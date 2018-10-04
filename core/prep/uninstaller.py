@@ -127,7 +127,7 @@ class Uninstaller(Configurable):
         log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
-        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For SKIRT, added by PTS (Python Toolkit for SKIRT)"
         terminal.remove_aliases_and_variables_with_comment(comment)
 
     # -----------------------------------------------------------------
@@ -158,7 +158,7 @@ class Uninstaller(Configurable):
         log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
-        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For SKIRT, added by PTS (Python Toolkit for SKIRT)"
         self.remote.remove_aliases_and_variables_with_comment(comment)
 
     # -----------------------------------------------------------------

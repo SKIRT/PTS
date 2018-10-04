@@ -1261,71 +1261,6 @@ StaticModelSuite = create_lazified_class(ModelSuite, "StaticModelSuite")
 
 # -----------------------------------------------------------------
 
-# def get_stellar_path(modeling_path, model_name):
-#
-#     """
-#     This function ...
-#     :param modeling_path:
-#     :param model_name:
-#     :return:
-#     """
-#
-#     return fs.join(get_model_path(modeling_path, model_name), "stellar")
-#
-# # -----------------------------------------------------------------
-#
-# def get_dust_path(modeling_path, model_name):
-#
-#     """
-#     This function ...
-#     :param modeling_path:
-#     :param model_name:
-#     :return:
-#     """
-#
-#     return fs.join(get_model_path(modeling_path, model_name), "dust")
-#
-# # -----------------------------------------------------------------
-#
-# def get_stellar_map_paths(modeling_path, model_name):
-#
-#     """
-#     This function ...
-#     :param modeling_path:
-#     :param model_name:
-#     :return:
-#     """
-#
-#     return fs.files_in_path(get_stellar_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
-#
-# # -----------------------------------------------------------------
-#
-# def get_dust_map_paths(modeling_path, model_name):
-#
-#     """
-#     This function ...
-#     :param modeling_path:
-#     :param model_name:
-#     :return:
-#     """
-#
-#     return fs.files_in_path(get_dust_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
-#
-# # -----------------------------------------------------------------
-#
-# def get_input_paths(modeling_path, model_name):
-#
-#     """
-#     This function ...
-#     :param modeling_path:
-#     :param model_name:
-#     :return:
-#     """
-#
-#     return fs.files_in_path(get_input_path(modeling_path, model_name)) + get_stellar_map_paths(modeling_path, model_name) + get_dust_map_paths(modeling_path, model_name)
-
-# -----------------------------------------------------------------
-
 def create_deprojection_for_wcs(galaxy_properties, disk_position_angle, wcs, filename, scaleheight, inclination=None):
 
     """
@@ -1374,6 +1309,18 @@ def create_deprojection_for_map(galaxy_properties, disk_position_angle, map, fil
 
     # Create the deprojection
     return create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight, inclination=inclination)
+
+# -----------------------------------------------------------------
+
+def load_component_cwd(add_map=False):
+
+    """
+    This function ...
+    :param add_map:
+    :return:
+    """
+
+    return load_component(fs.cwd(), add_map=add_map)
 
 # -----------------------------------------------------------------
 

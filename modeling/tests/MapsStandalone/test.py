@@ -686,7 +686,7 @@ class MapsStandaloneTest(TestImplementation):
         correction_factor = 0.25
 
         # Make map
-        dust = make_hot_dust_map(self.get_frame("24mu"), self.get_map(old_disk_filename), correction_factor)
+        dust = make_hot_dust_map(self.get_frame("MIPS 24mu"), self.get_map(old_disk_filename), correction_factor)
 
         # Detemrine path
         path = fs.join(self.maps_path, hot_dust_filename)
