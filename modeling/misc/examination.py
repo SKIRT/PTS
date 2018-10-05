@@ -36,6 +36,7 @@ from ..basics.models import DeprojectionModel3D
 from ...core.tools import sequences
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.tools import plotting
+from pts.magic.plot.imagegrid import plot_images_aplpy
 
 # -----------------------------------------------------------------
 
@@ -52,6 +53,9 @@ _history_command_name = "history"
 
 # Show
 _components_command_name = "components"
+
+# Plot
+_plot_command_name = "plot"
 
 # Other
 _project_command_name = "project"
@@ -73,6 +77,9 @@ commands[_history_command_name] = ("show_history_command", True, "show history o
 # Show stuff
 commands[_components_command_name] = ("show_components", False, "show model components", None)
 
+# Plot stuff
+commands[_plot_command_name] = (None, None, "plot stuff", None)
+
 # Other
 commands[_project_command_name] = ("project_command", True, "project the model from one or multiple orientations", "component")
 commands[_parameters_command_name] = ("show_parameters_command", True, "show model parameters", None)
@@ -83,8 +90,18 @@ commands[_luminosities_command_name] = ("show_luminosities", True, "show compone
 
 # -----------------------------------------------------------------
 
+_maps_command_name = "maps"
+
+# -----------------------------------------------------------------
+
+plot_commands = OrderedDict()
+plot_commands[_maps_command_name] = ("plot_maps_command", True, "plot the model component input maps", None)
+
+# -----------------------------------------------------------------
+
 # Subcommands
 subcommands = OrderedDict()
+subcommands[_plot_command_name] = plot_commands
 
 # -----------------------------------------------------------------
 
@@ -138,24 +155,12 @@ class ModelExamination(InteractiveConfigurable):
 
     @property
     def do_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.commands is not None and len(self.config.commands) > 0
 
     # -----------------------------------------------------------------
 
     @property
     def do_interactive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.interactive is None: return not self.has_any and not self.do_commands
         else: return self.config.interactive
 
@@ -682,6 +687,84 @@ class ModelExamination(InteractiveConfigurable):
 
             # Show
             show_component(path, line_prefix="    ")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_center_and_radius(self):
+        return self.model.has_center and self.model.has_truncation_ellipse
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_maps_definition(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Orientation
+        definition.add_positional_optional("orientation", "string", "orientation of the maps", earth_name, choices=projection_names)
+
+        # Save to path
+        definition.add_optional("path", "new_path", "save plot to file")
+
+        # Dark mode
+        definition.add_flag("dark", "plot in dark mode")
+
+        # Other options
+        if self.has_center_and_radius: definition.add_optional("zoom", "positive_real", "zoom from the normal galaxy truncation", 0.7)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_maps_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_maps_definition, **kwargs)
+
+        # Get maps
+        if config.orientation == earth_name: maps = self.model.component_maps_earth
+        elif config.orientation == faceon_name: maps = self.model.component_maps_faceon
+        elif config.orientation == edgeon_name: maps = self.model.component_maps_edgeon
+        else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
+
+        #share_scale = {"disk": "bulge"}
+        share_scale = None
+        scales = {"bulge": "log", "disk": "log", "young": "log", "sfr": "log", "dust": "linear"}
+
+        minmax_scaling = {"disk": 10., "dust": 1.} # instead of default of 0.5 for pts scaling
+
+        #descriptions = self.model.component_descriptions
+        descriptions = self.model.component_names
+
+        # Get center and radius
+        if self.has_center_and_radius and config.orientation == earth_name:
+
+            center = self.model.center
+            radius = self.model.truncation_radius * config.zoom
+            xy_ratio = self.model.truncation_box_axial_ratio
+
+        # Cannot define center, radius or xy ratio
+        else: center = radius = xy_ratio = None
+
+        # Plot
+        plot_images_aplpy(maps, center=center, radius=radius, filepath=config.path, dark=config.dark,
+                          xy_ratio=xy_ratio, distance=self.galaxy_distance, share_scale=share_scale,
+                          scale=scales, descriptions=descriptions, minmax_scaling=minmax_scaling)
 
     # -----------------------------------------------------------------
 
@@ -1458,12 +1541,6 @@ class ModelExamination(InteractiveConfigurable):
 
     @property
     def history_filename(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "model_examination"
 
 # -----------------------------------------------------------------

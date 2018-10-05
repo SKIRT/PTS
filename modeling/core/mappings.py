@@ -336,7 +336,8 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
     # Get scalar SFR
     sfr_scalar = sfr.to("Msun/yr").value
 
-    wavelength_column = [wavelength_meter * 1e6 for wavelength_meter in lambdav]
+    # Set arrays
+    wavelength_column = np.array([wavelength_meter * 1e6 for wavelength_meter in lambdav])
     luminosity_column = jv * sfr_scalar * 1e-6 # 1e-6 is to go from per meter to per micron
 
     # Create the SED

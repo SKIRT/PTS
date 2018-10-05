@@ -195,7 +195,7 @@ else:
 def get_dropbox_path():
     if "dropbox" in user_paths: return user_paths["dropbox"]
     else:
-        path = fs.join(fs.home(), "Dropbox")
+        path = fs.join(fs.home, "Dropbox")
         if not fs.is_directory(path): raise IOError("No Dropbox directory found")
         return path
 
@@ -846,7 +846,7 @@ def bashrc_path():
     """
 
     # Check if bashrc exists, if not create it if we are on Linux
-    bashrc_path = fs.join(fs.home(), ".bashrc")
+    bashrc_path = fs.join(fs.home, ".bashrc")
     if is_linux() and not fs.is_file(bashrc_path): fs.touch(bashrc_path)
 
     # Return the path
@@ -862,7 +862,7 @@ def profile_path():
     """
 
     # Check whether .profile exists, create it if we are on MacOS
-    profile_path = fs.join(fs.home(), ".profile")
+    profile_path = fs.join(fs.home, ".profile")
     if is_macos() and not fs.is_file(profile_path): fs.touch(profile_path)
 
     # Return the path
@@ -877,7 +877,7 @@ def bash_profile_path():
     :return:
     """
 
-    bash_profile_path = fs.join(fs.home(), ".bash_profile")
+    bash_profile_path = fs.join(fs.home, ".bash_profile")
     return bash_profile_path
 
 # -----------------------------------------------------------------
@@ -1036,14 +1036,14 @@ def pts_conformity_issues():
 
     pts_root_dir_name = fs.name(pts_root_dir)
     if pts_root_dir_name != "PTS": issues.append("PTS root directory is not called 'PTS'")
-    if fs.directory_of(pts_root_dir) != fs.home(): issues.append("PTS installation is not located in the home directory")
+    if fs.directory_of(pts_root_dir) != fs.home: issues.append("PTS installation is not located in the home directory")
 
     if not has_conda(): issues.append("Conda executable cannot be located based on the PATH")
     else:
 
         installation_path = conda_installation_path()
         if fs.name(installation_path) != "miniconda": issues.append("Name of Conda installation directory is not 'miniconda'")
-        if fs.directory_of(installation_path) != fs.home(): issues.append("Conda not installed in home directory")
+        if fs.directory_of(installation_path) != fs.home: issues.append("Conda not installed in home directory")
 
     if len(issues) == 0: return None
     else: return ", ".join(issues)
@@ -1073,7 +1073,7 @@ def skirt_conformity_issues():
     skirt_root_dir_name = fs.name(skirt_root_dir)
     if skirt_root_dir_name != "SKIRT": issues.append("SKIRT root directory is not called 'SKIRT'")
 
-    if fs.directory_of(skirt_root_dir) != fs.home(): issues.append("SKIRT installation is not located in the home directory")
+    if fs.directory_of(skirt_root_dir) != fs.home: issues.append("SKIRT installation is not located in the home directory")
 
     if len(issues) == 0: return None
     else: return ", ".join(issues)

@@ -528,7 +528,7 @@ def remove_aliases_and_variables_with_comment(comment):
     """
 
     # First make backup
-    #fs.copy_file(introspection.shell_configuration_path(), fs.home(), new_name="backup_profile")
+    #fs.copy_file(introspection.shell_configuration_path(), fs.home, new_name="backup_profile")
 
     # Lines to keep
     lines = []

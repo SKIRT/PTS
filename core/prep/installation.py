@@ -385,7 +385,7 @@ class SKIRTInstaller(Installer):
         log.info("Creating the directory structure ...")
 
         # Set paths
-        self.skirt_root_path = fs.join(fs.home(), "SKIRT")
+        self.skirt_root_path = fs.join(fs.home, "SKIRT")
         self.skirt_repo_path = fs.join(self.skirt_root_path, "git")
         self.skirt_release_path = fs.join(self.skirt_root_path, "release")
 
@@ -541,11 +541,11 @@ class SKIRTInstaller(Installer):
             # Debugging
             log.debug("Removing files and directories for re-installation of Qt ...")
 
-            source_path = fs.join(fs.home(), "qt.tar.gz")
-            other_source_path = fs.join(fs.home(), "qt.tar.xz")
+            source_path = fs.join(fs.home, "qt.tar.gz")
+            other_source_path = fs.join(fs.home, "qt.tar.xz")
 
-            decompress_path = fs.join(fs.home(), "Qt-install")
-            installation_path = fs.join(fs.home(), "Qt")
+            decompress_path = fs.join(fs.home, "Qt-install")
+            installation_path = fs.join(fs.home, "Qt")
 
             if fs.is_file(source_path): fs.remove_file(source_path)
             if fs.is_file(other_source_path): fs.remove_file(other_source_path)
@@ -571,17 +571,17 @@ class SKIRTInstaller(Installer):
         extension = fs.get_extension(self.qt_url, double=True)
 
         # Determine the path for the Qt source code
-        path = fs.join(fs.home(), "qt." + extension)
+        path = fs.join(fs.home, "qt." + extension)
 
         # Download tar.gz file
         network.download_file(self.qt_url, path)
 
         # Decompress tar.gz file
-        decompress_path = fs.join(fs.home(), "Qt-install")
+        decompress_path = fs.join(fs.home, "Qt-install")
         fs.create_directory(decompress_path)
         archive.decompress_file(path, decompress_path)
 
-        installation_path = fs.join(fs.home(), "Qt")
+        installation_path = fs.join(fs.home, "Qt")
         configure_options = qt_configure_options[:]
         configure_options[0] = configure_options[0].replace("$INSTALLATION_PATH", installation_path)
 
@@ -2467,7 +2467,7 @@ def find_qmake():
     # Get a list of qmake paths installed on this system
     qmake_paths = []
 
-    for qt_dir in fs.directories_in_path(fs.home(), startswith="Qt"):
+    for qt_dir in fs.directories_in_path(fs.home, startswith="Qt"):
         qmake_paths = fs.files_in_path(qt_dir, recursive=True, exact_name="qmake", extension="")
 
     for qt_dir in fs.directories_in_path("/usr/local", startswith="Qt"):
@@ -2720,7 +2720,7 @@ def install_conda_local():
     """
 
     # Determine installer path
-    installer_path = fs.join(fs.home(), "conda.sh")
+    installer_path = fs.join(fs.home, "conda.sh")
 
     # Debugging
     log.debug("Downloading the installer ...")
@@ -2731,7 +2731,7 @@ def install_conda_local():
     else: raise OSError("Your operating system is not supported")
 
     # Determine the conda installation directory
-    conda_installation_path = fs.join(fs.home(), "miniconda")
+    conda_installation_path = fs.join(fs.home, "miniconda")
 
     # Check if not present
     if fs.is_directory(conda_installation_path): raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")

@@ -110,7 +110,7 @@ class ExtinctionCurve(WavelengthCurve):
         """
 
         extinction_wavelength = self.extinction_at(wavelength)
-        self["Extinction"] /= extinction_wavelength * value
+        self["Extinction"] *= (value / extinction_wavelength)
 
 # -----------------------------------------------------------------
 
@@ -366,58 +366,6 @@ class BattistiExtinctionCurve(GeneratedExtinctionCurve):
 
         # Call the constructor of the base class
         super(BattistiExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
-
-# -----------------------------------------------------------------
-
-# class MappingsAttenuationCurve(AttenuationCurve):
-#
-#     """
-#     This class ...
-#     """
-#
-#     path = fs.join(attenuation_data_path, "AttenuationLawMAPPINGS.dat")
-#
-#     # -----------------------------------------------------------------
-#
-#     def __init__(self, *args, **kwargs):
-#
-#         """
-#         This function ...
-#         :param args:
-#         :param kwargs:
-#         """
-#
-#         attenuation = kwargs.pop("attenuation")
-#         wavelength = kwargs.pop("wavelength")
-#
-#         # Load the data
-#         # wl in micron from long to short wl.
-#         # ABS attenuations (see header of data file)
-#         wavelengths, abs_attenuations = np.loadtxt(self.path, unpack=True)
-#
-#         # CREATE A TABLE SO WE CAN EASILY SORT THE COLUMNS FOR INCREASING WAVELENGTH
-#         names = ["Wavelength", "ABS attenuation"]
-#         # Create the table
-#         abs_table = tables.new([wavelengths, abs_attenuations], names)
-#         abs_table["Wavelength"].unit = Unit("micron")
-#         # Sort the table on wavelength
-#         abs_table.sort("Wavelength")
-#
-#         wavelengths = np.array(list(abs_table["Wavelength"]))
-#         abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
-#
-#         # Find the ABS attenuation at the specified wavelength
-#         interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
-#         abs_wavelength = interpolated(wavelength.to("micron").value)
-#
-#         # 'Real' attenuations
-#         attenuations_mappings = abs_attenuations / abs_wavelength * attenuation
-#
-#         kwargs["wavelengths"] = wavelengths
-#         kwargs["attenuations"] = attenuations_mappings
-#
-#         # Call the constructor of the base class
-#         super(MappingsAttenuationCurve, self).__init__(*args, **kwargs)
 
 # -----------------------------------------------------------------
 

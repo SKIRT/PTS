@@ -25,11 +25,9 @@ from ..core.data import Data3D, SpectralData3D
 from ...core.data.sed import SED
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
-from ...core.basics.configuration import open_mapping, save_mapping
 from ...core.basics.configuration import open_box, save_box
-from ...core.basics.map import Map
 from ...core.tools import types
-from ...core.plot.sed import plot_seds
+from ...core.plot.sed import plot_seds, plot_seds_quick
 from ...core.units.parsing import parse_quantity as q
 from ...core.units.parsing import parse_unit as u
 
@@ -204,13 +202,29 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def correct_dust_sed(self, sed):
-        return sed.stripped_negatives_and_zeroes()
+    @lazyproperty
+    def min_dust_wavelength(self):
+        return q("1 micron")
 
     # -----------------------------------------------------------------
 
-    def correct_absorption_sed(self, sed):
-        return sed.stripped_negatives_and_zeroes()
+    def correct_dust_sed(self, sed, trim=True):
+        sed = sed.stripped_negatives_and_zeroes()
+        if trim: return sed.splice_right(self.min_dust_wavelength)
+        else: return sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_absorption_wavelength(self):
+        return q("2 micron")
+
+    # -----------------------------------------------------------------
+
+    def correct_absorption_sed(self, sed, trim=True):
+        sed = sed.stripped_negatives_and_zeroes()
+        if trim: return sed.splice_left(self.max_absorption_wavelength)
+        else: return sed
 
     # -----------------------------------------------------------------
     # SIMULATION DATA
@@ -228,6 +242,18 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.total_contribution_data.has_spectral_absorption
 
     # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_spectral_emission_filepath(self):
+        return self.total_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_contribution_spectral_emission(self):
+        return self.total_contribution_data.has_spectral_emission
+
+    # -----------------------------------------------------------------
     #   BULGE
     # -----------------------------------------------------------------
 
@@ -239,7 +265,19 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def has_bulge_contribution_spectral_absorption(self):
-        return fs.is_file(self.bulge_contribution_spectral_absorption_filepath)
+        return self.bulge_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_contribution_spectral_emission_filepath(self):
+        return self.bulge_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_contribution_spectral_emission(self):
+        return self.bulge_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   DISK
@@ -253,7 +291,19 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def has_disk_contribution_spectral_absorption(self):
-        return fs.is_file(self.disk_contribution_spectral_absorption_filepath)
+        return self.disk_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_contribution_spectral_emission_filepath(self):
+        return self.disk_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_contribution_spectral_emission(self):
+        return self.disk_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   OLD
@@ -267,6 +317,18 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def has_old_contribution_spectral_absorption(self):
+        return self.old_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_spectral_emission_filepath(self):
+        return self.old_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_contribution_spectral_emission(self):
         return self.old_contribution_data.has_spectral_absorption
 
     # -----------------------------------------------------------------
@@ -284,6 +346,18 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.young_contribution_data.has_spectral_absorption
 
     # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_spectral_emission_filepath(self):
+        return self.young_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_contribution_spectral_emission(self):
+        return self.young_contribution_data.has_spectral_emission
+
+    # -----------------------------------------------------------------
     #   SFR
     # -----------------------------------------------------------------
 
@@ -296,6 +370,18 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def has_sfr_contribution_spectral_absorption(self):
         return self.ionizing_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_contribution_spectral_emission_filepath(self):
+        return self.ionizing_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_contribution_spectral_emission(self):
+        return self.ionizing_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   UNEVOLVED
@@ -312,7 +398,19 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.unevolved_contribution_data.has_spectral_absorption
 
     # -----------------------------------------------------------------
-    # 3D CELL ABSORPTION DATA
+
+    @property
+    def unevolved_contribution_spectral_emission_filepath(self):
+        return self.unevolved_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_contribution_spectral_emission(self):
+        return self.unevolved_contribution_data.has_spectral_emission
+
+    # -----------------------------------------------------------------
+    # 3D CELL ABSORPTION DATAs
     #   TOTAL
     # -----------------------------------------------------------------
 
@@ -618,6 +716,310 @@ class AbsorptionAnalyser(AnalysisRunComponent):
                                               xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
+    # 3D CELL EMISSION DATA
+    #   TOTAL
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_name(self):
+        return "Lem_lambda_total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the total model"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "total_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_spectral_emission(self):
+        return fs.is_file(self.total_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "total_spectral_emission_path", True, write=True)
+    def total_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.total_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
+                                              name=self.total_spectral_emission_name, description=self.total_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   BULGE
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_spectral_emission_name(self):
+        return "Lem_lambda_bulge"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the old stellar bulge"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "bulge_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_spectral_emission(self):
+        return fs.is_file(self.bulge_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "bulge_spectral_emission_path", True, write=True)
+    def bulge_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.bulge_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit, name=self.bulge_spectral_emission_name,
+                                              description=self.bulge_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   DISK
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_spectral_emission_name(self):
+        return "Lem_lambda_disk"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the old stellar disk"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "disk_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_spectral_emission(self):
+        return fs.is_file(self.disk_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "disk_spectral_emission_path", True, write=True)
+    def disk_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.disk_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit, name=self.disk_spectral_emission_name,
+                                              description=self.disk_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   OLD
+    # -----------------------------------------------------------------
+
+    @property
+    def old_spectral_emission_name(self):
+        return "Lem_lambda_old"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the old stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "old_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_spectral_emission(self):
+        return fs.is_file(self.old_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "old_spectral_emission_path", True, write=True)
+    def old_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.old_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit, name=self.old_spectral_emission_name,
+                                              description=self.old_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   YOUNG
+    # -----------------------------------------------------------------
+
+    @property
+    def young_spectral_emission_name(self):
+        return "Lem_lambda_young"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the young stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "young_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_spectral_emission(self):
+        return fs.is_file(self.young_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "young_spectral_emission_path", True, write=True)
+    def young_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.young_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit,
+                                              name=self.young_spectral_emission_name,
+                                              description=self.young_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_spectral_emission_name(self):
+        return "Lem_lambda_sfr"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the young stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "sfr_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_spectral_emission(self):
+        return fs.is_file(self.sfr_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "sfr_spectral_emission_path", True, write=True)
+    def sfr_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.sfr_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit,
+                                              name=self.sfr_spectral_emission_name,
+                                              description=self.sfr_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   UNEVOLVED
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_name(self):
+        return "Lem_lambda_unevolved"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the unevolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "unevolved_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_emission(self):
+        return fs.is_file(self.unevolved_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "unevolved_spectral_emission_path", True, write=True)
+    def unevolved_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit,
+                                              name=self.unevolved_spectral_emission_name,
+                                              description=self.unevolved_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
     # CURVES FROM SPECTRAL 3D ABSORPTION DATA
     #   TOTAL
     # -----------------------------------------------------------------
@@ -892,6 +1294,273 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.unevolved_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
+    # CURVES FROM SPECTRAL 3D EMISSION DATA
+    #   TOTAL
+    # -----------------------------------------------------------------
+
+    @property
+    def total_emission_luminosity_name(self):
+        return "Emission luminosity (total)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the total simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "total_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_spectral_emission_curve(self):
+        return fs.is_file(self.total_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "total_spectral_emission_curve_path", True, write=False)
+    def total_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+    #   BULGE
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_emission_luminosity_name(self):
+        return "Emission luminosity (bulge)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the bulge simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "bulge_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_spectral_emission_curve(self):
+        return fs.is_file(self.bulge_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "bulge_spectral_emission_curve_path", True, write=False)
+    def bulge_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+    #   DISK
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_emission_luminosity_name(self):
+        return "Emission luminosity (disk)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the disk simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "disk_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_spectral_emission_curve(self):
+        return fs.is_file(self.disk_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "disk_spectral_emission_curve_path", True, write=False)
+    def disk_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+    #   OLD
+    # -----------------------------------------------------------------
+
+    @property
+    def old_emission_luminosity_name(self):
+        return "Emission luminosity (old)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the old simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "old_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_spectral_emission_curve(self):
+        return fs.is_file(self.old_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "old_spectral_emission_curve_path", True, write=False)
+    def old_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+    #   YOUNG
+    # -----------------------------------------------------------------
+
+    @property
+    def young_emission_luminosity_name(self):
+        return "Emission luminosity (young)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the young simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "young_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_spectral_emission_curve(self):
+        return fs.is_file(self.young_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "young_spectral_emission_curve_path", True, write=False)
+    def young_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+    #   SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_emission_luminosity_name(self):
+        return "Emission luminosity (SFR)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the SFR simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "sfr_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_spectral_emission_curve(self):
+        return fs.is_file(self.sfr_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "sfr_spectral_emission_curve_path", True, write=False)
+    def sfr_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+    #   UNEVOLVED
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_emission_luminosity_name(self):
+        return "Emission luminosity (unevolved)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the unevolved simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "unevolved_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_emission_curve(self):
+        return fs.is_file(self.unevolved_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "unevolved_spectral_emission_curve_path", True, write=False)
+    def unevolved_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
     # TOTAL STELLAR EMISSION
     # -----------------------------------------------------------------
 
@@ -1135,7 +1804,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def sfr_observed_stellar_sed_internal(self):
-        return self.model.intrinsic_sfr_sed - self.sfr_dust_sed_internal # intrinsic here means unaffected by diffuse dust, but still with internal extinction
+        return self.model.intrinsic_sfr_sed - self.sfr_dust_sed_internal_complete # intrinsic here means unaffected by diffuse dust, but still with internal extinction
 
     # -----------------------------------------------------------------
 
@@ -1147,7 +1816,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def sfr_observed_stellar_sed_all(self):
-        return self.model.sfr_simulations.observed_sed - self.sfr_dust_sed_all
+        return self.model.sfr_simulations.observed_sed - self.sfr_dust_sed_all_complete
 
     # -----------------------------------------------------------------
 
@@ -1265,6 +1934,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_dust_sed_diffuse_cells(self):
+        return self.correct_dust_sed(self.total_spectral_emission_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def total_dust_sed_diffuse(self):
         return self.correct_dust_sed(self.model.total_simulations.observed_diffuse_dust_sed)
 
@@ -1304,7 +1979,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def total_dust_sed_all(self):
-        return self.total_dust_sed_diffuse + self.sfr_dust_sed_internal
+        return self.correct_dust_sed(self.total_dust_sed_diffuse + self.sfr_dust_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -1322,7 +1997,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def total_dust_sed_all_alt(self):
-        return self.model.total_simulations.observed_dust_sed
+        return self.correct_dust_sed(self.model.total_simulations.observed_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1391,6 +2066,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def has_bulge_absorption_fraction(self):
         return self.has_bulge_absorption_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_dust_sed_cells(self):
+        return self.correct_dust_sed(self.bulge_spectral_emission_curve)
 
     # -----------------------------------------------------------------
 
@@ -1469,6 +2150,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def disk_dust_sed_cells(self):
+        return self.correct_dust_sed(self.disk_spectral_emission_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def disk_dust_sed(self):
         return self.correct_dust_sed(self.model.disk_simulations.observed_dust_sed)
 
@@ -1543,6 +2230,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_dust_sed_cells(self):
+        return self.correct_dust_sed(self.old_spectral_emission_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_dust_sed(self):
         return self.correct_dust_sed(self.model.old_simulations.observed_dust_sed)
 
@@ -1613,6 +2306,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def has_young_absorption_fraction(self):
         return self.has_young_absorption_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_dust_sed_cells(self):
+        return self.correct_dust_sed(self.young_spectral_emission_curve)
 
     # -----------------------------------------------------------------
 
@@ -1692,6 +2391,18 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sfr_dust_sed_diffuse_cells(self):
+        return self.correct_dust_sed(self.sfr_spectral_emission_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_sed_diffuse_complete(self):
+        return self.model.sfr_simulations.observed_diffuse_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_dust_sed_diffuse(self):
         return self.correct_dust_sed(self.model.sfr_simulations.observed_diffuse_dust_sed)
 
@@ -1716,8 +2427,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Get stellar SEDs
         #intrinsic_stellar = self.model.get_stellar_sed("sfr", "intrinsic")
-        intrinsic_stellar = self.model.intrinsic_sfr_sed # same
-        transparent_stellar = self.model.intrinsic_sfr_stellar_sed # NEW FROM TRANSPARENT MAPPINGS
+        #intrinsic_stellar = self.model.intrinsic_sfr_sed # same
+        intrinsic_stellar = self.model.intrinsic_sfr_stellar_sed
+        transparent_stellar = self.model.intrinsic_transparent_sfr_stellar_sed # NEW FROM TRANSPARENT MAPPINGS
 
         # INTERNALLY ABSORBED
         return self.correct_absorption_sed(transparent_stellar - intrinsic_stellar)
@@ -1737,8 +2449,20 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sfr_dust_sed_internal_complete(self):
+        return self.model.intrinsic_sfr_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_luminosity_internal_complete(self):
+        return self.sfr_dust_sed_internal_complete.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_dust_sed_internal(self):
-        return self.model.intrinsic_sfr_dust_sed # NEW FROM TRANSPARENT MAPPINGS, SUBTRACTED
+        return self.correct_dust_sed(self.model.intrinsic_sfr_dust_sed) # NEW FROM TRANSPARENT MAPPINGS, SUBTRACTED
 
     # -----------------------------------------------------------------
 
@@ -1756,7 +2480,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_dust_sed_internal_alt(self):
-        return self.model.sfr_simulations.intrinsic_dust_sed
+        return self.correct_dust_sed(self.model.sfr_simulations.intrinsic_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1793,8 +2517,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sfr_dust_sed_all_complete(self):
+        return self.sfr_dust_sed_diffuse_complete + self.sfr_dust_sed_internal_complete
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_dust_sed_all(self):
-        return self.sfr_dust_sed_diffuse + self.sfr_dust_sed_internal
+        return self.correct_dust_sed(self.sfr_dust_sed_diffuse + self.sfr_dust_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -1870,6 +2600,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def unevolved_dust_sed_diffuse_cells(self):
+        return self.correct_dust_sed(self.unevolved_spectral_emission_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_dust_sed_diffuse(self):
         return self.correct_dust_sed(self.model.unevolved_simulations.observed_diffuse_dust_sed)
 
@@ -1909,7 +2645,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def unevolved_dust_sed_all(self):
-        return self.unevolved_dust_sed_diffuse + self.sfr_dust_sed_internal
+        return self.correct_dust_sed(self.unevolved_dust_sed_diffuse + self.sfr_dust_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -2282,6 +3018,21 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def write_curves(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Absorption
+        self.write_absorption_curves()
+
+        # Emission
+        self.write_emission_curves()
+
+    # -----------------------------------------------------------------
+
     @property
     def do_write_total_curve(self):
         return not self.has_total_spectral_absorption_curve
@@ -2324,7 +3075,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def write_curves(self):
+    def write_absorption_curves(self):
 
         """
         This function ...
@@ -2460,6 +3211,160 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         # Write
         self.unevolved_spectral_absorption_curve.saveto(self.unevolved_spectral_absorption_curve_path)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_specem(self):
+        return self.has_total_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_specem(self):
+        return self.has_bulge_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_specem(self):
+        return self.has_disk_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_specem(self):
+        return self.has_old_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_specem(self):
+        return self.has_young_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_specem(self):
+        return self.has_sfr_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_specem(self):
+        return self.has_unevolved_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_total_emission_curve(self):
+        return self.has_total_specem and not self.has_total_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_bulge_emission_curve(self):
+        return self.has_bulge_specem and not self.has_bulge_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_disk_emission_curve(self):
+        return self.has_disk_specem and not self.has_disk_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_old_emission_curve(self):
+        return self.has_old_specem and not self.has_old_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_young_emission_curve(self):
+        return self.has_young_specem and not self.has_young_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_sfr_emission_curve(self):
+        return self.has_sfr_specem and not self.has_sfr_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_unevolved_emission_curve(self):
+        return self.has_unevolved_specem and not self.has_unevolved_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
+    def write_emission_curves(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the emission curves ...")
+
+        # Total
+        if self.do_write_total_emission_curve: self.write_total_emission_curve()
+
+        # Bulge
+        if self.do_write_bulge_emission_curve: self.write_bulge_emission_curve()
+
+        # Disk
+        if self.do_write_disk_emission_curve: self.write_disk_emission_curve()
+
+        # Old
+        if self.do_write_old_emission_curve: self.write_old_emission_curve()
+
+        # Young
+        if self.do_write_young_emission_curve: self.write_young_emission_curve()
+
+        # SFR
+        if self.do_write_sfr_emission_curve: self.write_sfr_emission_curve()
+
+        # Unevolved
+        if self.do_write_unevolved_emission_curve: self.write_unevolved_emission_curve()
+
+    # -----------------------------------------------------------------
+
+    def write_total_emission_curve(self):
+        self.total_spectral_emission_curve.saveto(self.total_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    def write_bulge_emission_curve(self):
+        self.bulge_spectral_emission_curve.saveto(self.bulge_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    def write_disk_emission_curve(self):
+        self.disk_spectral_emission_curve.saveto(self.disk_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    def write_old_emission_curve(self):
+        self.old_spectral_emission_curve.saveto(self.old_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_emission_curve(self):
+        self.young_spectral_emission_curve.saveto(self.young_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    def write_sfr_emission_curve(self):
+        self.sfr_spectral_emission_curve.saveto(self.sfr_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    def write_unevolved_emission_curve(self):
+        self.unevolved_spectral_emission_curve.saveto(self.unevolved_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def show(self):
@@ -2608,25 +3513,25 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def do_plot_bulge(self):
-        return not self.has_bulge_plot
+        return True
 
     # -----------------------------------------------------------------
 
     @property
     def do_plot_disk(self):
-        return not self.has_disk_plot
+        return True
 
     # -----------------------------------------------------------------
 
     @property
     def do_plot_old(self):
-        return not self.has_old_plot
+        return True
 
     # -----------------------------------------------------------------
 
     @property
     def do_plot_young(self):
-        return not self.has_young_plot
+        return True
 
     # -----------------------------------------------------------------
 
@@ -2642,6 +3547,78 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_test(self):
+
+        # print(self.model.mappings_parameters)
+        # print(self.model.mappings_transparent_parameters)
+
+        from ..core.mappings import Mappings
+        mappings_alt = Mappings(self.model.metallicity, 0, self.model.sfr_pressure, self.model.sfr_covering_factor, self.model.sfr)
+        mappings_transparent_alt = mappings_alt.sed
+
+        intrinsic_stellar = self.model.intrinsic_sfr_sed  # same
+        transparent_stellar = self.model.intrinsic_transparent_sfr_stellar_sed  # NEW FROM TRANSPARENT MAPPINGS
+        mappings_transparent = self.model.mappings_transparent.sed
+
+        seds = {"intrinsic_stellar": intrinsic_stellar, "transparent_stellar": transparent_stellar,
+                "mappings_transparent": mappings_transparent, "mappings_transparent_alt": mappings_transparent_alt}
+
+        plot_seds(seds, distance=self.galaxy_distance, unit=self.plot_unit)
+
+    # -----------------------------------------------------------------
+
+    def plot_test2(self):
+
+        intrinsic_stellar = self.model.intrinsic_sfr_stellar_sed
+        transparent_stellar = self.model.intrinsic_transparent_sfr_stellar_sed
+
+        # INTERNALLY ABSORBED
+        absorbed_new = transparent_stellar - intrinsic_stellar #self.correct_absorption_sed(transparent_stellar - intrinsic_stellar)
+
+        # Set
+        seds = {"intrinsic_stellar": intrinsic_stellar, "intrinsic_transparent_stellar": transparent_stellar, "absorbed": self.sfr_absorption_sed_internal, "absorbed_new": absorbed_new}
+
+        # Plot
+        plot_seds(seds, distance=self.galaxy_distance, unit=self.plot_unit)
+
+    # -----------------------------------------------------------------
+
+    def plot_test3(self):
+
+        unevolved_observed = self.model.unevolved_simulations.observed_sed
+        unevolved_dust = self.model.unevolved_simulations.get_dust_part(unevolved_observed, full=True)
+
+        intrinsic_dust = self.model.unevolved_simulations.intrinsic_dust_sed
+        intrinsic_dust2 = self.sfr_dust_sed_internal
+        intrinsic_dust3 = self.sfr_dust_sed_internal_alt
+
+        plot_seds_quick(observed=unevolved_observed, dust=unevolved_dust, intrinsic_dust=intrinsic_dust, intrinsic_dust2=intrinsic_dust2, intrinsic_dust3=intrinsic_dust3)
+
+    # -----------------------------------------------------------------
+
+    def plot_test4(self):
+
+        print("FRACTION OF ABSORBED ENERGY: " + tostr(self.sfr_dust_fraction_internal*100) + "%")
+        print("ABSORBED ENERGY: " + tostr(self.sfr_dust_luminosity_internal))
+        print("ABSORBED ENERGY (COMPLETE DUST SED): " + tostr(self.sfr_dust_luminosity_internal_complete))
+
+        from pts.core.data.attenuation import MappingsAttenuationCurve
+        attenuation_curve = MappingsAttenuationCurve()
+
+        fuv_attenuation = self.model.find_internal_mappings_attenuation()
+        print("FUV attenuation:", fuv_attenuation)
+
+        from ..core.model import correct_sed_for_attenuation
+        observed_sed = self.model.intrinsic_sfr_stellar_sed
+        attenuation_curve.normalize_at(self.fuv_wavelength, fuv_attenuation)
+        transparent_sed = correct_sed_for_attenuation(observed_sed, attenuation_curve)
+        absorbed_sed = transparent_sed - observed_sed
+
+        # Plot
+        plot_seds_quick(intrinsic_stellar=observed_sed, transparent_stellar=transparent_sed, absorbed=absorbed_sed)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -2651,6 +3628,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        self.plot_test4()
 
         # Total
         if self.do_plot_total: self.plot_total()
@@ -2677,7 +3656,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def plot_unit(self):
-        return u("Jy")
+        return self.config.unit
 
     # -----------------------------------------------------------------
 
@@ -2714,7 +3693,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_seds(self, observed_stellar, absorbed, dust, path, **extra):
+    def plot_reprocessing(self, observed_stellar, absorbed, dust, path, **extra):
 
         """
         This function ...
@@ -2742,6 +3721,54 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_absorption_emission(self, absorbed, dust, path, **extra):
+
+        """
+        This function ...
+        :param absorbed:
+        :param dust:
+        :param path:
+        :param extra:
+        :return:
+        """
+
+        # Set SEDs
+        seds = OrderedDict()
+        if types.is_dictionary(absorbed):
+            for label in absorbed: seds["absorption (" + label + ")"] = absorbed[label]
+        else: seds["absorption"] = absorbed
+        if types.is_dictionary(dust):
+            for label in dust: seds["emission (" + label + ")"] = dust[label]
+        else: seds["emission"] = dust
+
+        # Extra?
+        for label in extra:
+            sed = extra[label]
+            if sed is None: continue
+            seds[label] = sed
+
+        # Plot
+        plot_seds(seds, distance=self.galaxy_distance, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength,
+                  min_flux=self.min_flux, max_flux=self.max_flux, unit=self.plot_unit, path=path)
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def plot_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Reprocessing
+        self.plot_reprocessing_total()
+
+        # Absorption & Emission
+        self.plot_absorption_emission_total()
+
+    # -----------------------------------------------------------------
+
     @property
     def do_plot_total_diffuse(self):
         return not self.has_total_diffuse_plot
@@ -2754,7 +3781,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_total(self):
+    def plot_reprocessing_total(self):
 
         """
         This function ...
@@ -2788,12 +3815,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting the absorption and dust SEDs for the total model (diffuse dust) ...")
-
         # Plot
-        if self.has_total_absorption_sed_diffuse: self.plot_seds(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse, self.total_dust_sed_diffuse, self.total_diffuse_plot_path, absorbed_cells=self.total_absorption_sed_diffuse_cells)
-        else: self.plot_seds(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse_cells, self.total_dust_sed_diffuse, self.total_diffuse_plot_path)
+        if self.has_total_absorption_sed_diffuse: self.plot_reprocessing(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse, self.total_dust_sed_diffuse, self.total_diffuse_plot_path)
+        else: self.plot_reprocessing(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse_cells, self.total_dust_sed_diffuse, self.total_diffuse_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2816,11 +3840,110 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Plot
+        self.plot_reprocessing(self.total_observed_stellar_sed_all, self.total_absorption_sed_all, self.total_dust_sed_all, self.total_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Diffuse
+        if not self.has_absorption_emission_total_diffuse_plot: self.plot_absorption_emission_total_diffuse()
+
+        # Total
+        if not self.has_absorption_emission_total_all_plot: self.plot_absorption_emission_total_all()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorption_seds_diffuse(self):
+        seds = OrderedDict()
+        if self.has_total_absorption_sed_diffuse: seds["seds"] = self.total_absorption_sed_diffuse
+        seds["cells"] = self.total_absorption_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_emission_seds_diffuse(self):
+        seds = OrderedDict()
+        seds["seds"] = self.total_dust_sed_diffuse
+        if self.has_total_specem: seds["cells"] = self.total_dust_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_total_diffuse_plot_path(self):
+        return fs.join(self.absorption_path, "ae_total_diffuse.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_total_diffuse_plot(self):
+        return fs.is_file(self.absorption_emission_total_diffuse_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_scattered_sed(self):
+        return self.model.total_simulations.observed_sed_scattered if self.model.total_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_total_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the absorption and dust SEDs for the total model (diffuse dust) ...")
+
+        # Plot
+        self.plot_absorption_emission(self.total_absorption_seds_diffuse, self.total_emission_seds_diffuse, self.absorption_emission_total_diffuse_plot_path, scattered=self.total_scattered_sed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_emission_seds_all(self):
+        seds = OrderedDict()
+        seds["seds"] = self.total_dust_sed_all
+        seds["seds_alt"] = self.total_dust_sed_all_alt
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_total_all_plot_path(self):
+        return fs.join(self.absorption_path, "ae_total_all.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_total_all_plot(self):
+        return fs.is_file(self.absorption_emission_total_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_total_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the absorption and dust SEDs for the total model (all dust) ...")
 
         # Plot
-        self.plot_seds(self.total_observed_stellar_sed_all, self.total_absorption_sed_all, self.total_dust_sed_all, self.total_all_plot_path)
+        self.plot_absorption_emission(self.total_absorption_sed_all, self.total_emission_seds_all, self.absorption_emission_total_all_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2843,12 +3966,75 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Reprocessing
+        if not self.has_bulge_plot: self.plot_reprocessing_bulge()
+
+        # Absorption & emission
+        if not self.has_absorption_emission_bulge_plot: self.plot_absorption_emission_bulge()
+
+    # -----------------------------------------------------------------
+
+    def plot_reprocessing_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        if self.has_bulge_absorption_sed: self.plot_reprocessing(self.bulge_observed_stellar_sed, self.bulge_absorption_sed, self.bulge_dust_sed, self.bulge_plot_path)
+        else: self.plot_reprocessing(self.bulge_observed_stellar_sed, self.bulge_absorption_sed_cells, self.bulge_dust_sed, self.bulge_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_absorption_seds(self):
+        seds = OrderedDict()
+        if self.has_bulge_absorption_sed: seds["seds"] = self.bulge_absorption_sed
+        seds["cells"] = self.bulge_absorption_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_emission_seds(self):
+        seds = OrderedDict()
+        seds["seds"] = self.bulge_dust_sed
+        if self.has_bulge_specem: seds["cells"] = self.bulge_dust_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_bulge_plot_path(self):
+        return fs.join(self.absorption_path, "ae_bulge.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_bulge_plot(self):
+        return fs.is_file(self.absorption_emission_bulge_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_scattered_sed(self):
+        return self.model.bulge_simulations.observed_sed_scattered if self.model.bulge_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the absorption and dust SEDs for the old stellar bulge ...")
 
         # Plot
-        if self.has_bulge_absorption_sed: self.plot_seds(self.bulge_observed_stellar_sed, self.bulge_absorption_sed, self.bulge_dust_sed, self.bulge_plot_path, absorbed_cells=self.bulge_absorption_sed_cells)
-        else: self.plot_seds(self.bulge_observed_stellar_sed, self.bulge_absorption_sed_cells, self.bulge_dust_sed, self.bulge_plot_path)
+        self.plot_absorption_emission(self.bulge_absorption_seds, self.bulge_emission_seds, self.absorption_emission_bulge_plot_path, scattered=self.bulge_scattered_sed)
 
     # -----------------------------------------------------------------
 
@@ -2871,12 +4057,75 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Reprocessing
+        if not self.has_disk_plot: self.plot_reprocessing_disk()
+
+        # Absorption & Emission
+        if not self.has_absorption_emission_disk_plot: self.plot_absorption_emission_disk()
+
+    # -----------------------------------------------------------------
+
+    def plot_reprocessing_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        if self.has_disk_absorption_sed: self.plot_reprocessing(self.disk_observed_stellar_sed, self.disk_absorption_sed, self.disk_dust_sed, self.disk_plot_path)
+        else: self.plot_reprocessing(self.disk_observed_stellar_sed, self.disk_absorption_sed_cells, self.disk_dust_sed, self.disk_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_absorption_seds(self):
+        seds = OrderedDict()
+        if self.has_disk_absorption_sed: seds["seds"] = self.disk_absorption_sed
+        seds["cells"] = self.disk_absorption_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_emission_seds(self):
+        seds = OrderedDict()
+        seds["seds"] = self.disk_dust_sed
+        if self.has_disk_specem: seds["cells"] = self.disk_dust_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_disk_plot_path(self):
+        return fs.join(self.absorption_path, "ae_disk.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_disk_plot(self):
+        return fs.is_file(self.absorption_emission_disk_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_scattered_sed(self):
+        return self.model.disk_simulations.observed_sed_scattered if self.model.disk_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the absorption and dust SEDs for the old stellar disk ...")
 
         # Plot
-        if self.has_disk_absorption_sed: self.plot_seds(self.disk_observed_stellar_sed, self.disk_absorption_sed, self.disk_dust_sed, self.disk_plot_path, absorbed_cells=self.disk_absorption_sed_cells)
-        else: self.plot_seds(self.disk_observed_stellar_sed, self.disk_absorption_sed_cells, self.disk_dust_sed, self.disk_plot_path)
+        self.plot_absorption_emission(self.disk_absorption_seds, self.disk_emission_seds, self.absorption_emission_disk_plot_path, scattered=self.disk_scattered_sed)
 
     # -----------------------------------------------------------------
 
@@ -2899,12 +4148,75 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Reprocessing
+        if not self.has_old_plot: self.plot_reprocessing_old()
+
+        # Absorption & Emission
+        if not self.has_absorption_emission_old_plot: self.plot_absorption_emission_old()
+
+    # -----------------------------------------------------------------
+
+    def plot_reprocessing_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        if self.has_old_absorption_sed: self.plot_reprocessing(self.old_observed_stellar_sed, self.old_absorption_sed, self.old_dust_sed, self.old_plot_path)
+        else: self.plot_reprocessing(self.old_observed_stellar_sed, self.old_absorption_sed_cells, self.old_dust_sed, self.old_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_absorption_seds(self):
+        seds = OrderedDict()
+        if self.has_old_absorption_sed: seds["seds"] = self.old_absorption_sed
+        seds["cells"] = self.old_absorption_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_emission_seds(self):
+        seds = OrderedDict()
+        seds["seds"] = self.old_dust_sed
+        if self.has_old_specem: seds["cells"] = self.old_dust_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_old_plot_path(self):
+        return fs.join(self.absorption_path, "ae_old.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_old_plot(self):
+        return fs.is_file(self.absorption_emission_old_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_scattered_sed(self):
+        return self.model.old_simulations.observed_sed_scattered if self.model.old_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_old(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the absorption and dust SEDs for the old stars ...")
 
         # Plot
-        if self.has_old_absorption_sed: self.plot_seds(self.old_observed_stellar_sed, self.old_absorption_sed, self.old_dust_sed, self.old_plot_path, absorbed_cells=self.old_absorption_sed_cells)
-        else: self.plot_seds(self.old_observed_stellar_sed, self.old_absorption_sed_cells, self.old_dust_sed, self.old_plot_path)
+        self.plot_absorption_emission(self.old_absorption_seds, self.old_emission_seds, self.absorption_emission_old_plot_path, scattered=self.old_scattered_sed)
 
     # -----------------------------------------------------------------
 
@@ -2927,12 +4239,90 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Reprocessing
+        if not self.has_young_plot: self.plot_reprocessing_young()
+
+        # Absorption & Emission
+        if not self.has_absorption_emission_young_plot: self.plot_absorption_emission_young()
+
+    # -----------------------------------------------------------------
+
+    def plot_reprocessing_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        if self.has_young_absorption_sed: self.plot_reprocessing(self.young_observed_stellar_sed, self.young_absorption_sed, self.young_dust_sed, self.young_plot_path)
+        else: self.plot_reprocessing(self.young_observed_stellar_sed, self.young_absorption_sed_cells, self.young_dust_sed, self.young_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_absorption_seds(self):
+        seds = OrderedDict()
+        if self.has_young_absorption_sed: seds["seds"] = self.young_absorption_sed
+        seds["cells"] = self.young_absorption_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_emission_seds(self):
+        seds = OrderedDict()
+        seds["seds"] = self.young_dust_sed
+        if self.has_young_specem: seds["cells"] = self.young_dust_sed_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_young_plot_path(self):
+        return fs.join(self.absorption_path, "ae_young.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_young_plot(self):
+        return fs.is_file(self.absorption_emission_young_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_scattered_sed(self):
+        return self.model.young_simulations.observed_sed_scattered if self.model.young_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the absorption and dust SEDs for the young stars ...")
 
         # Plot
-        if self.has_young_absorption_sed: self.plot_seds(self.young_observed_stellar_sed, self.young_absorption_sed, self.young_dust_sed, self.young_plot_path, absorbed_cells=self.young_absorption_sed_cells)
-        else: self.plot_seds(self.young_observed_stellar_sed, self.young_absorption_sed_cells, self.young_dust_sed, self.young_plot_path)
+        self.plot_absorption_emission(self.young_absorption_seds, self.young_emission_seds, self.absorption_emission_young_plot_path, scattered=self.young_scattered_sed)
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Reprocessing
+        self.plot_reprocessing_sfr()
+
+        # Absorption & Emission
+        self.plot_absorption_emission_sfr()
 
     # -----------------------------------------------------------------
 
@@ -2954,7 +4344,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_sfr(self):
+    def plot_reprocessing_sfr(self):
 
         """
         This function ...
@@ -2991,12 +4381,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting the absorption and dust SEDs for the star formation regions (diffuse dust) ...")
-
         # Plot
-        if self.has_sfr_absorption_sed_diffuse: self.plot_seds(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path, absorbed_cells=self.sfr_absorption_sed_diffuse_cells)
-        else: self.plot_seds(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse_cells, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path)
+        if self.has_sfr_absorption_sed_diffuse: self.plot_reprocessing(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path)
+        else: self.plot_reprocessing(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse_cells, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3019,11 +4406,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting the absorption and dust SEDs for the star formation regions (internal dust) ...")
-
         # Plot
-        self.plot_seds(self.sfr_observed_stellar_sed_internal, self.sfr_absorption_sed_internal, self.sfr_dust_sed_internal, self.sfr_internal_plot_path)
+        self.plot_reprocessing(self.sfr_observed_stellar_sed_internal, self.sfr_absorption_sed_internal, self.sfr_dust_sed_internal, self.sfr_internal_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3046,11 +4430,155 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Plot
+        self.plot_reprocessing(self.sfr_observed_stellar_sed_all, self.sfr_absorption_sed_all, self.sfr_dust_sed_all, self.sfr_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Diffuse
+        if not self.has_absorption_emission_sfr_diffuse_plot: self.plot_absorption_emission_sfr_diffuse()
+
+        # Internal
+        if not self.has_absorption_emission_sfr_internal_plot: self.plot_absorption_emission_sfr_internal()
+
+        # All
+        if not self.has_absorption_emission_sfr_all_plot: self.plot_absorption_emission_sfr_all()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_scattered_sed(self):
+        return self.model.sfr_simulations.observed_sed_scattered if self.model.sfr_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_absorption_seds_diffuse(self):
+        seds = OrderedDict()
+        if self.has_sfr_absorption_sed_diffuse: seds["seds"] = self.sfr_absorption_sed_diffuse
+        seds["cells"] = self.sfr_absorption_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_emission_seds_diffuse(self):
+        seds = OrderedDict()
+        seds["seds"] = self.sfr_dust_sed_diffuse
+        if self.has_sfr_specem: seds["cells"] = self.sfr_dust_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_sfr_diffuse_plot_path(self):
+        return fs.join(self.absorption_path, "ae_sfr_diffuse.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_sfr_diffuse_plot(self):
+        return fs.join(self.absorption_emission_sfr_diffuse_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_sfr_diffuse(self):
+
+        """
+        This functio n...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the absorption and dust SEDs for the star formation regions (diffuse dust) ...")
+
+        # Plot
+        self.plot_absorption_emission(self.sfr_absorption_seds_diffuse, self.sfr_emission_seds_diffuse, self.absorption_emission_sfr_diffuse_plot_path, scattered=self.sfr_scattered_sed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_emission_seds_internal(self):
+        seds = OrderedDict()
+        seds["seds"] = self.sfr_dust_sed_internal
+        seds["seds_alt"] = self.sfr_dust_sed_internal_alt
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_sfr_internal_plot_path(self):
+        return fs.join(self.absorption_path, "ae_sfr_internal.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_sfr_internal_plot(self):
+        return fs.is_file(self.absorption_emission_sfr_internal_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_sfr_internal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the absorption and dust SEDs for the star formation regions (internal dust) ...")
+
+        # Plot
+        self.plot_absorption_emission(self.sfr_absorption_sed_internal, self.sfr_emission_seds_internal, self.absorption_emission_sfr_internal_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_sfr_all_plot_path(self):
+        return fs.join(self.absorption_path, "ae_sfr_all.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_sfr_all_plot(self):
+        return fs.is_file(self.absorption_emission_sfr_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_sfr_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the absorption and dust SEDs for the star formation regions (all dust) ...")
 
         # Plot
-        self.plot_seds(self.sfr_observed_stellar_sed_all, self.sfr_absorption_sed_all, self.sfr_dust_sed_all, self.sfr_all_plot_path)
+        self.plot_absorption_emission(self.sfr_absorption_sed_all, self.sfr_dust_sed_all, self.absorption_emission_sfr_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Reprocessing
+        self.plot_reprocessing_unevolved()
+
+        # Absorption & Emission
+        self.plot_absorption_emission_unevolved()
 
     # -----------------------------------------------------------------
 
@@ -3066,7 +4594,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_unevolved(self):
+    def plot_reprocessing_unevolved(self):
 
         """
         This function ...
@@ -3104,8 +4632,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the unevolved stars (diffuse dust) ...")
 
         # Plot
-        if self.has_unevolved_absorption_sed_diffuse: self.plot_seds(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path, absorbed_cells=self.unevolved_absorption_sed_diffuse_cells)
-        else: self.plot_seds(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse_cells, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path)
+        if self.has_unevolved_absorption_sed_diffuse: self.plot_reprocessing(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path, absorbed_cells=self.unevolved_absorption_sed_diffuse_cells)
+        else: self.plot_reprocessing(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse_cells, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3132,7 +4660,94 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the unevolved stars (all dust) ...")
 
         # Plot
-        self.plot_seds(self.unevolved_observed_stellar_sed_all, self.unevolved_absorption_sed_all, self.unevolved_dust_sed_all, self.unevolved_all_plot_path)
+        self.plot_reprocessing(self.unevolved_observed_stellar_sed_all, self.unevolved_absorption_sed_all, self.unevolved_dust_sed_all, self.unevolved_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Diffuse
+        if not self.has_absorption_emission_unevolved_diffuse_plot: self.plot_absorption_emission_unevolved_diffuse()
+
+        # All
+        if not self.has_absorption_emission_unevolved_all_plot: self.plot_absorption_emission_unevolved_all()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorption_seds_diffuse(self):
+        seds = OrderedDict()
+        if self.has_unevolved_absorption_sed_diffuse: seds["seds"] = self.unevolved_absorption_sed_diffuse
+        seds["cells"] = self.unevolved_absorption_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_emission_seds_diffuse(self):
+        seds = OrderedDict()
+        seds["seds"] = self.unevolved_dust_sed_diffuse
+        if self.has_unevolved_specem: seds["cells"] = self.unevolved_dust_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_unevolved_diffuse_plot_path(self):
+        return fs.join(self.absorption_path, "ae_unevolved_diffuse.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_unevolved_diffuse_plot(self):
+        return fs.is_file(self.absorption_emission_unevolved_diffuse_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_scattered_sed(self):
+        return self.model.unevolved_simulations.observed_sed_scattered if self.model.unevolved_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_unevolved_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        self.plot_absorption_emission(self.unevolved_absorption_seds_diffuse, self.unevolved_emission_seds_diffuse, self.absorption_emission_unevolved_diffuse_plot_path, scattered=self.unevolved_scattered_sed)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_unevolved_all_plot_path(self):
+        return fs.join(self.absorption_path, "ae_unevolved_all.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_unevolved_all_plot(self):
+        return fs.is_file(self.absorption_emission_unevolved_all_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_unevolved_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        self.plot_absorption_emission(self.unevolved_absorption_sed_all, self.unevolved_dust_sed_all, self.absorption_emission_unevolved_all_plot_path)
 
 # -----------------------------------------------------------------
 
@@ -3140,8 +4755,16 @@ def show_properties(properties):
     for label in properties:
         if types.is_dictionary(properties[label]):
             print(" - " + fmt.bold + label + fmt.reset_bold + ":")
-            for label2 in properties[label]: print("    * " + fmt.bold + label2 + fmt.reset_bold + ": " + tostr(properties[label][label2]))
-        else: print(" - " + fmt.bold + label + fmt.reset_bold + ": " + tostr(properties[label]))
+            for label2 in properties[label]:
+                if label2.startswith("rel_"):
+                    percentage = properties[label][label2] * 100
+                    print("    * " + fmt.bold + label2 + fmt.reset_bold + ": " + tostr(percentage, round=True, decimal_places=1) + "%")
+                else: print("    * " + fmt.bold + label2 + fmt.reset_bold + ": " + tostr(properties[label][label2], round=True))
+        else:
+            if label.startswith("rel_"):
+                percentage = properties[label]
+                print(" - " + fmt.bold + label + fmt.reset_bold + ": " + tostr(percentage, round=True, decimal_places=1) + "%")
+            else: print(" - " + fmt.bold + label + fmt.reset_bold + ": " + tostr(properties[label], round=True))
 
 # -----------------------------------------------------------------
 

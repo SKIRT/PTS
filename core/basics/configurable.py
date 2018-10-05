@@ -722,6 +722,7 @@ class InteractiveConfigurable(Configurable):
         # Try
         try: self.process_command(command)
 
+        # Invalid command
         except InvalidCommandError as e:
 
             if "Invalid command" in e.message: log.warning("Invalid command: '" + e.command + "'")
@@ -730,9 +731,12 @@ class InteractiveConfigurable(Configurable):
             # NO SUCCESS
             success = False
 
+        # Other exception
         except Exception as e:
 
             message = str(e)
+
+            # Too few arguments
             if "too few arguments" in message:
 
                 log.error("Too few arguments")
@@ -763,11 +767,13 @@ class InteractiveConfigurable(Configurable):
                     usage = self.get_usage_for_key(key, self._commands)
                     for line in usage: log.error(line)
 
+            # Invalid choice
             elif "invalid choice" in message:
 
                 log.error("Invalid choice")
                 log.error(str(e))
 
+            # Shown unknown error
             else:
 
                 traceback.print_exc()

@@ -55,3 +55,7 @@ definition.add_flag("replot_sfr", "replot SFR")
 definition.add_flag("replot_unevolved", "replot unevolved")
 
 # -----------------------------------------------------------------
+
+definition.add_optional("unit", "photometric_unit", "SED plotting unit", "W/m2 [density]", convert_default=True)
+
+# -----------------------------------------------------------------

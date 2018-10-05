@@ -260,7 +260,7 @@ class Uninstaller(Configurable):
         log.info("Uninstalling the Conda python distribution locally ...")
 
         # Check installation
-        installation_path = fs.join(fs.home(), "miniconda")
+        installation_path = fs.join(fs.home, "miniconda")
         if not fs.is_directory(installation_path):
             log.warning("Conda was not found locally")
             return

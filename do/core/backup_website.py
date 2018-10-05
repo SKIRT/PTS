@@ -26,12 +26,12 @@ mount_path = mounter.mount("www")
 # -----------------------------------------------------------------
 
 new_name = "www_backup"
-backup_path = fs.join(fs.home(), new_name)
+backup_path = fs.join(fs.home, new_name)
 
 # -----------------------------------------------------------------
 
 # Copy contents
-fs.copy_directory(mount_path, fs.home(), new_name=new_name)
+fs.copy_directory(mount_path, fs.home, new_name=new_name)
 
 # -----------------------------------------------------------------
 

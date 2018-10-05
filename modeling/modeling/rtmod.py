@@ -257,24 +257,12 @@ class RTMod(InteractiveConfigurable):
 
     @property
     def do_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.commands is not None and len(self.config.commands) > 0
 
     # -----------------------------------------------------------------
 
     @property
     def do_interactive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.interactive
 
     # -----------------------------------------------------------------

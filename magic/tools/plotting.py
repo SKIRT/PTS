@@ -825,7 +825,8 @@ def plot_frame(frame, **kwargs):
 
 def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, normalize_in=None, soft_min=False,
                   soft_max=False, soft_min_scaling=1., soft_max_scaling=1., symmetric_method="mean",
-                  check_around_zero=True, wcs=None, zmin=None, zmax=None, soft_zmin=False, soft_zmax=False):
+                  check_around_zero=True, wcs=None, zmin=None, zmax=None, soft_zmin=False, soft_zmax=False,
+                  percentile_low=0.5, percentile_high=99.9, logscale=False, minmax_scaling=0.5, min_relative_max_log=1e-4):
 
     """
     This function ...
@@ -845,13 +846,16 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
     :param zmax:
     :param soft_zmin:
     :param soft_zmax:
+    :param percentile_low:
+    :param percentile_high:
+    :param logscale:
+    :param minmax_scaling:
+    :param min_relative_max_log:
     :return:
     """
 
     # Check parameters
     if symmetric and not around_zero: raise ValueError("Cannot enable 'symmetric' but not 'around_zero'")
-
-    # Other new colormaps: plasma, magma, inferno
 
     # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
     from ..region.region import SkyRegion, PixelRegion
@@ -906,20 +910,26 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
             # Set min
             vmin = - vmax
 
+    # PERCENTILE
+    elif interval == "percentile":
+
+        vmin = np.nanpercentile(pixels, percentile_low)
+        vmax = np.nanpercentile(pixels, percentile_high)
+
     # PTS INTERVAL
     elif interval == "pts":
 
         # Around zero
         if around_zero:
 
-            vmin = 0.5 * normalize_min
-            vmax = 0.5 * normalize_max
+            vmin = minmax_scaling * normalize_min
+            vmax = minmax_scaling * normalize_max
 
             # Symmetric?
             if symmetric:
 
                 # Set max
-                if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+                if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)]) # mean
                 elif symmetric_method == "max": vmax = max([abs(vmin), abs(vmax)])
                 elif symmetric_method == "min": vmax = min([abs(vmin), abs(vmax)])
                 else: raise ValueError("Invalid symmetric method")
@@ -931,14 +941,25 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
         elif npositives > nnegatives:
 
             # Determine the maximum value in the box and the mimimum value for plotting
-            vmin = max(normalize_min, 0.)
-            vmax = 0.5 * (normalize_max + vmin)
+            if logscale:
+
+                vmin = max(normalize_min, min_relative_max_log * normalize_max)
+                # DO ALLOW ZERO FOR LOG? -> matplotlib seems to be able to handle it -> keep the same for now
+                #vmin = 0.
+                vmax = minmax_scaling * (normalize_max + vmin)
+
+            else:
+
+                vmin = max(normalize_min, 0.)
+                vmax = minmax_scaling * (normalize_max + vmin)
 
         # More negative values than positives
         else:
 
+            if logscale: raise ValueError("More negative values than positive values: are you sure you want to be plotting this data on a logarithmic scale?")
+
             vmax = min(normalize_max, 0.)
-            vmin = 0.5 * (normalize_min + vmax)
+            vmin = minmax_scaling * (normalize_min + vmax)
 
     # MINIMAX
     elif interval == "minmax":
@@ -952,7 +973,7 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
             if check_around_zero and not (below_zero and above_zero): raise ValueError("Not around zero")
 
             # Set max
-            if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)])
+            if symmetric_method == "mean": vmax = 0.5 * sum([abs(vmin), abs(vmax)]) # mean
             elif symmetric_method == "max": vmax = max([abs(vmin), abs(vmax)])
             elif symmetric_method == "min": vmax = min([abs(vmin), abs(vmax)])
             else: raise ValueError("Invalid symmetric method")

@@ -1384,20 +1384,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def total_spectral_emission_name(self):
-        return "Lem_lambda_total"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_spectral_emission_description(self):
-        return "Emission spectrum in each dust cell for the total model"
-
-    # -----------------------------------------------------------------
-
-    @property
     def total_spectral_emission_path(self):
-        return fs.join(self.cells_path, "total_emission.dat")
+        return fs.join(self.absorption_path, "total_emission.dat")
 
     # -----------------------------------------------------------------
 
@@ -1407,19 +1395,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(SpectralData3D, "total_spectral_emission_path", True, write=True)
+    @lazyproperty
     def total_spectral_emission_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # With external xyz
-        return SpectralData3D.from_table_file(self.total_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
-                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
-                                              name=self.total_spectral_emission_name, description=self.total_spectral_emission_description,
-                                              xyz_filepath=self.cell_coordinates_filepath)
+        if not self.has_total_spectral_emission: raise RuntimeError("Cannot find the total spectral emission data: run the absorption analysis first")
 
     # -----------------------------------------------------------------
 
@@ -1453,20 +1431,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def evolved_spectral_emission_name(self):
-        return "Lem_lambda_evolved"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def evolved_spectral_emission_description(self):
-        return "Emission spectrum in each dust cell for the evolved stellar populations"
-
-    # -----------------------------------------------------------------
-
-    @property
     def evolved_spectral_emission_path(self):
-        return fs.join(self.cells_path, "evolved_emission.dat")
+        return fs.join(self.absorption_path, "old_emission.dat")
 
     # -----------------------------------------------------------------
 
@@ -1476,19 +1442,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(SpectralData3D, "evolved_spectral_emission_path", True, write=True)
+    @lazyproperty
     def evolved_spectral_emission_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # With external xyz
-        return SpectralData3D.from_table_file(self.old_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
-                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
-                                              length_unit=self.length_unit, name=self.evolved_spectral_emission_name,
-                                              description=self.evolved_spectral_emission_description, xyz_filepath=self.cell_coordinates_filepath)
+        if not self.has_evolved_spectral_emission: raise RuntimeError("Cannot find the old spectral emission data: run the absorption analysis first")
 
     # -----------------------------------------------------------------
     #   UNEVOLVED: ABSORPTION
@@ -1528,20 +1484,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def unevolved_spectral_emission_name(self):
-        return "Lem_lambda_unevolved"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_spectral_emission_description(self):
-        return "Emission spectrum in each dust cell for the unevolved stellar populations"
-
-    # -----------------------------------------------------------------
-
-    @property
     def unevolved_spectral_emission_path(self):
-        return fs.join(self.cells_path, "unevolved_emission.dat")
+        return fs.join(self.absorption_path, "unevolved_emission.dat")
 
     # -----------------------------------------------------------------
 
@@ -1551,19 +1495,10 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(SpectralData3D, "unevolved_spectral_emission_path", True, write=True)
+    @lazyproperty
     def unevolved_spectral_emission_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # With external xyz
-        return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
-                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
-                                              name=self.unevolved_spectral_emission_name, description=self.unevolved_spectral_emission_description,
-                                              xyz_filepath=self.cell_coordinates_filepath)
+        if not self.has_unevolved_spectral_emission: raise RuntimeError("Cannot find the unevolved spectral emission data: run the absorption analysis first")
+        return SpectralData3D.from_file(self.unevolved_spectral_emission_path)
 
     # -----------------------------------------------------------------
 
@@ -1604,20 +1539,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def total_emission_luminosity_name(self):
-        return "Emission luminosity (total)"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_emission_luminosity_description(self):
-        return "Emission luminosity in dust cells for the total simulation"
-
-    # -----------------------------------------------------------------
-
-    @property
     def total_spectral_emission_curve_path(self):
-        return fs.join(self.cells_path, "total_curve_emission.dat")
+        return fs.join(self.absorption_path, "total_curve_emission.dat")
 
     # -----------------------------------------------------------------
 
@@ -1627,16 +1550,10 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(WavelengthCurve, "total_spectral_emission_curve_path", True, write=True)
+    @lazyproperty
     def total_spectral_emission_curve(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.total_spectral_emission_data.get_spectral_curve(self.total_emission_luminosity_name, measure="sum",
-                                                                    description=self.total_emission_luminosity_description)
+        if not self.has_total_spectral_emission_curve: raise RuntimeError("Cannot find the total spectral emission curve: run the emission analysis first")
+        return WavelengthCurve.from_file(self.total_spectral_emission_curve_path)
 
     # -----------------------------------------------------------------
     #   UNEVOLVED: ABSORPTION
@@ -1664,20 +1581,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def unevolved_emission_luminosity_name(self):
-        return "Emission luminosity (unevolved)"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_emission_luminosity_description(self):
-        return "Emission luminosity in dust cells for the unevolved simulation"
-
-    # -----------------------------------------------------------------
-
-    @property
     def unevolved_spectral_emission_curve_path(self):
-        return fs.join(self.cells_path, "unevolved_curve_emission.dat")
+        return fs.join(self.absorption_path, "unevolved_curve_emission.dat")
 
     # -----------------------------------------------------------------
 
@@ -1689,14 +1594,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyfileproperty(WavelengthCurve, "unevolved_spectral_emission_curve_path", True, write=True)
     def unevolved_spectral_emission_curve(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.unevolved_spectral_emission_data.get_spectral_curve(self.unevolved_emission_luminosity_name, measure="sum",
-                                                                        description=self.unevolved_emission_luminosity_description)
+        if not self.has_unevolved_spectral_emission_curve: raise RuntimeError("Cannot find the unevolved spectral emission curve: run the absorption analysis first")
+        return WavelengthCurve.from_file(self.unevolved_spectral_emission_curve_path)
 
     # -----------------------------------------------------------------
     #   UNEVOLVED: ABSORPTION FRACTION

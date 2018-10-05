@@ -53,9 +53,9 @@ def find_conda():
     if conda_executable_path is None:
 
         # Search for conda executables in the home directory
-        #for path in fs.files_in_path(fs.home(), exact_name="conda", extension=""):
+        #for path in fs.files_in_path(fs.home, exact_name="conda", extension=""):
         #    print(path)
-        conda_path = fs.join(fs.home(), "miniconda", "bin", "conda")
+        conda_path = fs.join(fs.home, "miniconda", "bin", "conda")
         if fs.is_file(conda_path): conda_executable_path = conda_path
 
     # Return the path to the conda executable

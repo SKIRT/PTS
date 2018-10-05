@@ -546,7 +546,7 @@ class SED(WavelengthCurve):
         """
 
         value_for_wavelength = self.photometry_at(wavelength, unit=self.unit, add_unit=False)
-        self[self.y_name] /= value_for_wavelength * value
+        self[self.y_name] *= (value / value_for_wavelength)
         self[self.y_name].unit = None
 
     # -----------------------------------------------------------------

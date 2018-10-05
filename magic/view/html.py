@@ -23,7 +23,7 @@ from ...core.tools import types
 # -----------------------------------------------------------------
 
 # Find the JS9 directory
-#js9_path = fs.join(fs.home(), "JS9", "js9")
+#js9_path = fs.join(fs.home, "JS9", "js9")
 #if not fs.is_directory(js9_path): raise IOError("The JS9 installation directory is not found")
 
 # JS9 URL
