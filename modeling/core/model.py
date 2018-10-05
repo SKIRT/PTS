@@ -49,7 +49,7 @@ from .stellar_mass import oliver_stellar_mass, hubble_stage_to_type
 from ...core.data.sed import SED
 from ...core.tools.serialization import write_dict, load_dict
 from ...core.units.parsing import parse_quantity
-from ...core.data.attenuation import MappingsAttenuationCurve
+from ...core.data.attenuation import MappingsAttenuationCurve, AttenuationCurve
 
 # -----------------------------------------------------------------
 
@@ -2037,7 +2037,7 @@ class RTModel(object):
         while True:
 
             # Debugging
-            log.debug("Testing an attenuation fraction of " + str(att_fraction) + " ...")
+            log.debug("Testing a FUV attenuation fraction of " + str(att_fraction) + " ...")
 
             # Get observed over transparent FUV luminosity
             obs_over_trans = 1. / (att_fraction + 1.)
@@ -2057,7 +2057,7 @@ class RTModel(object):
             absorption_fraction = absorbed_lum.value / stellar_luminosity.value
 
             # Debugging
-            log.debug("The absorption fraction is " + str(absorption_fraction) + " (dust emission fraction is " + str(dust_fraction_internal) + ")")
+            log.debug("The bolometric absorption fraction is " + str(absorption_fraction) + " (dust emission fraction is " + str(dust_fraction_internal) + ")")
 
             # Return the FUV attenuation
             if absorbed_lum >= dust_luminosity_internal: return attenuation
@@ -2067,15 +2067,32 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fuv_attenuation_sfr_internal(self):
-        pass
+    @property
+    def attenuation_curve_sfr_internal_path(self):
+        return fs.join(self.sfr_mappings_path, "internal_attenuation.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_curve_sfr_internal(self):
+        return fs.is_file(self.attenuation_curve_sfr_internal_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def attenuation_curve_sfr_internal(self):
-        return MappingsAttenuationCurve(wavelength=self.fuv_wavelength, attenuation=self.fuv_attenuation_sfr_internal)
+        if not self.has_attenuation_curve_sfr_internal:
+            fuv_attenuation = self.find_internal_mappings_attenuation()
+            attenuation_curve = MappingsAttenuationCurve(wavelength=self.fuv_wavelength, attenuation=fuv_attenuation)
+            attenuation_curve.saveto(self.attenuation_curve_sfr_internal_path)
+            return attenuation_curve
+        else: return AttenuationCurve.from_file(self.attenuation_curve_sfr_internal_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_attenuation_sfr_internal(self):
+        return self.attenuation_curve_sfr_internal.attenuation_at(self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 

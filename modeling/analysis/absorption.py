@@ -3598,21 +3598,29 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     def plot_test4(self):
 
-        print("FRACTION OF ABSORBED ENERGY: " + tostr(self.sfr_dust_fraction_internal*100) + "%")
-        print("ABSORBED ENERGY: " + tostr(self.sfr_dust_luminosity_internal))
-        print("ABSORBED ENERGY (COMPLETE DUST SED): " + tostr(self.sfr_dust_luminosity_internal_complete))
+        print("FRACTION OF RE-EMITTED ENERGY: " + tostr(self.sfr_dust_fraction_internal*100) + "%")
 
-        from pts.core.data.attenuation import MappingsAttenuationCurve
-        attenuation_curve = MappingsAttenuationCurve()
+        #print("EMITTED ENERGY: " + tostr(self.sfr_dust_luminosity_internal))
+        #print("EMITTED ENERGY (COMPLETE DUST SED): " + tostr(self.sfr_dust_luminosity_internal_complete))
 
-        fuv_attenuation = self.model.find_internal_mappings_attenuation()
-        print("FUV attenuation:", fuv_attenuation)
+        #from pts.core.data.attenuation import MappingsAttenuationCurve
+        #attenuation_curve = MappingsAttenuationCurve()
+
+        #fuv_attenuation = self.model.find_internal_mappings_attenuation()
+        #print("FUV attenuation:", fuv_attenuation)
+
+        attenuation_curve = self.model.attenuation_curve_sfr_internal
 
         from ..core.model import correct_sed_for_attenuation
         observed_sed = self.model.intrinsic_sfr_stellar_sed
-        attenuation_curve.normalize_at(self.fuv_wavelength, fuv_attenuation)
+        #attenuation_curve.normalize_at(self.fuv_wavelength, fuv_attenuation)
         transparent_sed = correct_sed_for_attenuation(observed_sed, attenuation_curve)
         absorbed_sed = transparent_sed - observed_sed
+
+        absorbed_lum = absorbed_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        # print(absorbed_lum)
+        absorption_fraction = absorbed_lum.value / self.sfr_stellar_luminosity.value
+        print("FRACTION OF ABSORBED ENERGY: " + tostr(absorption_fraction*100) + "%")
 
         # Plot
         plot_seds_quick(intrinsic_stellar=observed_sed, transparent_stellar=transparent_sed, absorbed=absorbed_sed)
