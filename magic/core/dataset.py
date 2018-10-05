@@ -1040,8 +1040,7 @@ class DataSet(object):
 
         frames = []
         names = self.get_names_for_filters(filters)
-        for name in names:
-            frames.append(self.get_frame(name))
+        for name in names: frames.append(self.get_frame(name))
         return frames
 
     # -----------------------------------------------------------------

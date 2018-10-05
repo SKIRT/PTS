@@ -63,6 +63,8 @@ from ..config.analyse_sfr import definition as analyse_sfr_definition
 from .sfr import SFRAnalyser
 from ...core.units.parsing import parse_unit as u
 from ...core.data.sed import SED
+from ...magic.core.dataset import StaticDataSet
+from ...core.basics.distribution import Distribution
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -99,6 +101,7 @@ _data_command_name = "data"
 _model_command_name = "model"
 
 # Plot commands
+_plot_command_name = "plot"
 _wavelengths_command_name = "wavelengths"
 _dustgrid_command_name = "grid"
 _sed_command_name = "sed"
@@ -135,13 +138,10 @@ commands[_show_command_name] = (None, None, "show analysis results", None)
 commands[_model_command_name] = ("examine_model", False, "examine the radiative transfer model", None)
 
 # Plot stuff
-commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
-commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 commands[_sed_command_name] = (None, None, "plot SEDs", None)
 commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
 commands[_map_command_name] = (None, None, "plot a map", None)
-commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
-commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
+commands[_plot_command_name] = (None, None, "plot other stuff", None)
 
 # Evaluate
 commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the analysis model", None)
@@ -192,6 +192,16 @@ show_commands[_properties_command_name] = ("show_properties", False, "show the m
 # Simulation output and data
 show_commands[_output_command_name] = ("show_output", False, "show the simulation output", None)
 show_commands[_data_command_name] = ("show_data", False, "show the simulation data available for the model", None)
+
+# -----------------------------------------------------------------
+
+# Plot subcommands
+plot_commands = OrderedDict()
+plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
+plot_commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
+plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the observed, modeled and residual images", None)
+plot_commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
+plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 
 # -----------------------------------------------------------------
 
@@ -265,29 +275,13 @@ attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", T
 
 # Map subcommands
 map_commands = OrderedDict()
-
-## TOTAL
 map_commands[_total_name] = ("show_total_map_command", True, "show a map of the total model", None)
-
-## Bulge
 map_commands[_bulge_name] = ("show_bulge_map_command", True, "show a map of the old stellar bulge component", None)
-
-## Disk
 map_commands[_disk_name] = ("show_disk_map_command", True, "show a map of the old stellar disk component", None)
-
-## Old
 map_commands[_old_name] = ("show_old_map_command", True, "show a map of the old stellar component", None)
-
-## Young
 map_commands[_young_name] = ("show_young_map_command", True, "show a map of the young stellar component", None)
-
-## SFR
 map_commands[_sfr_name] = ("show_sfr_map_command", True, "show a map of the SFR component", None)
-
-## Unevolved
 map_commands[_unevolved_name] = ("show_unevolved_map_command", True, "show a map of the unevolved stellar component", None)
-
-## Dust
 map_commands[_dust_name] = ("show_dust_map_command", True, "show a map of the dust component", None)
 
 # -----------------------------------------------------------------
@@ -320,6 +314,7 @@ energy_commands[_projected_name] = ("analyse_projected_energy_command", True, "a
 # Set subcommands
 subcommands = OrderedDict()
 subcommands[_show_command_name] = show_commands
+subcommands[_plot_command_name] = plot_commands
 subcommands[_sed_command_name] = sed_commands
 subcommands[_attenuation_command_name] = attenuation_commands
 subcommands[_map_command_name] = map_commands
@@ -1891,7 +1886,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         intrinsic_stellar = self.model.get_stellar_sed(sfr, intrinsic_name)
 
         # Get intrinsic SEDs
-        transparent_stellar = self.model.intrinsic_sfr_stellar_sed
+        transparent_stellar = self.model.intrinsic_transparent_sfr_stellar_sed
         dust = self.model.intrinsic_sfr_dust_sed
 
         # Plot
@@ -2411,6 +2406,155 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         plot_attenuation_curve(self.model.attenuation_curve_unevolved, unevolved)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_residuals_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Filters
+        definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="FUV,NUV,I1,MIPS 24mu,Pacs160,SPIRE350", convert_default=True)
+
+        # Save to path
+        definition.add_optional("path", "new_path", "save plot to file")
+
+        # Dark mode
+        definition.add_flag("dark", "plot in dark mode")
+
+        # Other options
+        definition.add_optional("zoom", "positive_real", "zoom from the normal galaxy truncation", 0.7)
+        definition.add_optional("scale_xy_ratio", "positive_real", "scale the xy ratio to make plot panes more or less square", 1.)
+        definition.add_optional("scale_xy_exponent", "positive_real", "exponent for the xy ratio to make plot panes more or less square", 0.7)
+        definition.add_flag("mask", "mask the model image pixels that are invalid in the observed images", True)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_residuals_definition, **kwargs)
+
+        # Plot residuals
+        self.plot_residuals(config.filters, path=config.path, dark=config.dark, zoom=config.zoom,
+                            scale_xy_ratio=config.scale_xy_ratio, scale_xy_exponent=config.scale_xy_exponent,
+                            mask_simulated=config.mask)
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals(self, filters, path=None, dark=False, zoom=1., scale_xy_ratio=1., scale_xy_exponent=1., mask_simulated=False):
+
+        """
+        Thisn function ...
+        :param filters:
+        :param path:
+        :param dark:
+        :param zoom:
+        :param scale_xy_ratio:
+        :param scale_xy_exponent:
+        :param mask_simulated:
+        :return:
+        """
+
+        from pts.magic.plot.imagegrid import plot_residuals_aplpy
+
+        # Get images
+        observations = self.get_observed_images(filters)
+        models = self.get_simulated_images(filters)
+        residuals = self.get_residual_images(filters)
+        distributions = self.get_residual_distributions(filters)
+
+        # Get center and radius
+        center = self.galaxy_center
+        radius = self.truncation_radius * zoom
+        xy_ratio = (self.truncation_box_axial_ratio * scale_xy_ratio)**scale_xy_exponent
+
+        #print(xy_ratio)
+
+        # Plot
+        plot_residuals_aplpy(observations, models, residuals, center=center, radius=radius, filepath=path, dark=dark,
+                             xy_ratio=xy_ratio, distance=self.galaxy_distance, mask_simulated=mask_simulated)
+
+    # -----------------------------------------------------------------
+    # OBSERVED
+    # -----------------------------------------------------------------
+
+    def get_observed_images(self, filters):
+        return self.static_photometry_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+    # SIMULATED (MOCK)
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_images_path(self):
+        return self.analysis_run.images_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulated_images_dataset(self):
+        return StaticDataSet.from_directory(self.simulated_images_path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_images(self, filters):
+        return self.simulated_images_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+    # RESIDUALS
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_images_path(self):
+        return fs.join(self.analysis_run.residuals_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_images_dataset(self):
+        return StaticDataSet.from_directory(self.residual_images_path)
+
+    # -----------------------------------------------------------------
+
+    def get_residual_images(self, filters):
+        return self.residual_images_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+    # DISTRIBUTIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_distributions_path(self):
+        return fs.join(self.analysis_run.residuals_path, "distributions")
+
+    # -----------------------------------------------------------------
+
+    def get_residual_distributions(self, filters):
+        distributions = []
+        for fltr in filters:
+            filepath = fs.join(self.residual_distributions_path, str(fltr) + ".dat")
+            if not fs.is_file(filepath): distribution = None
+            else: distribution = Distribution.from_file(filepath)
+            distributions.append(distribution)
+        return distributions
 
     # -----------------------------------------------------------------
 

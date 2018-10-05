@@ -469,48 +469,24 @@ class SkyRegion(Region):
 
     @property
     def ra_min(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.axis1_min
 
     # -----------------------------------------------------------------
 
     @property
     def ra_max(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.axis1_max
 
     # -----------------------------------------------------------------
 
     @property
     def dec_min(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.axis2_min
 
     # -----------------------------------------------------------------
 
     @property
     def dec_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.axis2_max
 
     # -----------------------------------------------------------------

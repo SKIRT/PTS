@@ -32,6 +32,8 @@ from ...core.basics.plot import MPLFigure
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.basics.plot import normal_colormaps
 from ..core.list import uniformize
+from ...core.tools import numbers
+from ...core.tools import types
 
 # ------------------------------------------------------------------------------
 
@@ -167,24 +169,12 @@ class ImageGridPlotter(Configurable):
 
     @property
     def light(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.theme == light_theme
 
     # -----------------------------------------------------------------
 
     @property
     def dark(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.theme == dark_theme
 
     # -----------------------------------------------------------------
@@ -276,108 +266,48 @@ class ImageGridPlotter(Configurable):
 
     @property
     def ra_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.center.ra
 
     # ------------------------------------------------------------------------------
 
     @property
     def dec_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.center.dec
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def ra_center_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ra_center.to("deg").value
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def dec_center_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dec_center.to("deg").value
-
-    # ------------------------------------------------------------------------------
-
-    # @lazyproperty
-    # def pixelscale_deg(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.config.pixelscale.to("deg").value
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def spacing_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.spacing.to("deg").value
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def radius_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.radius.to("deg").value
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def colormap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return cm.get_cmap(self.config.cmap)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nan_color(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.nan_color is not None: return self.config.nan_color
         else: return self.colormap(0)
 
@@ -385,12 +315,6 @@ class ImageGridPlotter(Configurable):
 
     @lazyproperty
     def theme_settings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.light: return light_theme_settings
         elif self.dark: return dark_theme_settings
         else: raise ValueError("Invalid theme")
@@ -2967,5 +2891,594 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Close
         #plt.close(fig)
         plt.close()
+
+# ------------------------------------------------------------------------------
+
+def plot_images_aplpy(frames, filepath=None, center=None, radius=None, xy_ratio=None, dark=False, scale="log",
+                      colormap="inferno", nrows=None, ncols=None, orientation="horizontal", plotsize=3., distance=None,
+                      share_scale=None, descriptions=None, minmax_scaling=0.5):
+
+    """
+    This function ...
+    :param frames:
+    :param filepath:
+    :param center:
+    :param radius:
+    :param xy_ratio:
+    :param dark:
+    :param scale:
+    :param colormap:
+    :param nrows:
+    :param ncols:
+    :param orientation:
+    :param plotsize:
+    :param distance:
+    :param share_scale:
+    :param descriptions:
+    :param minmax_scaling: 0.5
+    :return:
+    """
+
+    import matplotlib.gridspec as gridspec
+    #from matplotlib.colorbar import ColorbarBase
+    #from matplotlib.colors import LinearSegmentedColormap
+    #from matplotlib.colors import Normalize
+
+    from pts.magic.tools import plotting
+
+    # Set
+    set_theme(dark=dark)
+    nimages = len(frames)
+
+    xsize = plotsize
+    #if xy_ratio is None: ysize = 3.5
+    #else: ysize = xsize / xy_ratio
+    if xy_ratio is None: xy_ratio = 0.85
+    ysize = xsize / xy_ratio
+
+    #print("plotsize", xsize, ysize)
+
+    # Determine the number of columns and rows
+    if nrows is None and ncols is None:
+
+        if orientation == "horizontal": ncols, nrows = nimages, 1
+        elif orientation == "vertical": ncols, nrows = 1, nimages
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # Nrows is none but ncols is not
+    elif nrows is None: ncols = numbers.round_up_to_int(nimages/nrows)
+
+    # Ncols is none but nrows is not
+    elif ncols is None: nrows = numbers.round_up_to_int(nimages/ncols)
+
+    # Set figure size
+    figxsize = xsize * ncols
+    figysize = ysize * nrows
+
+    #print("figsize", figxsize, figysize)
+
+    # Create figure with appropriate size
+    fig = plt.figure(figsize=(figxsize, figysize))
+
+    # Create grid
+    gs1 = gridspec.GridSpec(nrows, ncols)  # nimages ROWS, 4 COLUMNS
+    # gs1.update(wspace=0.01, hspace=0.3)
+    gs1.update(wspace=0., hspace=0.)
+    plot_idx = 0
+
+    # Get frame labels
+    if types.is_dictionary(frames):
+        labels = frames.keys()
+        frames = frames.values()
+    else: labels = [frame.filter_name for frame in frames]
+
+    # Set scale for each image
+    scales = dict()
+    if types.is_string_type(scale):
+        for label in labels: scales[label] = scale
+    elif types.is_sequence(scale):
+        for label, scalei in zip(labels, scale): scales[label] = scalei
+    elif types.is_dictionary(scale): scales = scale
+    else: raise ValueError("Invalid type for 'scale'")
+
+    # Initialize dict for intervals
+    intervals = dict()
+
+    # Set descriptions
+    if descriptions is None:
+        descriptions = dict()
+        for label in labels: descriptions[label] = None
+    elif types.is_sequence(descriptions):
+        descrpts = descriptions
+        descriptions = dict()
+        for label, descr in zip(labels, descrpts): descriptions[label] = descr
+    elif types.is_dictionary(descriptions): pass # OK
+    else: raise ValueError("Invalid type for 'descriptions'")
+
+    # Set minmax scaling
+    if types.is_real_type(minmax_scaling):
+        factor = minmax_scaling
+        minmax_scaling = dict()
+        for label in labels: minmax_scaling[label] = factor
+    elif types.is_dictionary(minmax_scaling):
+        minmax_scaling_orig = minmax_scaling
+        minmax_scaling = dict()
+        for label in labels:
+            if label in minmax_scaling_orig: minmax_scaling[label] = minmax_scaling_orig[label]
+            else: minmax_scaling[label] = 0.5
+    elif types.is_sequence(minmax_scaling):
+        minmax_scaling_orig = minmax_scaling
+        minmax_scaling = dict()
+        for label, factor in zip(labels, minmax_scaling_orig): minmax_scaling[label] = factor
+    else: raise ValueError("Invalid type for 'minmax_scaling'")
+
+    # Loop over the frames
+    for label, frame, index in zip(labels, frames, range(nimages)):
+
+        rowi = index // ncols
+        coli = index % ncols
+
+        is_first_row = rowi == 0
+        is_last_row = rowi == nrows - 1
+
+        is_first_col = coli == 0
+        is_last_col = coli == ncols - 1
+
+        #print("row", rowi)
+        #print("col", coli)
+
+        # IS FIRST OR LAST IMAGE?
+        is_first = index == 0
+        is_last = index == nimages - 1
+
+        # Debugging
+        log.debug("Plotting the '" + label + "' image ...")
+
+        # Get HDU
+        hdu = frame.to_hdu()
+
+        # Get interval
+        if share_scale is not None and label in share_scale:
+
+            share_with = share_scale[label]
+            vmin, vmax = intervals[share_with]
+            scalei = scales[share_with]
+
+        else:
+
+            # Get scale
+            scalei = scales[label]
+            is_logscale = scalei == "log"
+
+            #print(label, minmax_scaling[label])
+            vmin, vmax = plotting.get_vmin_vmax(frame.data, logscale=is_logscale, minmax_scaling=minmax_scaling[label])
+
+        # Set interval
+        intervals[label] = (vmin, vmax,)
+
+        # Set title
+        if descriptions[label] is not None: title = descriptions[label]
+        else: title = label.replace("_", "\_").replace("um", "$\mu$m")
+
+        # Has sky coordinate system?
+        has_wcs = frame.has_wcs and frame.wcs.is_sky
+
+        # OBSERVATION
+        figi = aplpy.FITSFigure(hdu, figure=fig, subplot=list(gs1[plot_idx].get_position(fig).bounds))
+        setup_map_plot(figi, colormap, vmin=vmin, vmax=vmax, label=r'' + str(title), center=center, radius=radius, scale=scalei, has_wcs=has_wcs)
+        set_ticks(figi, is_first_row, is_last_row)
+
+        # FIRST COLUMN
+        if is_first_col:
+
+            figi.tick_labels.show_y()
+            figi.axis_labels.show_y()
+
+        # LAST ROW
+        if is_last_row:
+
+            figi.tick_labels.show_x()
+            figi.axis_labels.show_x()
+
+        # Increment
+        plot_idx += 1
+
+    # Save the figure
+    if filepath is not None: plt.savefig(filepath, bbox_inches='tight', dpi=300)
+    else: plt.show()
+
+    # Close
+    plt.close()
+
+    # Reset
+    reset_theme()
+
+# ------------------------------------------------------------------------------
+
+def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=None, radius=None, xy_ratio=None,
+                         dark=False, scale="log", plotsize=3., distance=None, mask_simulated=False):
+
+    """
+    This function ...
+    :param observations:
+    :param models:
+    :param residuals:
+    :param filepath:
+    :param center:
+    :param radius:
+    :param xy_ratio:
+    :param dark:
+    :param scale:
+    :param plotsize:
+    :param distance:
+    :param mask_simulated:
+    :return:
+    """
+
+    import numpy as np
+    import matplotlib.gridspec as gridspec
+    from matplotlib.colorbar import ColorbarBase
+    from matplotlib.colors import LinearSegmentedColormap
+    from matplotlib.colors import Normalize
+    import seaborn as sns
+
+    # Set theme
+    set_theme(dark=dark)
+
+    nimages = len(observations)
+    ncols = 4
+    nrows = nimages
+
+    # Colormaps
+    colormap = "inferno"
+    residual_colormap = "RdBu"
+
+    # Set individual map plot size
+    xsize = plotsize
+    #if xy_ratio is None: ysize = 3.5
+    #else: ysize = xsize / xy_ratio
+    #print("individual size", xsize, ysize)
+    if xy_ratio is None: xy_ratio = 0.85
+    ysize = xsize / xy_ratio
+
+    # Set figure size
+    figxsize = xsize * ncols
+    figysize = ysize * nrows
+    #print("figure size", figxsize, figysize)
+
+    # Create figure with appropriate size
+    fig = plt.figure(figsize=(figxsize, figysize))
+
+    # Create grid
+    gs1 = gridspec.GridSpec(nimages, 4) # nimages ROWS, 4 COLUMNS
+    #gs1.update(wspace=0.01, hspace=0.3)
+    gs1.update(wspace=0., hspace=0.)
+    plot_idx = 0
+
+    # Loop over the filters
+    for observation, model, residual, index in zip(observations, models, residuals, range(nimages)):
+
+        #print("units:")
+        #print(observation.unit)
+        #print(model.unit)
+        observation.convert_to("mJy/sr", distance=distance)
+        model.convert_to("mJy/sr", distance=distance)
+
+        # MASK MODEL
+        if mask_simulated:
+            model.rebin(observation.wcs)
+            model.apply_mask_nans(observation.nans)
+
+        # IS FIRST OR LAST IMAGE?
+        is_first = index == 0
+        is_last = index == nimages - 1
+
+        # Debugging
+        log.debug("Plotting the observation, model and residuals for the " + str(observation.filter) + " filter ...")
+
+        # Percentual residuals
+        residual = residual * 100.
+
+        # Set title
+        title = str(observation.filter).replace("um", " $\mu$m")
+
+        # Create HDU's for Aplpy
+        observation_hdu = observation.to_hdu()
+        model_hdu = model.to_hdu()
+        residual_hdu = residual.to_hdu()
+
+        from pts.magic.tools import plotting
+
+        vmin, vmax = plotting.get_vmin_vmax(observation.data, logscale=scale=="log")
+        #vmax = 0.7 * vmax
+
+        #print("VMIN", vmin)
+        #print("VMAX", vmax)
+
+        # ------------------------------------------------------------------------------
+        # Plot obs, model and residual
+        # ------------------------------------------------------------------------------
+
+        # OBSERVATION
+        fig1 = aplpy.FITSFigure(observation_hdu, figure=fig, subplot=list(gs1[plot_idx].get_position(fig).bounds))
+        setup_map_plot(fig1, colormap, vmin=vmin, vmax=vmax, label=r'' + str(title), center=center, radius=radius, scale=scale)
+        set_ticks(fig1, is_first, is_last)
+
+        # Enable y ticks and axis labels BECAUSE OBSERVATION IS THE FIRST COLUMN
+        fig1.tick_labels.show_y()
+        fig1.axis_labels.show_y()
+
+        # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+        if is_last: fig1.tick_labels.show_x()
+        if is_last: fig1.axis_labels.show_x()
+
+        # Increment
+        plot_idx += 1
+
+        # ------------------------------------------------------------------------------
+
+        # MODEL
+        fig2 = aplpy.FITSFigure(model_hdu, figure=fig, subplot=list(gs1[plot_idx].get_position(fig).bounds))
+        setup_map_plot(fig2, colormap, vmin=vmin, vmax=vmax, label='Model', center=center, radius=radius, scale=scale)
+        set_ticks(fig2, is_first, is_last)
+
+        # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+        if is_last: fig2.tick_labels.show_x()
+        if is_last: fig2.axis_labels.show_x()
+
+        # Increment
+        plot_idx += 1
+
+        # ------------------------------------------------------------------------------
+
+        # RESIDUAL
+        fig3 = aplpy.FITSFigure(residual_hdu, figure=fig, subplot=list(gs1[plot_idx].get_position(fig).bounds))
+        setup_map_plot(fig3, residual_colormap, vmin=-100, vmax=100, label='Residual (\%)', center=center, radius=radius)
+        set_ticks(fig3, is_first, is_last)
+
+        # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+        if is_last: fig3.tick_labels.show_x()
+        if is_last: fig3.axis_labels.show_x()
+
+        # ------------------------------------------------------------------------------
+
+        # COLORBAR
+        colorbar_start_x = gs1[plot_idx].get_position(fig).bounds[0] + 0.025
+        colorbar_start_y = gs1[plot_idx].get_position(fig).bounds[1] + 0.085 / (nimages)
+        colorbar_x_width = gs1[plot_idx].get_position(fig).bounds[2] - 0.05
+        colorbar_y_height = gs1[plot_idx].get_position(fig).bounds[3]
+        cb_ax = fig.add_axes([colorbar_start_x, colorbar_start_y, colorbar_x_width, (0.02 + 0.002) / (nimages + 1)])
+
+        # Colourbar
+        cb = ColorbarBase(cb_ax, cmap=residual_colormap, norm=Normalize(vmin=-100, vmax=100), orientation='horizontal')
+        cb.ax.xaxis.set_ticks_position('bottom')
+        cb.ax.xaxis.set_label_position('bottom')
+        cb.ax.zorder = 99
+        cb.ax.xaxis.set_tick_params(color='white')
+        cb.outline.set_edgecolor('white')
+        plt.setp(plt.getp(cb.ax.axes, 'yticklabels'), color='white')
+        plt.setp(plt.getp(cb.ax.axes, 'xticklabels'), color='white')
+        cb.set_ticks([-100, -50, 0, 50, 100])
+
+        # Increment
+        plot_idx += 1
+
+        # ------------------------------------------------------------------------------
+
+        # KDE Plot of residuals
+
+        residual = residual_hdu.data
+        fig4 = plt.subplot(gs1[plot_idx])
+        residuals_to_kde = np.where((residual <= 200) & (residual >= -200))
+
+        if dark:
+            sns.kdeplot(residual[residuals_to_kde], bw='silverman', c='white', shade=True)
+            fig4.axes.set_axis_bgcolor("black") #set_facecolor('black')
+        else:
+            sns.kdeplot(residual[residuals_to_kde], bw='silverman', c='k', shade=True)
+            fig4.axes.set_axis_bgcolor("white") #set_facecolor('white')
+
+        fig4.tick_params(labelleft='off')
+        plt.xlim([-150, 150])
+
+        fig4.tick_params(direction='in', which='major', length=7, top=True, right=False, bottom=True, left=False)
+        fig4.tick_params(direction='in', which='major', length=7, top=True, right=False, bottom=True, left=False)
+
+        # Hide tick labels except for the last (bottom) plot
+        if not is_last: fig4.tick_params(labelbottom=False)
+
+        if dark: plt.axvline(0, c='white', ls='--', lw=2)
+        else: plt.axvline(0, c='k', ls='--', lw=2)
+
+        # Label for kde
+        plt.xlabel('Residual (\%)')
+
+        # Increment
+        plot_idx += 1
+
+    # Save the figure
+    if filepath is not None: plt.savefig(filepath, bbox_inches='tight', dpi=300)
+    else: plt.show()
+
+    # Close
+    plt.close()
+
+    # Reset theme
+    reset_theme()
+
+# ------------------------------------------------------------------------------
+
+def setup_map_plot(figure, colormap, vmin, vmax, label, smooth=None,text_x=0.05, text_y=0.95, center=None,
+                   radius=None, scale="linear", has_wcs=True):
+
+    """
+    This function ...
+    :param figure:
+    :param colormap:
+    :param vmin:
+    :param vmax:
+    :param label:
+    :param smooth:
+    :param text_x:
+    :param text_y:
+    :param center:
+    :param radius:
+    :param scale:
+    :param has_wcs:
+    :return:
+    """
+
+    figure.show_colorscale(cmap=colormap, vmin=vmin, vmax=vmax, smooth=smooth, stretch=scale)
+    #figure.set_tick_labels_format(xformat='hh:mm:ss',yformat='dd:mm:ss')
+
+    if has_wcs:
+        figure.tick_labels.set_xformat('hh:mm:ss')
+        figure.tick_labels.set_yformat('dd:mm:ss')
+
+    figure._ax1.set_facecolor('black')
+    figure.set_nan_color('black')
+
+    # RECENTER
+    if center is not None:
+        if radius is None: raise ValueError("Cannot specify center without radius")
+        if has_wcs: figure.recenter(center.ra.to("deg").value, center.dec.to("deg").value, radius=radius.to("deg").value)
+        else: figure.recenter(center.x, center.y, radius=radius)
+
+    # Hide axes labels and tick labels by default (enable for y for first column and for x for last row)
+    figure.axis_labels.hide()
+    figure.tick_labels.hide()
+
+    # Axes spines
+    figure._ax1.spines['bottom'].set_color('white')
+    figure._ax1.spines['top'].set_color('white')
+    figure._ax1.spines["left"].set_color("white")
+    figure._ax1.spines["right"].set_color("white")
+
+    # TICKS
+    #figure._ax1.tick_params(direction='in', which='major', length=7, top=True, right=True, bottom=True, left=True)
+    #figure._ax1.tick_params(direction='in', which='minor', length=4, top=True, right=True, bottom=True, left=True)
+    #figure._ax2.tick_params(direction='in', which='major', length=7, top=True, right=True, bottom=True, left=True)
+    #figure._ax2.tick_params(direction='in', which='minor', length=4, top=True, right=True, bottom=True, left=True)
+
+    # SET LABEL
+    figure.add_label(text_x, text_y, r'' + str(label), relative=True, size=13, weight='bold', color='white',
+                     horizontalalignment='left', verticalalignment='top',
+                     bbox=dict(facecolor='black', edgecolor='none', alpha=0.5))
+
+# ------------------------------------------------------------------------------
+
+def set_ticks(figure, is_first_row, is_last_row):
+
+    """
+    This function ...
+    :param figure:
+    :param is_first_row:
+    :param is_last_row:
+    :return:
+    """
+
+    # ONLY ROW?
+    is_only_row = is_first_row and is_last_row
+
+    # ONLY
+    if is_only_row:
+
+        # IN EVERYWHERE
+        figure._ax1.tick_params(direction='in', which='major', length=7, top=True, right=True, bottom=True, left=True)
+        figure._ax1.tick_params(direction='in', which='minor', length=4, top=True, right=True, bottom=True, left=True)
+
+    # FIRST
+    elif is_first_row:
+
+        # LEFT, RIGHT AND TOP
+        figure._ax1.tick_params(direction='in', which='major', length=7, top=True, right=True, bottom=False, left=True)
+        figure._ax1.tick_params(direction='in', which='minor', length=4, top=True, right=True, bottom=False, left=True)
+
+    # LAST
+    elif is_last_row:
+
+        # TOP
+        figure._ax1.tick_params(direction='inout', which='major', length=14, top=True, right=False, bottom=False, left=False)
+        figure._ax1.tick_params(direction='inout', which='minor', length=8, top=True, right=False, bottom=False, left=False)
+
+        #figure._ax1.tick_params(direction='out', which='major', length=7, top=True, right=False, bottom=False, left=False)
+        #figure._ax1.tick_params(direction='out', which='minor', length=4, top=True, right=False, bottom=False, left=False)
+        #figure._ax1.tick_params(direction='in', which='major', length=7, top=True, right=False, bottom=False, left=False)
+        #figure._ax1.tick_params(direction='in', which='minor', length=4, top=True, right=False, bottom=False, left=False)
+
+        # BOTTOM, LEFT AND RIGHT
+        figure._ax1.tick_params(direction='in', which='major', length=7, right=True, bottom=True, left=True)
+        figure._ax1.tick_params(direction='in', which='minor', length=4, right=True, bottom=True, left=True)
+
+        #figure._ax1.tick_params(direction='in', which='major', length=7, top=True, right=True, bottom=True, left=True)
+        #figure._ax1.tick_params(direction='in', which='minor', length=4, top=True, right=True, bottom=True, left=True)
+
+    # In between
+    else:
+
+        # TOP
+        figure._ax1.tick_params(direction='inout', which='major', length=14, top=True, right=False, bottom=False, left=False)
+        figure._ax1.tick_params(direction='inout', which='minor', length=8, top=True, right=False, bottom=False, left=False)
+
+        #figure._ax1.tick_params(direction='out', which='major', length=7, top=True, right=False, bottom=False, left=False)
+        #figure._ax1.tick_params(direction='out', which='minor', length=4, top=True, right=False, bottom=False, left=False)
+        #figure._ax1.tick_params(direction='in', which='major', length=7, top=True, right=False, bottom=False, left=False)
+        #figure._ax1.tick_params(direction='in', which='minor', length=4, top=True, right=False, bottom=False, left=False)
+
+        # LEFT AND RIGHT
+        figure._ax1.tick_params(direction='in', which='major', length=7, right=True, bottom=False, left=True)
+        figure._ax1.tick_params(direction='in', which='minor', length=4, right=True, bottom=False, left=True)
+
+        #figure._ax1.tick_params(direction='in', which='major', length=7, top=False, right=True, bottom=False, left=True)
+        #figure._ax1.tick_params(direction='in', which='minor', length=4, top=False, right=True, bottom=False, left=True)
+
+# ------------------------------------------------------------------------------
+
+def set_theme(dark=False):
+
+    """
+    This function ...
+    :param dark:
+    :return:
+    """
+
+    # General settings
+    plt.rcParams["axes.labelsize"] = 14  # 16 #default 20
+    plt.rcParams["xtick.labelsize"] = 8  # 10 #default 16
+    plt.rcParams["ytick.labelsize"] = 8  # 10 #default 16
+    plt.rcParams["legend.fontsize"] = 14  # 10 #default 14
+    plt.rcParams["legend.markerscale"] = 0
+    plt.rcParams["lines.markersize"] = 2.5  # 4 #default 4
+    plt.rcParams["axes.linewidth"] = 1
+
+    # Colors
+    if dark:
+        plt.rcParams['axes.facecolor'] = 'black'
+        plt.rcParams['savefig.facecolor'] = 'black'
+        plt.rcParams['axes.edgecolor'] = 'white'
+        plt.rcParams['xtick.color'] = 'white'
+        plt.rcParams['ytick.color'] = 'white'
+        plt.rcParams["axes.labelcolor"] = 'white'
+        plt.rcParams["text.color"] = 'white'
+    else:
+        plt.rcParams['axes.facecolor'] = "white"
+        plt.rcParams['savefig.facecolor'] = 'white'
+        plt.rcParams['axes.edgecolor'] = 'black'
+        plt.rcParams['xtick.color'] = 'black'
+        plt.rcParams['ytick.color'] = 'black'
+        plt.rcParams["axes.labelcolor"] = 'black'
+        plt.rcParams["text.color"] = 'black'
+
+# ------------------------------------------------------------------------------
+
+def reset_theme():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Back to original settings
+    plt.rcParams.update(plt.rcParamsDefault)
 
 # ------------------------------------------------------------------------------

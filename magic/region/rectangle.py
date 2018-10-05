@@ -65,48 +65,24 @@ class RectangleRegion(Region):
 
     @property
     def width(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.radius.axis1
 
     # -----------------------------------------------------------------
 
     @property
     def height(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.radius.axis2
 
     # -----------------------------------------------------------------
 
     @property
     def rotated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return not bool(self.angle == Angle(0.0, "deg"))
 
     # -----------------------------------------------------------------
 
     @property
     def diagonal(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.radius.norm
 
     # -----------------------------------------------------------------
@@ -137,48 +113,24 @@ class RectangleRegion(Region):
 
     @property
     def axis1_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return min([corner.axis1 for corner in self.corners])
 
     # -----------------------------------------------------------------
 
     @property
     def axis1_max(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return max([corner.axis1 for corner in self.corners])
 
     # -----------------------------------------------------------------
 
     @property
     def axis2_min(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return min([corner.axis2 for corner in self.corners])
 
     # -----------------------------------------------------------------
 
     @property
     def axis2_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return max([corner.axis2 for corner in self.corners])
 
     # -----------------------------------------------------------------
@@ -272,6 +224,12 @@ class RectangleRegion(Region):
         if coordinate.axis1 > self.axis1_max or coordinate.axis1 < self.axis1_min: return False
         if coordinate.axis2 > self.axis2_max or coordinate.axis2 < self.axis2_min: return False
         return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axial_ratio(self):
+        return self.width / self.height
 
     # -----------------------------------------------------------------
 

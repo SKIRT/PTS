@@ -45,6 +45,9 @@ class ImagesAnalyser(AnalysisRunComponent):
         # Call the constructor of the base class
         super(AnalysisRunComponent, self).__init__(*args, **kwargs)
 
+        # The mock observed images
+        self.images = dict()
+
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -230,8 +233,9 @@ class ImagesAnalyser(AnalysisRunComponent):
         # Run
         maker.run(**self.image_maker_input)
 
-        # Return the images
-        #return maker.images[earth_name] if earth_name in maker.images else {} # if all images were already made
+        # Update the images
+        # Check for if all images were already made
+        if earth_name in maker.images: self.images.update(maker.images[earth_name])
 
     # -----------------------------------------------------------------
 

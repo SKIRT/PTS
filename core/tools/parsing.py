@@ -729,6 +729,19 @@ def directorypath_list(argument):
 
 # -----------------------------------------------------------------
 
+def new_path(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    # Doesn't need to exist
+    return fs.absolute_path(argument)
+
+# -----------------------------------------------------------------
+
 def path(argument):
 
     """

@@ -172,7 +172,7 @@ def find_modeling_path_up(path):
     if filepath is None:
 
         # Stop at home
-        if path == fs.home(): raise ValueError("Could not find a modeling configuration file and home directory is reached")
+        if path == fs.home: raise ValueError("Could not find a modeling configuration file and home directory is reached")
         else: return find_modeling_path_up(fs.directory_of(path))
 
     # Return the directory path
@@ -1570,6 +1570,12 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     @lazyproperty
     def truncation_box(self):
         return self.truncation_ellipse.bounding_box
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_box_axial_ratio(self):
+        return self.truncation_box.axial_ratio
 
     # -----------------------------------------------------------------
 

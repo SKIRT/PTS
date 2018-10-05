@@ -183,7 +183,7 @@ class TransmissionCurve(object):
         """
 
         transmission_wavelength = self.transmission_at(wavelength)
-        self.table["Transmission"] /= transmission_wavelength * value
+        self.table["Transmission"] *= (value / transmission_wavelength)
 
     # -----------------------------------------------------------------
 

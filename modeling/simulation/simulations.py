@@ -1562,6 +1562,9 @@ class ComponentSimulations(object):
         :return:
         """
 
+        # GIVE WARNING
+        log.warning("The get_stellar_part function in its current form is deprecated and should NOT be used, as it is very inacurrate")
+
         # Fit stuff
         if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")
 
@@ -1583,6 +1586,9 @@ class ComponentSimulations(object):
         :param full: keep the full wavelength grid
         :return:
         """
+
+        # GIVE WARNING
+        log.warning("The get_dust_part function in its current form is deprecated and should NOT be used, as it is very inacurrate")
 
         # Fit stuff?
         if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")

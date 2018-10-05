@@ -113,12 +113,6 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
     @lazyproperty
     def output_path_hash(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return strings.hash_string(self.output_path)
 
     # -----------------------------------------------------------------

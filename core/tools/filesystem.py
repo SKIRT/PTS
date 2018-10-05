@@ -39,6 +39,13 @@ else: PYTHON_2 = True # Python 2
 
 # -----------------------------------------------------------------
 
+home = os.path.expanduser('~')
+downloads = os.path.join(home, "Downloads")
+documents = os.path.join(home, "Documents")
+desktop = os.path.join(home, "Desktop")
+
+# -----------------------------------------------------------------
+
 def cwd():
 
     """
@@ -64,26 +71,18 @@ def change_cwd(path):
 
 # -----------------------------------------------------------------
 
-def home():
-
-    """
-    This function returns the full path to the home directory
-    :return:
-    """
-
-    return os.path.expanduser('~')
+def to_home_directory():
+    change_cwd(home)
 
 # -----------------------------------------------------------------
 
-def to_home_directory():
+def to_desktop():
+    change_cwd(desktop)
 
-    """
-    This function ...
-    :param path:
-    :return:
-    """
+# -----------------------------------------------------------------
 
-    change_cwd(home())
+def to_documents():
+    change_cwd(documents)
 
 # -----------------------------------------------------------------
 
@@ -174,28 +173,6 @@ def show_file_in_directory(path, wait=False):
 
 # -----------------------------------------------------------------
 
-def desktop():
-
-    """
-    This function returns the full path to the desktop directory
-    :return:
-    """
-
-    return os.path.expanduser("~/Desktop") # On Mac OS X
-
-# -----------------------------------------------------------------
-
-def documents():
-
-    """
-    This function returns the full path to the documents directory
-    :return:
-    """
-
-    return os.path.expanduser("~/Documents") # On Mac OS X
-
-# -----------------------------------------------------------------
-
 def absolute_path(path):
 
     """
@@ -204,7 +181,16 @@ def absolute_path(path):
     :return:
     """
 
-    return os.path.abspath(os.path.expanduser(path))
+    # Starts with environment variable
+    if path.startswith("$"):
+        if path.startswith("$HOME"): return path.replace("$HOME", home)
+        elif path.startswith("$DESKTOP"): return path.replace("$DESKTOP", desktop)
+        elif path.startswith("$DOCUMENTS"): return path.replace("$DOCUMENTS", documents)
+        elif path.startswith("$DOWNLOADS"): return path.replace("$DOWNLOADS", downloads)
+        else: raise ValueError("Unknown environment variable path: '" + path.split("/")[0] + "'")
+
+    # Relative path (or with ~ for home directory)
+    else: return os.path.abspath(os.path.expanduser(path))
 
 # -----------------------------------------------------------------
 

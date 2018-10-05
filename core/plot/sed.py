@@ -111,6 +111,19 @@ def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pd
 
 # -----------------------------------------------------------------
 
+def plot_seds_quick(**seds):
+
+    """
+    This function ...
+    :param seds:
+    :return:
+    """
+
+    # Plot
+    plot_seds(seds)
+
+# -----------------------------------------------------------------
+
 def plot_seds(seds, **kwargs):
 
     """
@@ -1142,6 +1155,9 @@ class SEDPlotter(Configurable):
 
         # Loop over the model SEDs
         for model_label in self.models:
+
+            # Debugging
+            log.debug("Plotting the '" + model_label + "' SED ...")
 
             #sed, plot_residuals, ghost = self.models[model_label]
             sed = self.models[model_label]
@@ -2254,6 +2270,7 @@ class SEDPlotter(Configurable):
 
         if adjust_extrema:
 
+            #print(label, fluxes)
             if self.adjust_photometry_minmax_models: self.adjust_photometry_minmax_fluxes(fluxes, errors=errors)
             if self.adjust_wavelength_minmax_models: self.adjust_wavelength_minmax_wavelengths(wavelengths)
 

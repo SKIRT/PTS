@@ -458,6 +458,72 @@ class Relation(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_indices_right(self, x_min, include=True):
+
+        """
+        This function ...
+        :param x_min:
+        :param include:
+        :return:
+        """
+
+        # Get the values
+        x_values = self.get_x()
+
+        # Initialize
+        indices = []
+
+        # Loop over the x values
+        for index, value in enumerate(x_values):
+
+            # Checks
+            if x_min is not None:
+
+                if include:
+                    if value < x_min: continue
+                else:
+                    if value <= x_min: continue
+
+            # Add the index
+            indices.append(index)
+
+        # Return the indices
+        return indices
+
+    # -----------------------------------------------------------------
+
+    def get_indices_left(self, x_max, include=True):
+
+        """
+        This function ...
+        :param x_max:
+        :param include:
+        :return:
+        """
+
+        # Get the values
+        x_values = self.get_x()
+
+        # Initialize
+        indices = []
+
+        # Loop over the x values
+        for index, value in enumerate(x_values):
+
+            # Checks
+            if include:
+                if value > x_max: continue
+            else:
+                if value >= x_max: continue
+
+            # Add the index
+            indices.append(index)
+
+        # Return the indices
+        return indices
+
+    # -----------------------------------------------------------------
+
     def get_indices(self, x_min=None, x_max=None, include_min=True, include_max=True):
 
         """
@@ -475,6 +541,7 @@ class Relation(SmartTable):
         # Get the values
         x_values = self.get_x()
 
+        # Initialize
         indices = []
 
         # Loop over the values
@@ -497,6 +564,40 @@ class Relation(SmartTable):
 
         # Return the indices
         return indices
+
+    # -----------------------------------------------------------------
+
+    def splice_right(self, x_min, include=True):
+
+        """
+        This function splices at the given x value and returns the right part
+        :param x_min:
+        :param include:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.get_indices_right(x_min, include=include)
+
+        # Return
+        return self.splice_indices(indices)
+
+    # -----------------------------------------------------------------
+
+    def splice_left(self, x_max, include=True):
+
+        """
+        This function splics the curve and the given x value and returns the left part
+        :param x_max:
+        :param include:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.get_indices_left(x_max, include=include)
+
+        # Return
+        return self.splice_indices(indices)
 
     # -----------------------------------------------------------------
 

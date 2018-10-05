@@ -49,6 +49,7 @@ from .stellar_mass import oliver_stellar_mass, hubble_stage_to_type
 from ...core.data.sed import SED
 from ...core.tools.serialization import write_dict, load_dict
 from ...core.units.parsing import parse_quantity
+from ...core.data.attenuation import MappingsAttenuationCurve
 
 # -----------------------------------------------------------------
 
@@ -201,6 +202,7 @@ disk_component_name = "Evolved stellar disk"
 young_component_name = "Young stars"
 ionizing_component_name = "Ionizing stars"
 transparent_ionizing_component_name = "Ionizing stars (transparent)"
+dust_component_name = "Dust"
 
 bulge_component_description = "old bulge stellar component"
 disk_component_description = "old disk stellar component"
@@ -261,7 +263,8 @@ class RTModel(object):
                  free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
                  observed_bulge_output_path=None, observed_disk_output_path=None, observed_old_output_path=None,
                  observed_young_output_path=None, observed_sfr_output_path=None, observed_unevolved_output_path=None,
-                 parameters=None, center=None, galaxy_name=None, hubble_stage=None, redshift=None, earth_wcs=None):
+                 parameters=None, center=None, galaxy_name=None, hubble_stage=None, redshift=None, earth_wcs=None,
+                 truncation_ellipse=None):
 
         """
         The constructor ...
@@ -337,6 +340,7 @@ class RTModel(object):
         self.galaxy_name = galaxy_name
         self.hubble_stage = hubble_stage
         self.redshift = redshift
+        self.truncation_ellipse = truncation_ellipse
 
         # Set the earth coordinate system
         self.earth_wcs = earth_wcs
@@ -372,6 +376,33 @@ class RTModel(object):
     @property
     def has_center(self):
         return self.center is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_truncation_ellipse(self):
+        return self.truncation_ellipse is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_radius(self):
+        if not self.has_truncation_ellipse: return None
+        return self.truncation_ellipse.semimajor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_box(self):
+        if not self.has_truncation_ellipse: return None
+        return self.truncation_ellipse.bounding_box
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_box_axial_ratio(self):
+        if not self.has_truncation_ellipse: return None
+        return self.truncation_box.axial_ratio
 
     # -----------------------------------------------------------------
 
@@ -1974,6 +2005,86 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    def find_internal_mappings_attenuation(self, min_fuv_attenuation_fraction=0.1, fuv_attenuation_fraction_step=0.01):
+
+        """
+        # NORMALIZE THE ATTENUATION CURVE AT FUV TO ONLY ATTENUATE 10% OF THE LIGHT: AN UNDERESTIMATION,
+        # SO WE CAN DRIVE UP THE ATTENUATION AND KEEP DOING THAT UNTIL WE FIND A MATCH WITH THE EMITTED DUST ENERGY
+        This function ...
+        :param min_fuv_attenuation_fraction:
+        :param fuv_attenuation_fraction_step:
+        :return:
+        """
+
+        # Bolometric luminosities
+        bolometric_luminosity_unit = parse_quantity("W")
+
+        # 'Observed': after internal attenuation
+        observed_sed = self.intrinsic_sfr_stellar_sed
+        stellar_sed = self.sfr_simulations.intrinsic_sed
+        stellar_luminosity = stellar_sed.integrate().to(bolometric_luminosity_unit, distance=self.distance)
+
+        # Dust
+        internal_dust_sed = self.intrinsic_sfr_dust_sed
+        dust_luminosity_internal = internal_dust_sed.integrate().to(bolometric_luminosity_unit, distance=self.distance)
+        dust_fraction_internal = dust_luminosity_internal.value / stellar_luminosity.value
+
+        # Get attenuation curve
+        curve = MappingsAttenuationCurve()
+
+        # Loop over the values of attenuation fraction
+        att_fraction = min_fuv_attenuation_fraction
+        while True:
+
+            # Debugging
+            log.debug("Testing an attenuation fraction of " + str(att_fraction) + " ...")
+
+            # Get observed over transparent FUV luminosity
+            obs_over_trans = 1. / (att_fraction + 1.)
+            attenuation = -2.5 * np.log10(obs_over_trans)
+
+            # Normalize the attenuation curve
+            curve.normalize_at(self.fuv_wavelength, attenuation)
+            #transmissions = 10 ** (-0.4 * curve.y_array)
+
+            # Correct for attenuation
+            transparent_sed = correct_sed_for_attenuation(observed_sed, curve)
+
+            # Get absorbed luminosity under this attenuation curve
+            absorbed_sed = transparent_sed - observed_sed
+            absorbed_lum = absorbed_sed.integrate().to(bolometric_luminosity_unit, distance=self.distance)
+            #print(absorbed_lum)
+            absorption_fraction = absorbed_lum.value / stellar_luminosity.value
+
+            # Debugging
+            log.debug("The absorption fraction is " + str(absorption_fraction) + " (dust emission fraction is " + str(dust_fraction_internal) + ")")
+
+            # Return the FUV attenuation
+            if absorbed_lum >= dust_luminosity_internal: return attenuation
+
+            # Increase the attenuation fraction
+            att_fraction += fuv_attenuation_fraction_step
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_attenuation_sfr_internal(self):
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def attenuation_curve_sfr_internal(self):
+        return MappingsAttenuationCurve(wavelength=self.fuv_wavelength, attenuation=self.fuv_attenuation_sfr_internal)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unattenuated_mappings_sed(self):
+        return correct_sed_for_attenuation(self.intrinsic_sfr_stellar_sed, self.attenuation_curve_sfr_internal)
+        
+    # -----------------------------------------------------------------
+
     @property
     def normalized_mappings_sed_path(self):
         return fs.join(self.sfr_mappings_path, "normalized_sed.dat")
@@ -2984,21 +3095,33 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def intrinsic_sfr_stellar_sed(self):
-
-        # Set
-        fit_from_wavelength = parse_quantity("0.1 micron")
-        from_wavelength = parse_quantity("5 micron")
-
-        # Return the adapted SED
-        return self.transparent_sfr_sed.extrapolated_from(from_wavelength, fit_from_wavelength, xlog=True, ylog=True)
+    def fit_mappings_from_wavelength(self):
+        return parse_quantity("0.1 micron")
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def extrapolate_mappings_from_wavelength(self):
+        return parse_quantity("5 micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_transparent_sfr_stellar_sed(self):
+        return self.transparent_sfr_sed.extrapolated_from(self.extrapolate_mappings_from_wavelength, self.fit_mappings_from_wavelength, xlog=True, ylog=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_sfr_stellar_sed(self):
+        return self.intrinsic_sfr_sed.extrapolated_from(self.extrapolate_mappings_from_wavelength, self.fit_mappings_from_wavelength, xlog=True, ylog=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def intrinsic_sfr_dust_sed(self):
-        from pts.core.plot.sed import plot_seds
-        plot_seds({"intrinsic": self.intrinsic_sfr_sed, "intrinsic_stellar": self.intrinsic_sfr_stellar_sed})
+        #from pts.core.plot.sed import plot_seds
+        #plot_seds({"intrinsic": self.intrinsic_sfr_sed, "intrinsic_stellar": self.intrinsic_sfr_stellar_sed})
         return self.intrinsic_sfr_sed - self.intrinsic_sfr_stellar_sed
 
     # -----------------------------------------------------------------
@@ -11027,5 +11150,104 @@ class RTModel(object):
         #else: raise ValueError("Invalid component: '" + component + "'")
 
         # THERE IS ALSO model.diffuse_dust_sed !
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def component_maps(self):
+        return self.component_maps_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def component_maps_earth(self):
+        maps = OrderedDict()
+        maps[bulge_simulation_name] = self.old_bulge_map_earth
+        maps[disk_simulation_name] = self.old_disk_map_earth
+        maps[young_simulation_name] = self.young_map_earth
+        maps[sfr_simulation_name] = self.sfr_map_earth
+        maps[dust_simulation_name] = self.dust_map_earth
+        return maps
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def component_maps_faceon(self):
+        maps = OrderedDict()
+        maps[bulge_simulation_name] = self.old_bulge_map_faceon
+        maps[disk_simulation_name] = self.old_disk_map_faceon
+        maps[young_simulation_name] = self.young_map_faceon
+        maps[sfr_simulation_name] = self.sfr_map_faceon
+        maps[dust_simulation_name] = self.dust_map_faceon
+        return maps
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def component_maps_edgeon(self):
+        maps = OrderedDict()
+        maps[bulge_simulation_name] = self.old_bulge_map_edgeon
+        maps[disk_simulation_name] = self.old_disk_map_edgeon
+        maps[young_simulation_name] = self.young_map_edgeon
+        maps[sfr_simulation_name] = self.sfr_map_edgeon
+        maps[dust_simulation_name] = self.dust_map_edgeon
+        return maps
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def component_names(self):
+        names = OrderedDict()
+        names[bulge_simulation_name] = bulge_component_name
+        names[disk_simulation_name] = disk_component_name
+        names[young_simulation_name] = young_component_name
+        names[sfr_simulation_name] = ionizing_component_name
+        names[dust_simulation_name] = dust_component_name
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def component_descriptions(self):
+        descriptions = OrderedDict()
+        descriptions[bulge_simulation_name] = bulge_component_description
+        descriptions[disk_simulation_name] = disk_component_description
+        descriptions[young_simulation_name] = young_component_description
+        descriptions[sfr_simulation_name] = ionizing_component_description
+        descriptions[dust_simulation_name] = dust_component_description
+        return descriptions
+
+# -----------------------------------------------------------------
+
+def correct_sed_for_attenuation(sed, attenuation_curve):
+
+    """
+    Thisf unction ...
+    :param sed:
+    :param attenuation_curve:
+    :return:
+    """
+
+    from scipy.interpolate import interp1d
+
+    # Get attenuation data
+    wavelengths = attenuation_curve.wavelengths(unit="micron", asarray=True)
+    attenuations = attenuation_curve.attenuations(asarray=True)
+
+    # Interpolate attenuation data on the SED wavelengths
+    interpolated = interp1d(wavelengths, attenuations)
+    sed_wavelengths = sed.wavelengths(unit="micron", asarray=True)
+    sed_attenuations = interpolated(sed_wavelengths)
+
+    # Get transparent photometry
+    photometry = sed.photometry(unit=sed.unit, asarray=True)
+    exponent = sed_attenuations / 2.5
+    transparent_photometry = photometry * 10 ** exponent
+
+    # Create SED
+    transparent_sed = SED.from_arrays(sed_wavelengths, transparent_photometry, "micron", sed.unit)
+
+    # Return
+    return transparent_sed
 
 # -----------------------------------------------------------------

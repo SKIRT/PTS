@@ -17,9 +17,10 @@ import numpy as np
 from scipy import interpolate
 
 # Import the relevant PTS classes and modules
-from ...core.tools import tables, introspection, arrays
-from ...core.tools import filesystem as fs
+from ..tools import tables, introspection, arrays
+from ..tools import filesystem as fs
 from ..basics.curve import Curve
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -142,6 +143,34 @@ class AttenuationCurve(Curve):
 
     # -----------------------------------------------------------------
 
+    def closest_wavelength_index(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return arrays.find_closest_index(self["Wavelength"], wavelength, array_unit=self["Wavelength"].unit)
+
+    # -----------------------------------------------------------------
+
+    def closest_wavelength(self, wavelength, return_index=False):
+
+        """
+        This function ...
+        :param wavelength:
+        :param return_index:
+        :return:
+        """
+
+        index = self.closest_wavelength_index(wavelength)
+        wavelength = self["Wavelength"][index] * self["Wavelength"].unit
+        if return_index: return wavelength, index
+        else: return wavelength
+
+    # -----------------------------------------------------------------
+
     def normalize_at(self, wavelength, value=1.):
 
         """
@@ -152,6 +181,98 @@ class AttenuationCurve(Curve):
         """
 
         attenuation_wavelength = self.attenuation_at(wavelength)
-        self["Attenuation"] /= attenuation_wavelength * value
+        self["Attenuation"] *= (value / attenuation_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def peak_attenuation(self):
+        return np.max(self["Attenuation"])
+
+    # -----------------------------------------------------------------
+
+    def normalize_at_peak(self, value=1.):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self["Attenuation"] *= (value / self.peak_attenuation)
+
+# -----------------------------------------------------------------
+
+def load_mappings_attenuation_data():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # The filepath
+    path = fs.join(attenuation_data_path, "AttenuationLawMAPPINGS.dat")
+
+    # wl in micron from long to short wl.
+    # ABS attenuations (see header of data file)
+    wavelengths, abs_attenuations = np.loadtxt(path, unpack=True)
+
+    # CREATE A TABLE SO WE CAN EASILY SORT THE COLUMNS FOR INCREASING WAVELENGTH
+    names = ["Wavelength", "ABS attenuation"]
+    # Create the table
+    abs_table = tables.new([wavelengths, abs_attenuations], names)
+    abs_table["Wavelength"].unit = u("micron")
+    # Sort the table on wavelength
+    abs_table.sort("Wavelength")
+
+    # Return
+    return abs_table
+
+# -----------------------------------------------------------------
+
+class MappingsAttenuationCurve(AttenuationCurve):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Get attenuation at a
+        attenuation = kwargs.pop("attenuation", None)
+        wavelength = kwargs.pop("wavelength", None)
+        if attenuation is not None and wavelength is None: raise ValueError("If attenuation value is specified, wavelength must be specified")
+        if wavelength is not None and attenuation is None: raise ValueError("If wavelength is specified, attenuation value must be specified")
+
+        # Load the data
+        abs_table = load_mappings_attenuation_data()
+        wavelengths = np.array(list(abs_table["Wavelength"]))
+        abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
+
+        # Find the ABS attenuation at the specified wavelength
+        if attenuation is not None and wavelength is not None:
+
+            # Normalize
+            interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
+            abs_wavelength = interpolated(wavelength.to("micron").value)
+
+            # 'Real' attenuations
+            attenuations = abs_attenuations / abs_wavelength * attenuation
+
+        # Just use the ABS attenuations
+        else: attenuations = abs_attenuations
+
+        # Set arguments
+        kwargs["wavelengths"] = wavelengths
+        kwargs["attenuations"] = attenuations
+
+        # Call the constructor of the base class
+        super(MappingsAttenuationCurve, self).__init__(*args, **kwargs)
 
 # -----------------------------------------------------------------
