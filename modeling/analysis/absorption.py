@@ -3604,12 +3604,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         #print("EMITTED ENERGY (COMPLETE DUST SED): " + tostr(self.sfr_dust_luminosity_internal_complete))
 
         #from pts.core.data.attenuation import MappingsAttenuationCurve
-        #attenuation_curve = MappingsAttenuationCurve()
+        #attenuation_curve = MappingsAttenuationCurve(from_astropy=False)
 
         #fuv_attenuation = self.model.find_internal_mappings_attenuation()
         #print("FUV attenuation:", fuv_attenuation)
 
         attenuation_curve = self.model.attenuation_curve_sfr_internal
+        #print("test", attenuation_curve.attenuation_at(self.fuv_wavelength))
 
         from ..core.model import correct_sed_for_attenuation
         observed_sed = self.model.intrinsic_sfr_stellar_sed

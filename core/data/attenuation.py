@@ -244,33 +244,48 @@ class MappingsAttenuationCurve(AttenuationCurve):
         :param kwargs:
         """
 
-        # Get attenuation at a
-        attenuation = kwargs.pop("attenuation", None)
-        wavelength = kwargs.pop("wavelength", None)
-        if attenuation is not None and wavelength is None: raise ValueError("If attenuation value is specified, wavelength must be specified")
-        if wavelength is not None and attenuation is None: raise ValueError("If wavelength is specified, attenuation value must be specified")
+        # Check whether constructor is called by Astropy
+        if "from_astropy" in kwargs: from_astropy = kwargs.pop("from_astropy")
+        elif "wavelength" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-        # Load the data
-        abs_table = load_mappings_attenuation_data()
-        wavelengths = np.array(list(abs_table["Wavelength"]))
-        abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
+        # Not called by Astropy
+        if not from_astropy:
 
-        # Find the ABS attenuation at the specified wavelength
-        if attenuation is not None and wavelength is not None:
+            # Get attenuation at a
+            attenuation = kwargs.pop("attenuation", None)
+            wavelength = kwargs.pop("wavelength", None)
+            if attenuation is not None and wavelength is None: raise ValueError("If attenuation value is specified, wavelength must be specified")
+            if wavelength is not None and attenuation is None: raise ValueError("If wavelength is specified, attenuation value must be specified")
 
-            # Normalize
-            interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
-            abs_wavelength = interpolated(wavelength.to("micron").value)
+            # Load the data
+            abs_table = load_mappings_attenuation_data()
+            wavelengths = np.array(list(abs_table["Wavelength"]))
+            abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
 
-            # 'Real' attenuations
-            attenuations = abs_attenuations / abs_wavelength * attenuation
+            #print(wavelengths)
+            #print(abs_attenuations)
+            #print(len(wavelengths), len(abs_attenuations))
 
-        # Just use the ABS attenuations
-        else: attenuations = abs_attenuations
+            # Find the ABS attenuation at the specified wavelength
+            if attenuation is not None and wavelength is not None:
 
-        # Set arguments
-        kwargs["wavelengths"] = wavelengths
-        kwargs["attenuations"] = attenuations
+                # Normalize
+                interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
+                abs_wavelength = interpolated(wavelength.to("micron").value)
+
+                # 'Real' attenuations
+                attenuations = abs_attenuations / abs_wavelength * attenuation
+
+            # Just use the ABS attenuations
+            else: attenuations = abs_attenuations
+
+            #print(len(wavelengths), wavelengths)
+            #print(len(attenuations), attenuations)
+
+            # Set arguments
+            kwargs["wavelengths"] = wavelengths
+            kwargs["attenuations"] = attenuations
 
         # Call the constructor of the base class
         super(MappingsAttenuationCurve, self).__init__(*args, **kwargs)

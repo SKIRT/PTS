@@ -2272,6 +2272,7 @@ class SmartTable(Table):
         # Write to buffer, get the lines
         self.write(output, format="ascii.commented_header")
         data_lines = output.getvalue().split("\n")
+        #print("datalines", len(data_lines))
 
         # Get masks
         # masks = self.get_masks()
@@ -2318,6 +2319,7 @@ class SmartTable(Table):
         for line in data_lines:
             if not line: continue  # empty line at the end
             lines.append(line)
+        #print("lines", len(lines))
 
         # Write the lines
         fs.write_lines(path, lines)

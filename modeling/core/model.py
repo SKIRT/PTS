@@ -2030,7 +2030,7 @@ class RTModel(object):
         dust_fraction_internal = dust_luminosity_internal.value / stellar_luminosity.value
 
         # Get attenuation curve
-        curve = MappingsAttenuationCurve()
+        curve = MappingsAttenuationCurve(from_astropy=False)
 
         # Loop over the values of attenuation fraction
         att_fraction = min_fuv_attenuation_fraction
