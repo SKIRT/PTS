@@ -1943,9 +1943,23 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     #if xlog: plt.xscale("log")
     #if ylog: plt.yscale("log")
 
+    #import sys
+    #reload(sys)
+    #sys.setdefaultencoding('utf8')
+
     # Set labels
-    if x_label is not None: plt.xlabel(x_label.replace("_", "\_"))
-    if y_label is not None: plt.ylabel(y_label.replace("_", "\_"))
+    #print(x_label.replace("_", "\_"))
+    #print(y_label.replace("_", "\_"))
+    if x_label is not None:
+        #xlabel = x_label.replace("_", "\_").replace("[", "\[").replace("]", "\]")
+        xlabel = x_label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
+        #print(xlabel)
+        plt.xlabel(xlabel)
+    if y_label is not None:
+        #ylabel = y_label.replace("_", "\_").replace("[", "\[").replace("]", "\]")
+        ylabel = y_label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
+        #print(ylabel)
+        plt.ylabel(ylabel)
 
     # Create legend
     if legend: plt.legend()
