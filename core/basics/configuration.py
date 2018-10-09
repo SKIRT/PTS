@@ -1379,6 +1379,7 @@ def load_parameters(mappingfile, mapping, cls, indent="", cls_kwargs=None):
 
                     #print(line)
                     parsing_function = getattr(parsing, specification)
+                    #print(value)
                     value = parsing_function(value)
 
                 #print("definition", value)

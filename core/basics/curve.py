@@ -175,11 +175,6 @@ class Curve(Relation):
             j = 0
             while True:
 
-                # Try to get wavelength
-                if isinstance(self, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(i)}
-                elif isinstance(other, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(j)}
-                else: conversion_info = None
-
                 # Get the values
                 x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
                 x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
@@ -187,8 +182,15 @@ class Curve(Relation):
                 # Value is the same: add
                 if x_a == x_b:
 
+                    # Try to get wavelength and distance for unit conversion
+                    if isinstance(self, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(i), "distance": self.distance}
+                    elif isinstance(other, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(j), "distance": self.distance}
+                    else: conversion_info = None
+
+                    # Calculate the sum of the y values
                     result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False, conversion_info=conversion_info) + other.get_value(other.y_name, j, unit=y_unit, add_unit=False, conversion_info=conversion_info)
 
+                    # Add the x value and the new y value
                     x_values.append(x_a)
                     y_values.append(result)
 
