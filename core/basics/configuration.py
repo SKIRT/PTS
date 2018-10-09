@@ -1244,7 +1244,7 @@ def open_box(filepath):
     """
 
     from box import Box
-    parameters = Box()
+    parameters = Box(ordered_box=True)
     with open(filepath, "r") as fh: load_box(fh, parameters)
     return parameters
 
@@ -1257,11 +1257,11 @@ def load_mapping(fh, parameters, indent=""):
 
 def load_box(fh, parameters, indent=""):
     from box import Box
-    return load_parameters(fh, parameters, Box, indent=indent)
+    return load_parameters(fh, parameters, Box, indent=indent, cls_kwargs={"ordered_dict": True})
 
 # -----------------------------------------------------------------
 
-def load_parameters(mappingfile, mapping, cls, indent=""):
+def load_parameters(mappingfile, mapping, cls, indent="", cls_kwargs=None):
 
     """
     This function ...
@@ -1269,8 +1269,11 @@ def load_parameters(mappingfile, mapping, cls, indent=""):
     :param mapping:
     :param cls:
     :param indent:
+    :param cls_kwargs:
     :return:
     """
+
+    if cls_kwargs is None: cls_kwargs = {}
 
     # STATES:
     # 0: empty line
@@ -1401,7 +1404,7 @@ def load_parameters(mappingfile, mapping, cls, indent=""):
             else: name = before
 
             # Initialize the submapping
-            mapping[name] = cls()
+            mapping[name] = cls(**cls_kwargs)
 
             # Load the submapping
             load_mapping(mappingfile, mapping[name], indent=indent+"    ")

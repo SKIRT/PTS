@@ -497,7 +497,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False,
-                   min_wavelength=None, max_wavelength=None):
+                   min_wavelength=None, max_wavelength=None, distance=None):
 
         """
         This function ...
@@ -509,11 +509,12 @@ class SED(WavelengthCurve):
         :param brightness:
         :param min_wavelength:
         :param max_wavelength:
+        :param distance:
         :return:
         """
 
         return self.values(unit, asarray, add_unit, conversion_info=conversion_info, density=density, brightness=brightness,
-                           min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+                           min_wavelength=min_wavelength, max_wavelength=max_wavelength, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -716,7 +717,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     def convert_to(self, wavelength_unit=None, photometry_unit=None, density=False, density_strict=False,
-                   brightness=False, brightness_strict=False):
+                   brightness=False, brightness_strict=False, distance=None):
 
         """
         This function ...
@@ -726,6 +727,7 @@ class SED(WavelengthCurve):
         :param density_strict:
         :param brightness:
         :param brightness_strict:
+        :param distance:
         :return:
         """
 
@@ -740,7 +742,7 @@ class SED(WavelengthCurve):
         if photometry_unit is not None:
 
             photometry_unit = PhotometricUnit(photometry_unit, density=density, density_strict=density_strict, brightness=brightness, brightness_strict=brightness_strict)
-            self["Photometry"] = self.photometry(asarray=True, unit=photometry_unit)
+            self["Photometry"] = self.photometry(asarray=True, unit=photometry_unit, distance=distance)
             self["Photometry"].unit = photometry_unit
 
             # Set whether this column is a spectral density
@@ -751,7 +753,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     def converted_to(self, wavelength_unit=None, photometry_unit=None, density=False, density_strict=False,
-                     brightness=False, brightness_strict=False):
+                     brightness=False, brightness_strict=False, distance=None):
 
         """
         This function ...
@@ -761,11 +763,14 @@ class SED(WavelengthCurve):
         :param density_strict:
         :param brightness:
         :param brightness_strict:
+        :param distance:
         :return:
         """
 
         new = self.copy()
-        new.convert_to(wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        new.convert_to(wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, density=density,
+                       brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict,
+                       distance=distance)
         return new
 
     # -----------------------------------------------------------------

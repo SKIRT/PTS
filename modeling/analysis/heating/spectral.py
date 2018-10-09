@@ -1398,6 +1398,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @lazyproperty
     def total_spectral_emission_data(self):
         if not self.has_total_spectral_emission: raise RuntimeError("Cannot find the total spectral emission data: run the absorption analysis first")
+        return SpectralData3D.from_file(self.total_spectral_emission_path)
 
     # -----------------------------------------------------------------
 
@@ -1445,6 +1446,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @lazyproperty
     def evolved_spectral_emission_data(self):
         if not self.has_evolved_spectral_emission: raise RuntimeError("Cannot find the old spectral emission data: run the absorption analysis first")
+        return SpectralData3D.from_file(self.evolved_spectral_emission_path)
 
     # -----------------------------------------------------------------
     #   UNEVOLVED: ABSORPTION

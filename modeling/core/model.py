@@ -2102,6 +2102,12 @@ class RTModel(object):
         
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def attenuation_sed_sfr_internal(self):
+        return self.unattenuated_mappings_sed - self.intrinsic_sfr_stellar_sed
+
+    # -----------------------------------------------------------------
+
     @property
     def normalized_mappings_sed_path(self):
         return fs.join(self.sfr_mappings_path, "normalized_sed.dat")
