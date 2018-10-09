@@ -173,14 +173,20 @@ class Curve(Relation):
             # Loop over the values of this curve and the other curve simultaneously
             i = 0
             j = 0
+            #print("ADDING CURVES")
             while True:
 
                 # Get the values
                 x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
                 x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
 
+                #print(x_a, x_b, x_a==x_b)
+
                 # Value is the same: add
-                if x_a == x_b:
+                #if x_a == x_b:
+                isclose = np.isclose(x_a, x_b)
+                if not isclose: print("NOT CLOSE:", x_a, x_b)
+                if isclose:
 
                     # Try to get wavelength and distance for unit conversion
                     if isinstance(self, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(i), "distance": self.distance}
@@ -299,14 +305,20 @@ class Curve(Relation):
             # Loop over the values of this curve and the other curve simultaneously
             i = 0
             j = 0
+            #print("SUBTRACTING CURVES")
             while True:
 
                 # Get the values
                 x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
                 x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
 
-                # Value is the same: add
-                if x_a == x_b:
+                #print(x_a, x_b, x_a==x_b)
+
+                # Value is the same: subtract
+                #if x_a == x_b:
+                isclose = np.isclose(x_a, x_b)
+                if not isclose: print("NOT CLOSE:", x_a, x_b)
+                if isclose:
 
                     result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
 

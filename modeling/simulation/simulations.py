@@ -1563,7 +1563,10 @@ class ComponentSimulations(object):
         """
 
         # GIVE WARNING
+        import traceback
         log.warning("The get_stellar_part function in its current form is deprecated and should NOT be used, as it is very inacurrate")
+        log.warning("Called from:")
+        traceback.print_stack(limit=6)
 
         # Fit stuff
         if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")
@@ -1588,7 +1591,10 @@ class ComponentSimulations(object):
         """
 
         # GIVE WARNING
+        import traceback
         log.warning("The get_dust_part function in its current form is deprecated and should NOT be used, as it is very inacurrate")
+        log.warning("Called from:")
+        traceback.print_stack(limit=6)
 
         # Fit stuff?
         if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")
@@ -2156,7 +2162,7 @@ class ComponentSimulations(object):
     def intrinsic_dust_cube(self):
         return self.get_dust_part(self.intrinsic_cube, full=True)
 
-    # -----------------------------------------------------------------
+    # ----------------------------------------------------------------
 
     @lazyproperty
     def faceon_intrinsic_dust_cube(self):
