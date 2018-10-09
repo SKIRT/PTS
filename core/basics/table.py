@@ -1091,6 +1091,11 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def is_photometric_column(self, column_name):
+        return self.has_column_unit(column_name) and isinstance(self.column_unit(column_name), PhotometricUnit)
+
+    # -----------------------------------------------------------------
+
     def column_unit_string(self, column_name):
 
         """
@@ -1708,7 +1713,7 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_value(self, colname, index, add_unit=True, unit=None):
+    def get_value(self, colname, index, add_unit=True, unit=None, conversion_info=None):
 
         """
         This function ...
@@ -1716,6 +1721,7 @@ class SmartTable(Table):
         :param index:
         :param add_unit:
         :param unit:
+        :param conversion_info:
         :return:
         """
 
@@ -1730,8 +1736,13 @@ class SmartTable(Table):
 
         # Convert?
         if unit is not None:
+
+            if conversion_info is None: conversion_info = {}
             if not self.has_column_unit(colname): raise ValueError("Column '" + colname + "' does not have a unit")
-            value = value.to(unit)
+
+            # Convert
+            if self.is_photometric_column(colname): value = value.to(unit, **conversion_info)
+            else: value = value.to(unit)
 
         # Return the value
         if add_unit: return value
@@ -2272,6 +2283,7 @@ class SmartTable(Table):
         # Write to buffer, get the lines
         self.write(output, format="ascii.commented_header")
         data_lines = output.getvalue().split("\n")
+        #print("datalines", len(data_lines))
 
         # Get masks
         # masks = self.get_masks()
@@ -2318,6 +2330,7 @@ class SmartTable(Table):
         for line in data_lines:
             if not line: continue  # empty line at the end
             lines.append(line)
+        #print("lines", len(lines))
 
         # Write the lines
         fs.write_lines(path, lines)

@@ -351,36 +351,18 @@ class GalacticAttenuation(object):
 
     @lazyproperty
     def v_band_index(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return tables.find_index(self.table, "CTIO V")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def av_ebv_ratio(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.table["A_over_E_B_V_SandF"][self.v_band_index]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def attenuation_v(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.table["A_SandF"][self.v_band_index]
 
     # -----------------------------------------------------------------

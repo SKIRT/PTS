@@ -126,12 +126,6 @@ class DustGridGenerator(Configurable):
 
     @property
     def grid_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._grid_type
 
     # -----------------------------------------------------------------
@@ -151,108 +145,54 @@ class DustGridGenerator(Configurable):
 
     @property
     def x_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.x_radius
 
     # -----------------------------------------------------------------
 
     @property
     def x_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.x_radius
 
     # -----------------------------------------------------------------
 
     @property
     def x_extent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.x_max - self.x_min
 
     # -----------------------------------------------------------------
 
     @property
     def y_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.y_radius
 
     # -----------------------------------------------------------------
 
     @property
     def y_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.y_radius
 
     # -----------------------------------------------------------------
 
     @property
     def y_extent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.y_max - self.y_min
 
     # -----------------------------------------------------------------
 
     @property
     def z_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.z_radius
 
     # -----------------------------------------------------------------
 
     @property
     def z_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.z_radius
 
     # -----------------------------------------------------------------
 
     @property
     def z_extent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.z_max - self.z_min
 
     # -----------------------------------------------------------------
