@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ....core.tools.utils import lazyproperty
-from .simple import AbsorptionBase, seds_name, cells_name
+from .simple import AbsorptionBase, seds_name, cells_name, best_name
 
 # -----------------------------------------------------------------
 
@@ -170,6 +170,12 @@ class UnevolvedAbsorption(AbsorptionBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def dust_sed_diffuse_cells_complete(self):
+        return self.correct_dust_sed(self.emission_curve_cells, trim=False, make_full=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dust_sed_diffuse_cells(self):
         return self.correct_dust_sed(self.emission_curve_cells)
 
@@ -178,6 +184,12 @@ class UnevolvedAbsorption(AbsorptionBase):
     @property
     def has_dust_sed_diffuse_cells(self):
         return self.has_emission_curve_cells
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_sed_diffuse_complete(self):
+        return self.correct_dust_sed(self.simulations.observed_diffuse_dust_sed, trim=False)
 
     # -----------------------------------------------------------------
 
@@ -277,6 +289,12 @@ class UnevolvedAbsorption(AbsorptionBase):
     # DIFFUSE
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def best_observed_stellar_sed_diffuse(self):
+        return self.correct_observed_stellar_sed(self.simulations.observed_sed - self.best_dust_sed_diffuse_complete, extrapolate=False)
+
+    # -----------------------------------------------------------------
+
     @property
     def best_absorption_sed_diffuse(self):
         if self.has_absorption_sed_diffuse_cells: return self.absorption_sed_diffuse_cells
@@ -285,12 +303,25 @@ class UnevolvedAbsorption(AbsorptionBase):
     # -----------------------------------------------------------------
 
     @property
-    def best_unevolved_dust_sed_diffuse(self):
+    def best_dust_sed_diffuse_complete(self):
+        if self.has_dust_sed_diffuse_cells: return self.dust_sed_diffuse_cells_complete
+        else: return self.dust_sed_diffuse_complete
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_dust_sed_diffuse(self):
         if self.has_dust_sed_diffuse_cells: return self.dust_sed_diffuse_cells
         else: return self.dust_sed_diffuse  # seds
 
     # -----------------------------------------------------------------
     # ALL
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_observed_stellar_sed_all(self):
+        return self.correct_observed_stellar_sed(self.young.best_observed_stellar_sed + self.sfr.best_observed_stellar_sed_all)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -325,7 +356,7 @@ class UnevolvedAbsorption(AbsorptionBase):
 
     @lazyproperty
     def best_dust_sed_all(self):
-        return self.correct_dust_sed(self.best_unevolved_dust_sed_diffuse + self.sfr.dust_sed_internal)
+        return self.correct_dust_sed(self.best_dust_sed_diffuse + self.sfr.dust_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -357,6 +388,26 @@ class UnevolvedAbsorption(AbsorptionBase):
         seds = OrderedDict()
         seds[seds_name] = self.dust_sed_diffuse
         if self.has_dust_sed_diffuse_cells: seds[cells_name] = self.dust_sed_diffuse_cells
+        return seds
+
+    # -----------------------------------------------------------------
+    # ALL
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absorption_seds_all(self):
+        seds = OrderedDict()
+        seds[seds_name] = self.absorption_sed_all
+        seds[best_name] = self.best_absorption_sed_all
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def emission_seds_all(self):
+        seds = OrderedDict()
+        seds[seds_name] = self.dust_sed_all
+        seds[best_name] = self.best_dust_sed_all
         return seds
 
 # -----------------------------------------------------------------

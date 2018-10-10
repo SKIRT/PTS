@@ -27,6 +27,7 @@ from ....core.filter.broad import BroadBandFilter
 cells_name = "cells"
 seds_name = "seds"
 seds_alt_name = "seds_alt"
+best_name = "best"
 
 # -----------------------------------------------------------------
 
@@ -129,6 +130,7 @@ class AbsorptionBase(object):
         else: sed = sed.copy()
         sed.set_negatives_to_zero()
         sed = sed.extended_to_right(self.maximum_wavelength, logscale=True, points=self.wavelengths)
+        sed.replace_zeros_by_lowest(0.01) # replace by one hundreth of the minimum value (except zero)
         sed.distance = self.distance
         return sed
 

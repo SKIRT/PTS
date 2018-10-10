@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ....core.tools.utils import lazyproperty
-from .simple import AbsorptionBase, seds_name, cells_name, seds_alt_name
+from .simple import AbsorptionBase, seds_name, cells_name, seds_alt_name, best_name
 
 # -----------------------------------------------------------------
 
@@ -376,6 +376,7 @@ class TotalAbsorption(AbsorptionBase):
     def absorption_seds_all(self):
         seds = OrderedDict()
         seds[seds_name] = self.absorption_sed_all
+        seds[best_name] = self.best_absorption_sed_all
         return seds
 
     # -----------------------------------------------------------------
@@ -385,6 +386,7 @@ class TotalAbsorption(AbsorptionBase):
         seds = OrderedDict()
         seds[seds_name] = self.dust_sed_all
         seds[seds_alt_name] = self.dust_sed_all_alt
+        seds[best_name] = self.best_dust_sed_all
         return seds
 
 # -----------------------------------------------------------------

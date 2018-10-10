@@ -430,6 +430,92 @@ class Relation(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_x_value(self, index, unit=None, add_unit=True, conversion_info=None, density=False, brightness=False):
+
+        """
+        This function ...
+        :param index:
+        :param unit:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :return:
+        """
+
+        from ..units.parsing import parse_unit as u
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
+        return self.get_value(self.x_name, index, unit=unit, add_unit=add_unit, conversion_info=conversion_info)
+
+    # -----------------------------------------------------------------
+
+    def get_min_x_value(self, unit=None, add_unit=True, conversion_info=None, density=False, brightness=False,
+                        ignore_zero=False, ignore_negatives=False):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :param ignore_zero:
+        :param ignore_negatives:
+        :return:
+        """
+
+        # Get unit
+        from ..units.parsing import parse_unit as u
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
+
+        # Get values as array
+        values = self.get_x(unit=unit, asarray=True, conversion_info=conversion_info)
+
+        # Mask?
+        if ignore_zero: values = values[values != 0]
+        if ignore_negatives: values = values[values >= 0]
+
+        # Get minimum
+        min_value = np.nanmin(values)
+
+        # Return
+        if add_unit: return min_value * unit
+        else: return min_value
+
+    # -----------------------------------------------------------------
+
+    def get_max_x_value(self, unit=None, add_unit=True, conversion_info=None, density=False, brightness=False, ignore_zero=False):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :param ignore_zero:
+        :return:
+        """
+
+        # Get unit
+        from ..units.parsing import parse_unit as u
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
+
+        # Get values as array
+        values = self.get_x(unit=unit, asarray=True, conversion_info=conversion_info)
+
+        # Mask?
+        if ignore_zero: values = values[values != 0]
+
+        # Get maximum
+        min_value = np.nanmax(values)
+
+        # Return
+        if add_unit: return min_value * unit
+        else: return min_value
+
+    # -----------------------------------------------------------------
+
     def get_y(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False):
 
         """
@@ -449,6 +535,92 @@ class Relation(SmartTable):
         else: return arrays.array_as_list(self[self.y_name], unit=unit, add_unit=add_unit,
                                         array_unit=self.column_unit(self.y_name), conversion_info=conversion_info,
                                         density=density, brightness=brightness)
+
+    # -----------------------------------------------------------------
+
+    def get_y_value(self, index, unit=None, add_unit=True, conversion_info=None, density=False, brightness=False):
+
+        """
+        This function ...
+        :param index:
+        :param unit:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :return:
+        """
+
+        from ..units.parsing import parse_unit as u
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
+        return self.get_value(self.y_name, index, unit=unit, add_unit=add_unit, conversion_info=conversion_info)
+
+    # -----------------------------------------------------------------
+
+    def get_min_y_value(self, unit=None, add_unit=True, conversion_info=None, density=False, brightness=False,
+                        ignore_zero=False, ignore_negatives=False):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :param ignore_zero:
+        :param ignore_negatives:
+        :return:
+        """
+
+        # Get unit
+        from ..units.parsing import parse_unit as u
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
+
+        # Get values as array
+        values = self.get_y(unit=unit, asarray=True, conversion_info=conversion_info)
+
+        # Mask?
+        if ignore_zero: values = values[values!=0]
+        if ignore_negatives: values = values[values>=0]
+
+        # Get minimum
+        min_value = np.nanmin(values)
+
+        # Return
+        if add_unit: return min_value * unit
+        else: return min_value
+
+    # -----------------------------------------------------------------
+
+    def get_max_y_value(self, unit=None, add_unit=True, conversion_info=None, density=False, brightness=False, ignore_zero=False):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :param conversion_info:
+        :param density:
+        :param brightness:
+        :param ignore_zero:
+        :return:
+        """
+
+        # Get unit
+        from ..units.parsing import parse_unit as u
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
+
+        # Get values as array
+        values = self.get_y(unit=unit, asarray=True, conversion_info=conversion_info)
+
+        # Mask?
+        if ignore_zero: values = values[values != 0]
+
+        # Get maximum
+        min_value = np.nanmax(values)
+
+        # Return
+        if add_unit: return min_value * unit
+        else: return min_value
 
     # -----------------------------------------------------------------
 

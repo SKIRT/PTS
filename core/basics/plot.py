@@ -1561,48 +1561,24 @@ class MPLPlot(Plot):
 
     @property
     def axes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._plot.axes
 
     # -----------------------------------------------------------------
 
     @property
     def xaxis(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.axes.get_xaxis()
 
     # -----------------------------------------------------------------
 
     @property
     def yaxis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.axes.get_yaxis()
 
     # -----------------------------------------------------------------
 
     @property
     def xticklabels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._plot.get_xticklabels()
 
     # -----------------------------------------------------------------
@@ -2228,6 +2204,123 @@ class MPLFigure(Figure):
 
         # Return the plots
         return plots
+
+    # -----------------------------------------------------------------
+
+    def create_sed_plots(self, nresiduals=1):
+
+        """
+        This function ...
+        :param nresiduals:
+        :return:
+        """
+
+        # No residual panel?
+        if nresiduals == 0: return self.create_one_plot(), []
+
+        # Set subplot height ratios
+        nplots = nresiduals + 1
+        height_ratios = [4] + [1] * nresiduals
+
+        # Create plots
+        plots = self.create_column(nplots, share_axis=True, height_ratios=height_ratios)
+
+        # Split
+        main_plot = plots[0]
+        residual_plots = plots[1:]
+
+        # Return
+        return main_plot, residual_plots
+
+    # -----------------------------------------------------------------
+
+    def create_row_of_sed_plots(self, npanels, nresiduals=1):
+
+        """
+        This function ...
+        :param npanels:
+        :param nresiduals:
+        :return:
+        """
+
+        # Main plots
+        main_plots = []
+        residual_plots = []
+
+        # The number of residual panels is the same for each SED panel
+        if isinstance(nresiduals, int):
+
+            # Set subplot height ratios
+            nplots = nresiduals + 1 # nplots per column (nrows)
+            height_ratios = [4] + [1] * nresiduals
+
+            # Create plots
+            plots = self.create_grid(nplots, npanels, height_ratios=height_ratios, sharex=True, sharey=True)
+
+            for index in range(npanels):
+                main_plots.append(plots[0][index])
+                residual_plots_panel = [row[index] for row in plots[1:]]
+                residual_plots.append(residual_plots_panel)
+
+        # Different number of residual panels for each SED panel? -> nresiduals is a list of integers
+        else:
+
+            max_nresiduals = max(nresiduals)
+            nrows = max_nresiduals + 1
+            height_ratios = [4] + [1] * max_nresiduals
+
+            # Define space
+            wspace = 0.0
+            hspace = 0.0
+
+            # Create grid spec
+            grid = self.create_gridspec(nrows, npanels, wspace=wspace, hspace=hspace, height_ratios=height_ratios)
+
+            # Create plots
+            #plots = self._create_grid_shared(grid, nrows, ncols, projections=projections,
+            #                                 rows_shared_x=rows_shared_x, rows_shared_y=rows_shared_y,
+            #                                 columns_shared_x=columns_shared_x, columns_shared_y=columns_shared_y,
+            #                                 share_per_row=share_per_row, share_per_column=share_per_column)
+
+            # TODO: SET AXIS SHARING
+
+            # Main plots
+            main_plots = []
+            residual_plots = []
+
+            # Loop over the SED panels
+            for index in range(npanels):
+
+                # Get the number of residual panels for this SED panel
+                nres = nresiduals[index]
+                nrows_for_main = nrows - nres
+
+                # Create the main plot
+                rect = grid[:-nres, index]
+
+                #plot = self._create_plot_not_shared(rect)
+                #plot = self._create_plot_shared(rect, , reference_main_plot.axes)
+                if index == 0: main_plot = self._create_plot_not_shared(rect)
+                else: main_plot = self._create_plot_shared_y(rect, main_plots[0].axes)
+                main_plots.append(main_plot)
+
+                # Create the residual plots
+                res_plots = []
+                for j in range(nres):
+                    resrect = grid[nrows_for_main+j, index]
+                    #resplot = self._create_plot_not_shared(resrect)
+                    resplot = self._create_plot_shared_x(resrect, main_plot.axes)
+                    res_plots.append(resplot)
+                residual_plots.append(res_plots)
+
+        # Return
+        return main_plots, residual_plots
+
+    # -----------------------------------------------------------------
+
+    def create_column_of_sed_plots(self):
+        # not implemented yet
+        pass
 
     # -----------------------------------------------------------------
 

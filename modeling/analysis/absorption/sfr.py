@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ....core.tools.utils import lazyproperty
-from .simple import AbsorptionBase, cells_name, seds_name, seds_alt_name
+from .simple import AbsorptionBase, cells_name, seds_name, seds_alt_name, best_name
 
 # -----------------------------------------------------------------
 
@@ -174,9 +174,9 @@ class SFRAbsorption(AbsorptionBase):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_sed_diffuse_cells_complete(self):
-        return self.emission_curve_cells
+        return self.correct_dust_sed(self.emission_curve_cells, trim=False, make_full=True)
 
     # -----------------------------------------------------------------
 
@@ -194,7 +194,7 @@ class SFRAbsorption(AbsorptionBase):
 
     @lazyproperty
     def dust_sed_diffuse_complete(self):
-        return self.simulations.observed_diffuse_dust_sed
+        return self.correct_dust_sed(self.simulations.observed_diffuse_dust_sed, trim=False)
 
     # -----------------------------------------------------------------
 
@@ -348,7 +348,7 @@ class SFRAbsorption(AbsorptionBase):
 
     @lazyproperty
     def best_observed_stellar_sed_diffuse(self):
-        return self.correct_observed_stellar_sed(self.simulations.observed_sed - self.best_dust_sed_diffuse, extrapolate=False)
+        return self.correct_observed_stellar_sed(self.simulations.observed_sed - self.best_dust_sed_diffuse_complete, extrapolate=False)
 
     # -----------------------------------------------------------------
 
@@ -370,6 +370,26 @@ class SFRAbsorption(AbsorptionBase):
     def best_dust_sed_diffuse(self):
         if self.has_dust_sed_diffuse_cells: return self.dust_sed_diffuse_cells
         else: return self.dust_sed_diffuse
+
+    # -----------------------------------------------------------------
+    # INTERNAL
+    # -----------------------------------------------------------------
+
+    @property
+    def best_observed_stellar_sed_internal(self):
+        return self.observed_stellar_sed_internal
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_absorption_sed_internal(self):
+        return self.absorption_sed_internal
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_dust_sed_internal(self):
+        return self.dust_sed_internal
 
     # -----------------------------------------------------------------
     # ALL
@@ -476,6 +496,7 @@ class SFRAbsorption(AbsorptionBase):
     def absorption_seds_all(self):
         seds = OrderedDict()
         seds[seds_name] = self.absorption_sed_all
+        seds[best_name] = self.best_absorption_sed_all
         return seds
 
     # -----------------------------------------------------------------
@@ -484,6 +505,7 @@ class SFRAbsorption(AbsorptionBase):
     def emission_seds_all(self):
         seds = OrderedDict()
         seds[seds_name] = self.dust_sed_all
+        seds[best_name] = self.best_dust_sed_all
         return seds
 
 # -----------------------------------------------------------------

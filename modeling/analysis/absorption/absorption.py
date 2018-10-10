@@ -1676,6 +1676,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_observed_stellar_luminosity_diffuse(self):
+        return self.total_observed_stellar_sed_diffuse.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def total_absorption_sed_diffuse_path(self):
         return fs.join(self.total_path, absorption_diffuse_filename)
@@ -1722,6 +1728,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyfileproperty(SED, "total_observed_stellar_sed_all_path", True)
     def total_observed_stellar_sed_all(self):
         return self.total_absorption.best_observed_stellar_sed_all
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_observed_stellar_luminosity_all(self):
+        return self.total_observed_stellar_sed_all.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1788,6 +1800,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def bulge_observed_stellar_luminosity(self):
+        return self.bulge_observed_stellar_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def bulge_absorption_sed_path(self):
         return fs.join(self.bulge_path, absorption_filename)
@@ -1848,6 +1866,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyfileproperty(SED, "disk_observed_stellar_sed_path", True)
     def disk_observed_stellar_sed(self):
         return self.disk_absorption.best_observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_observed_stellar_luminosity(self):
+        return self.disk_observed_stellar_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1914,6 +1938,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_observed_stellar_luminosity(self):
+        return self.old_observed_stellar_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def old_absorption_sed_path(self):
         return fs.join(self.old_path, absorption_filename)
@@ -1974,6 +2004,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyfileproperty(SED, "young_observed_stellar_sed_path", True)
     def young_observed_stellar_sed(self):
         return self.young_absorption.best_observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_observed_stellar_luminosity(self):
+        return self.young_observed_stellar_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -2042,6 +2078,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sfr_observed_stellar_luminosity_diffuse(self):
+        return self.sfr_observed_stellar_sed_diffuse.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def sfr_absorption_sed_diffuse_path(self):
         return fs.join(self.sfr_path, absorption_diffuse_filename)
@@ -2091,6 +2133,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sfr_observed_stellar_luminosity_internal(self):
+        return self.sfr_observed_stellar_sed_internal.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def sfr_absorption_sed_internal_path(self):
         return fs.join(self.sfr_path, absorption_internal_filename)
@@ -2137,6 +2185,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyfileproperty(SED, "sfr_observed_stellar_sed_all_path", True)
     def sfr_observed_stellar_sed_all(self):
         return self.sfr_absorption.best_observed_stellar_sed_all
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_observed_stellar_luminosity_all(self):
+        return self.sfr_observed_stellar_sed_all.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -2205,6 +2259,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unevolved_observed_stellar_luminosity_diffuse(self):
+        return self.unevolved_observed_stellar_sed_diffuse.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def unevolved_absorption_sed_diffuse_path(self):
         return fs.join(self.unevolved_path, absorption_diffuse_filename)
@@ -2251,6 +2311,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyfileproperty(SED, "unevolved_observed_stellar_sed_all_path", True)
     def unevolved_observed_stellar_sed_all(self):
         return self.unevolved_absorption.best_observed_stellar_sed_all
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_observed_stellar_luminosity_all(self):
+        return self.unevolved_observed_stellar_sed_all.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -2303,7 +2369,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "total_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "total_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def total_properties(self):
 
@@ -2316,35 +2381,28 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.total_observed_luminosity
-        props.stellar_bol = self.total_stellar_luminosity
+        props.observed_bol = self.total_absorption.observed_luminosity
+        props.stellar_bol = self.total_absorption.stellar_luminosity
         props.observed_stellar_bol_diffuse = self.total_observed_stellar_luminosity_diffuse
         props.observed_stellar_bol_all = self.total_observed_stellar_luminosity_all
 
         # Diffuse
         diffuse = Box(ordered_box=True)
-        if self.has_total_absorption_luminosity_diffuse: diffuse.absorbed = self.total_absorption_luminosity_diffuse
-        diffuse.absorbed_cells = self.total_absorption_luminosity_diffuse_cells # CELLS
-        diffuse.dust = self.total_dust_luminosity_diffuse
-        if self.has_total_absorption_fraction_diffuse: diffuse.rel_absorbed = self.total_absorption_fraction_diffuse
-        diffuse.rel_absorbed_cells = self.total_absorption_fraction_diffuse_cells # CELLS
-        diffuse.rel_dust = self.total_dust_fraction_diffuse
+        #if self.has_total_absorption_luminosity_diffuse: diffuse.absorbed = self.total_absorption_luminosity_diffuse
+        #diffuse.absorbed_cells = self.total_absorption_luminosity_diffuse_cells # CELLS
+        #diffuse.dust = self.total_dust_luminosity_diffuse
+        #if self.has_total_absorption_fraction_diffuse: diffuse.rel_absorbed = self.total_absorption_fraction_diffuse
+        #diffuse.rel_absorbed_cells = self.total_absorption_fraction_diffuse_cells # CELLS
+        #diffuse.rel_dust = self.total_dust_fraction_diffuse
 
         # All
         all = Box(ordered_box=True)
-        #all.absorbed = self.total_absorption_luminosity_all
-        #all.dust = self.total_dust_luminosity_all
-        #all.dust_alt = self.total_dust_luminosity_all_alt
-        #all.rel_absorbed = self.total_absorption_fraction_all
-        #all.rel_dust = self.total_dust_fraction_all
-        #all.rel_dust_alt = self.total_dust_fraction_all_alt
-
-        all.absorbed = self.best_total_absorption_luminosity_all
-        all.dust = self.best_total_dust_luminosity_all
-        all.rel_absorbed = self.best_total_absorption_fraction_all
-        all.rel_dust = self.best_total_dust_fraction_all
-        all.absorbed_fuv = self.best_total_fuv_absorption_luminosity_all
-        all.rel_absorbed_fuv = self.best_total_fuv_absorption_fraction_all
+        all.absorbed = self.total_absorption.best_absorption_luminosity_all
+        all.dust = self.total_absorption.best_dust_luminosity_all
+        all.rel_absorbed = self.total_absorption.best_absorption_fraction_all
+        all.rel_dust = self.total_absorption.best_dust_fraction_all
+        all.absorbed_fuv = self.total_absorption.best_fuv_absorption_luminosity_all
+        all.rel_absorbed_fuv = self.total_absorption.best_fuv_absorption_fraction_all
 
         # Return
         props.diffuse = diffuse
@@ -2365,7 +2423,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "bulge_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "bulge_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def bulge_properties(self):
 
@@ -2378,17 +2435,17 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.bulge_observed_luminosity
-        props.stellar_bol = self.bulge_stellar_luminosity
+        props.observed_bol = self.bulge_absorption.observed_luminosity
+        props.stellar_bol = self.bulge_absorption.stellar_luminosity
         props.observed_stellar_bol = self.bulge_observed_stellar_luminosity
 
         # Absorption
-        if self.has_bulge_absorption_luminosity: props.absorbed = self.bulge_absorption_luminosity
-        props.absorbed_cells = self.bulge_absorption_luminosity_cells
-        props.dust = self.bulge_dust_luminosity
-        if self.has_bulge_absorption_fraction: props.rel_absorbed = self.bulge_absorption_fraction
-        props.rel_absorbed_cells = self.bulge_absorption_fraction_cells
-        props.rel_dust = self.bulge_dust_fraction
+        #if self.has_bulge_absorption_luminosity: props.absorbed = self.bulge_absorption_luminosity
+        #props.absorbed_cells = self.bulge_absorption_luminosity_cells
+        #props.dust = self.bulge_dust_luminosity
+        #if self.has_bulge_absorption_fraction: props.rel_absorbed = self.bulge_absorption_fraction
+        #props.rel_absorbed_cells = self.bulge_absorption_fraction_cells
+        #props.rel_dust = self.bulge_dust_fraction
 
         # Return
         return props
@@ -2407,7 +2464,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "disk_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "disk_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def disk_properties(self):
 
@@ -2420,8 +2476,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.disk_observed_luminosity
-        props.stellar_bol = self.disk_stellar_luminosity
+        props.observed_bol = self.disk_absorption.observed_luminosity
+        props.stellar_bol = self.disk_absorption.stellar_luminosity
         props.observed_stellar_bol = self.disk_observed_stellar_luminosity
 
         # Absorption
@@ -2449,7 +2505,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     #-----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "old_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "old_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def old_properties(self):
 
@@ -2462,17 +2517,17 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.old_observed_luminosity
-        props.stellar_bol = self.old_stellar_luminosity
+        props.observed_bol = self.old_absorption.observed_luminosity
+        props.stellar_bol = self.old_absorption.stellar_luminosity
         props.observed_stellar_bol = self.old_observed_stellar_luminosity
 
         # Absorption
-        if self.has_old_absorption_luminosity: props.absorbed = self.old_absorption_luminosity
-        props.absorbed_cells = self.old_absorption_luminosity_cells
-        props.dust = self.old_dust_luminosity
-        if self.has_old_absorption_fraction: props.rel_absorbed = self.old_absorption_fraction
-        props.rel_absorbed_cells = self.old_absorption_fraction_cells
-        props.rel_dust = self.old_dust_fraction
+        #if self.has_old_absorption_luminosity: props.absorbed = self.old_absorption_luminosity
+        #props.absorbed_cells = self.old_absorption_luminosity_cells
+        #props.dust = self.old_dust_luminosity
+        #if self.has_old_absorption_fraction: props.rel_absorbed = self.old_absorption_fraction
+        #props.rel_absorbed_cells = self.old_absorption_fraction_cells
+        #props.rel_dust = self.old_dust_fraction
 
         # Return
         return props
@@ -2491,7 +2546,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "young_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "young_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def young_properties(self):
 
@@ -2504,8 +2558,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.young_observed_luminosity
-        props.stellar_bol = self.young_stellar_luminosity
+        props.observed_bol = self.young_absorption.observed_luminosity
+        props.stellar_bol = self.young_absorption.stellar_luminosity
         props.observed_stellar_bol = self.young_observed_stellar_luminosity
 
         # Absorption
@@ -2536,7 +2590,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "sfr_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "sfr_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def sfr_properties(self):
 
@@ -2549,42 +2602,38 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.sfr_observed_luminosity
-        props.stellar_bol = self.sfr_stellar_luminosity
+        props.observed_bol = self.sfr_absorption.observed_luminosity
+        props.stellar_bol = self.sfr_absorption.stellar_luminosity
         props.observed_stellar_bol_diffuse = self.sfr_observed_stellar_luminosity_diffuse
         props.observed_stellar_bol_internal = self.sfr_observed_stellar_luminosity_internal
         props.observed_stellar_bol_all = self.sfr_observed_stellar_luminosity_all
 
         # Diffuse
         diffuse = Box(ordered_box=True)
-        if self.has_sfr_absorption_luminosity_diffuse: diffuse.absorbed = self.sfr_absorption_luminosity_diffuse
-        diffuse.absorbed_cells = self.sfr_absorption_luminosity_diffuse_cells
-        diffuse.dust = self.sfr_dust_luminosity_diffuse
-        if self.has_sfr_absorption_fraction_diffuse: diffuse.rel_absorbed = self.sfr_absorption_fraction_diffuse
-        diffuse.rel_absorbed_cells = self.sfr_absorption_fraction_diffuse_cells
-        diffuse.rel_dust = self.sfr_dust_fraction_diffuse
+        #if self.has_sfr_absorption_luminosity_diffuse: diffuse.absorbed = self.sfr_absorption_luminosity_diffuse
+        #diffuse.absorbed_cells = self.sfr_absorption_luminosity_diffuse_cells
+        #diffuse.dust = self.sfr_dust_luminosity_diffuse
+        #if self.has_sfr_absorption_fraction_diffuse: diffuse.rel_absorbed = self.sfr_absorption_fraction_diffuse
+        #diffuse.rel_absorbed_cells = self.sfr_absorption_fraction_diffuse_cells
+        #diffuse.rel_dust = self.sfr_dust_fraction_diffuse
 
         # Internal
-        internal = Box(ordered_box=True)
-        internal.absorbed = self.sfr_absorption_luminosity_internal
-        internal.dust = self.sfr_dust_luminosity_internal
-        internal.dust_alt = self.sfr_dust_luminosity_internal_alt
-        internal.rel_absorbed = self.sfr_absorption_fraction_internal
-        internal.rel_dust = self.sfr_dust_fraction_internal
-        internal.rel_dust_alt = self.sfr_dust_fraction_internal_alt
+        #internal = Box(ordered_box=True)
+        #internal.absorbed = self.sfr_absorption_luminosity_internal
+        #internal.dust = self.sfr_dust_luminosity_internal
+        #internal.dust_alt = self.sfr_dust_luminosity_internal_alt
+        #internal.rel_absorbed = self.sfr_absorption_fraction_internal
+        #internal.rel_dust = self.sfr_dust_fraction_internal
+        #internal.rel_dust_alt = self.sfr_dust_fraction_internal_alt
 
         # All
-        all = Box(ordered_box=True)
-        #all.absorbed = self.sfr_absorption_luminosity_all
-        #all.dust = self.sfr_dust_luminosity_all
-        #all.rel_absorbed = self.sfr_absorption_fraction_all
-        #all.rel_dust = self.sfr_dust_fraction_all
-        all.absorbed = self.best_sfr_absorption_luminosity_all
-        all.dust = self.best_sfr_dust_luminosity_all
-        all.rel_absorbed = self.best_sfr_absorption_fraction_all
-        all.rel_dust = self.best_sfr_dust_fraction_all
-        all.absorbed_fuv = self.best_sfr_fuv_absorption_luminosity_all
-        all.rel_absorbed_fuv = self.best_sfr_fuv_absorption_fraction_all
+        #all = Box(ordered_box=True)
+        #all.absorbed = self.best_sfr_absorption_luminosity_all
+        #all.dust = self.best_sfr_dust_luminosity_all
+        #all.rel_absorbed = self.best_sfr_absorption_fraction_all
+        #all.rel_dust = self.best_sfr_dust_fraction_all
+        #all.absorbed_fuv = self.best_sfr_fuv_absorption_luminosity_all
+        #all.rel_absorbed_fuv = self.best_sfr_fuv_absorption_fraction_all
 
         # Return
         props.diffuse = diffuse
@@ -2606,7 +2655,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyfileproperty(Map, "unevolved_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
     @lazyfileproperty(Box, "unevolved_properties_path", True, write=True, fsave=save_box, fload=open_box)
     def unevolved_properties(self):
 
@@ -2619,32 +2667,28 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props = Box(ordered_box=True)
 
         # Stellar
-        props.observed_bol = self.unevolved_observed_luminosity
-        props.stellar_bol = self.unevolved_stellar_luminosity
+        props.observed_bol = self.unevolved_absorption.observed_luminosity
+        props.stellar_bol = self.unevolved_absorption.stellar_luminosity
         props.observed_stellar_bol_diffuse = self.unevolved_observed_stellar_luminosity_diffuse
         props.observed_stellar_bol_all = self.unevolved_observed_stellar_luminosity_all
 
         # Diffuse
         diffuse = Box(ordered_box=True)
-        if self.has_unevolved_absorption_luminosity_diffuse: diffuse.absorbed = self.unevolved_absorption_luminosity_diffuse
-        diffuse.absorbed_cells = self.unevolved_absorption_luminosity_diffuse_cells
-        diffuse.dust = self.unevolved_dust_luminosity_diffuse
-        if self.has_unevolved_absorption_fraction_diffuse: diffuse.rel_absorbed = self.unevolved_absorption_fraction_diffuse
-        diffuse.rel_absorbed_cells = self.unevolved_absorption_fraction_diffuse_cells
-        diffuse.rel_dust = self.unevolved_dust_fraction_diffuse
+        #if self.has_unevolved_absorption_luminosity_diffuse: diffuse.absorbed = self.unevolved_absorption_luminosity_diffuse
+        #diffuse.absorbed_cells = self.unevolved_absorption_luminosity_diffuse_cells
+        #diffuse.dust = self.unevolved_dust_luminosity_diffuse
+        #if self.has_unevolved_absorption_fraction_diffuse: diffuse.rel_absorbed = self.unevolved_absorption_fraction_diffuse
+        #diffuse.rel_absorbed_cells = self.unevolved_absorption_fraction_diffuse_cells
+        #diffuse.rel_dust = self.unevolved_dust_fraction_diffuse
 
         # All
         all = Box(ordered_box=True)
-        #all.absorbed = self.unevolved_absorption_luminosity_all
-        #all.dust = self.unevolved_dust_luminosity_all
-        #all.rel_absorbed = self.unevolved_absorption_fraction_all
-        #all.rel_dust = self.unevolved_dust_fraction_all
-        all.absorbed = self.best_unevolved_absorption_luminosity_all
-        all.dust = self.best_unevolved_dust_luminosity_all
-        all.rel_absorbed = self.best_unevolved_absorption_fraction_all
-        all.rel_dust = self.best_unevolved_dust_fraction_all
-        all.absorbed_fuv = self.best_unevolved_fuv_absorption_luminosity_all
-        all.rel_absorbed_fuv = self.best_unevolved_fuv_absorption_fraction_all
+        #all.absorbed = self.best_unevolved_absorption_luminosity_all
+        #all.dust = self.best_unevolved_dust_luminosity_all
+        #all.rel_absorbed = self.best_unevolved_absorption_fraction_all
+        #all.rel_dust = self.best_unevolved_dust_fraction_all
+        #all.absorbed_fuv = self.best_unevolved_fuv_absorption_luminosity_all
+        #all.rel_absorbed_fuv = self.best_unevolved_fuv_absorption_fraction_all
 
         # Return
         props.diffuse = diffuse

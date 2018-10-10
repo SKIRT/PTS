@@ -145,8 +145,20 @@ def plot_seds(seds, **kwargs):
     distance = kwargs.pop("distance", None)
     options = kwargs.pop("options", {})
 
+    # Figure and plots
+    figure = kwargs.pop("figure", None)
+    main_plot = kwargs.pop("main_plot", None)
+    residual_plot = kwargs.pop("residual_plot", None)
+    residual_plots = kwargs.pop("residual_plots", None)
+
+    # Show the figure after plotting
+    show = kwargs.pop("show", None)
+
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
+
+    # Set show flag (None means automatically determined)
+    plotter.config.show = show
 
     # Get the units
     if wavelength_unit is None:
@@ -176,7 +188,7 @@ def plot_seds(seds, **kwargs):
     plotter.config.max_flux = kwargs.pop("max_flux", None)
 
     # Run the plotter
-    plotter.run(title=title, output=path)
+    plotter.run(title=title, output=path, figure=figure, main_plot=main_plot, residual_plot=residual_plot, residual_plots=residual_plots)
 
     # Show file
     if show_file: fs.open_file(path)
@@ -258,6 +270,50 @@ class SEDPlotter(Configurable):
         # The main plot and the residual plots
         self.main_plot = None
         self.residual_plots = []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_plots(self):
+        return self.has_main_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_main_plot(self):
+        return self.main_plot is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nresidual_plots(self):
+        return len(self.residual_plots)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_residual_plots(self):
+        return self.nresidual_plots > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_residual_plot(self):
+        return self.nresidual_plots == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_plot(self):
+        if not self.has_single_residual_plot: raise RuntimeError("This setup does not have one residual plot pane or plots not yet created")
+        return self.residual_plots[0]
+
+    # -----------------------------------------------------------------
+
+    @residual_plot.setter
+    def residual_plot(self, plot):
+        if self.has_residual_plots: raise ValueError("Cannot set residual plot when residual plots are already created")
+        self.residual_plots[0] = plot
 
     # -----------------------------------------------------------------
 
@@ -434,6 +490,12 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_create_plots(self):
+        return not self.has_plots
+
+    # -----------------------------------------------------------------
+
     def _run(self, **kwargs):
 
         """
@@ -442,10 +504,13 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        # Make the plot
+        # Create the plots if necessary
+        if self.do_create_plots: self.create_plots()
+
+        # Plot the SEDs
         self.plot()
 
-        # Set matplotlib defaults
+        # Reset matplotlib defaults
         self.set_defaults()
 
     # -----------------------------------------------------------------
@@ -515,10 +580,17 @@ class SEDPlotter(Configurable):
         # Add SED templates
         if self.config.add_templates: self.create_templates()
 
-        # Create the plot
-        if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
-        elif self.config.library == bokeh: self.figure = BokehFigure()
-        else: raise ValueError("Invalid libary: " + self.config.library)
+        # Create the figure
+        if kwargs.get("figure", None) is not None: self.figure = kwargs.pop("figure")
+        else:
+            if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
+            elif self.config.library == bokeh: self.figure = BokehFigure()
+            else: raise ValueError("Invalid libary: " + self.config.library)
+
+        # Plots are passed
+        if kwargs.get("main_plot", None) is not None: self.main_plot = kwargs.pop("main_plot")
+        if kwargs.get("residual_plot", None) is not None: self.residual_plot = kwargs.pop("residual_plot")
+        elif kwargs.get("residual_plots", None) is not None: self.residual_plots = kwargs.pop("residual_plots")
 
         # Set the 'show' flag
         if self.config.show is None:
@@ -746,32 +818,54 @@ class SEDPlotter(Configurable):
     # -----------------------------------------------------------------
 
     def clear(self):
+        raise NotImplementedError("Clearing the SED plotter is no longer supported. Create a new instance for new plots.")
+
+    # -----------------------------------------------------------------
+
+    def create_plots(self):
 
         """
         This function ...
         :return:
         """
 
-        raise NotImplementedError("Clearing the SED plotter is no longer supported. Create a new instance for new plots.")
+        # No models, just observed SEDs
+        if self.no_models:
 
-        # Inform the user
-        #log.info("Clearing the SED plotter ...")
+            # Only one observation: just create a main plot
+            if self.one_observation: nrespanels = 0
 
-        # Set default values for all attributes
-        #self.models = OrderedDict()
-        #self.observations = OrderedDict()
-        #self.model_options = defaultdict(Map)
-        #self.observation_options = defaultdict(Map)
-        #self._min_wavelength = None
-        #self._max_wavelength = None
-        #self._min_flux = None
-        #self._max_flux = None
-        #self.min_wavelength = None
-        #self.max_wavelength = None
-        #self.min_flux = None
-        #self.max_flux = None
-        #self.main_plot = None
-        #self.residual_plots = []
+            # Multiple observations
+            else: nrespanels = 1
+
+        # With models
+        else:
+
+            # Only models
+            if self.no_observations:
+
+                # Create
+                if self.config.models_residuals and self.nmodels_for_residuals > 1: nrespanels = 1
+                else: nrespanels = 0
+
+            # One observation
+            elif self.one_observation:
+
+                # Determine number of residual panels
+                if self.config.residual_reference == observations_reference: nrespanels = 1
+                elif self.config.residual_reference == models_reference: nrespanels = self.nmodels_for_residuals
+                else: raise ValueError("Invalid residual reference '" + self.config.residual_reference + "'")
+
+            # Multiple observations
+            else:
+
+                # Determine number of plot rows
+                if self.config.residual_reference == observations_reference: nrespanels = self.nobservations
+                elif self.config.residual_reference == models_reference: nrespanels = self.nmodels_for_residuals
+                else: raise ValueError("Invalid residual reference")
+
+        # Create
+        self.main_plot, self.residual_plots = self.figure.create_sed_plots(nresiduals=nrespanels)
 
     # -----------------------------------------------------------------
 
@@ -817,9 +911,6 @@ class SEDPlotter(Configurable):
 
         # Debugging
         log.debug("Plotting one observed SED ...")
-
-        # Setup the figure
-        self.main_plot = self.figure.create_one_plot()
 
         # Determine color map class
         colormap = plt.get_cmap("rainbow")
@@ -927,15 +1018,6 @@ class SEDPlotter(Configurable):
 
         # Debugging
         log.debug("Plotting multiple observed SEDs ...")
-
-        nplots = 2
-        height_ratios = [4, 1]
-
-        # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
-        plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
-        self.main_plot = plots[0]
-        residual_plot = plots[1]
-        self.residual_plots.append(residual_plot)
 
         # Make iterable from distinct colors
         different_colors = iter(dark_pretty_colors)
@@ -1063,7 +1145,7 @@ class SEDPlotter(Configurable):
 
                     #yerr, lolims, uplims = process_errorbar(error)
                     yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
-                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
+                    self.residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
             # The next observation is not the first anymore
             first = False
@@ -1114,29 +1196,6 @@ class SEDPlotter(Configurable):
 
         # Debugging
         log.debug("Plotting only model SEDs ...")
-
-        for_residuals = []
-        for model_label in self.models:
-            #sed, plot_residuals, ghost = self.models[model_label]
-            sed = self.models[model_label]
-            plot_residuals = self.model_options[model_label].residuals
-            ghost = self.model_options[model_label].ghost
-            if plot_residuals: for_residuals.append(model_label)
-
-        # Create the main plot
-        if self.config.models_residuals and len(for_residuals) > 1:
-
-            height_ratios = [4,1]
-            # CREATE MAIN PLOT AND RESIDUAL PLOT
-            plots = self.figure.create_column(2, share_axis=True, height_ratios=height_ratios)
-
-            self.main_plot = plots[0]
-            self.residual_plots = plots[1:]
-            residual_plot = self.residual_plots[0]
-
-        else:
-            self.main_plot = self.figure.create_one_plot()
-            residual_plot = None
 
         # Keep
         counter = 0
@@ -1240,13 +1299,13 @@ class SEDPlotter(Configurable):
             if above is not None: self.main_plot.axes.fill_between(wavelengths, np.log10(above_fluxes), np.log10(fluxes), facecolor=model_colors[model_label], alpha=0.5, label=model_label.replace("_", "\_"))
 
         # Plot residual axis
-        if residual_plot is not None:
+        if self.has_residual_plots:
 
             # Pair of models
-            if len(for_residuals) == 2:
+            if self.nmodels_for_residuals == 2:
 
-                label_a = for_residuals[0]
-                label_b = for_residuals[1]
+                label_a = self.model_labels_for_residuals[0]
+                label_b = self.model_labels_for_residuals[1]
                 sed_a = self.models[label_a]
                 sed_b = self.models[label_b]
 
@@ -1282,24 +1341,24 @@ class SEDPlotter(Configurable):
                 residuals_b = - 0.5 * residuals
 
                 # Plot both
-                residual_plot.plot(wavelengths_a, residuals_a, linestyle=model_styles[label_a], color=model_colors[label_a], label=label_a)
-                residual_plot.plot(wavelengths_a, residuals_b, linestyle=model_styles[label_b], color=model_colors[label_b], label=label_b)
+                self.residual_plot.plot(wavelengths_a, residuals_a, linestyle=model_styles[label_a], color=model_colors[label_a], label=label_a)
+                self.residual_plot.plot(wavelengths_a, residuals_b, linestyle=model_styles[label_b], color=model_colors[label_b], label=label_b)
 
             # More models
-            elif len(for_residuals) > 2:
+            elif self.nmodels_for_residuals > 2:
 
                 # Get reference
-                reference_model_label = for_residuals[0]
+                reference_model_label = self.model_labels_for_residuals[0]
                 reference_model_sed = self.models[reference_model_label]
                 reference_wavelengths = reference_model_sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 reference_fluxes = reference_model_sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
 
                 # Plot reference
                 residuals = [0.0] * len(reference_wavelengths)
-                residual_plot.plot(reference_wavelengths, residuals, linestyle=model_styles[reference_model_label], color=model_colors[reference_model_label], label=reference_model_label)
+                self.residual_plot.plot(reference_wavelengths, residuals, linestyle=model_styles[reference_model_label], color=model_colors[reference_model_label], label=reference_model_label)
 
                 # Loop over the models to be plotted
-                for model_label in for_residuals:
+                for model_label in self.model_labels_for_residuals:
                     if model_label == reference_model_label: continue
 
                     # Get color and style
@@ -1323,7 +1382,7 @@ class SEDPlotter(Configurable):
                     residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
                     # Plot
-                    residual_plot.plot(wavelengths_residuals, residuals, linestyle=linestyle, color=linecolor, label=model_label.replace("_", "\_"))
+                    self.residual_plot.plot(wavelengths_residuals, residuals, linestyle=linestyle, color=linecolor, label=model_label.replace("_", "\_"))
 
         # Finish the plot
         self.finish_plot()
@@ -1331,26 +1390,26 @@ class SEDPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def model_labels_for_residuals(self):
+        return [model_label for model_label in self.models if self.model_options[model_label].residuals]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nmodels_for_residuals(self):
-        count = 0
-        # Loop over the models
-        for model_label in self.models:
-            #sed, plot_residuals, ghost = self.models[model_label]
-            plot_residuals = self.model_options[model_label].residuals
-            if plot_residuals: count += 1
-        return count
+        return len(self.model_labels_for_residuals)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_labels_not_ghost(self):
+        return [model_label for model_label in self.models if not self.model_options[model_label].ghost]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nmodels_not_ghost(self):
-        count = 0
-        # Loop over the models
-        for model_label in self.models:
-            #sed, plot_residuals, ghost = self.models[model_label]
-            ghost = self.model_options[model_label].ghost
-            if not ghost: count += 1
-        return count
+        return len(self.model_labels_not_ghost)
 
     # -----------------------------------------------------------------
 
@@ -1372,19 +1431,6 @@ class SEDPlotter(Configurable):
 
         # Debugging
         log.debug("Plotting one observed SED with model SEDs ...")
-
-        # Setup the figure
-        if self.config.residual_reference == observations_reference: nplots = 2
-        elif self.config.residual_reference == models_reference: nplots = 1 + self.nmodels_for_residuals
-        else: raise ValueError("")
-
-        # Set subplot height ratios
-        height_ratios = [4] + [1] * (nplots-1)
-
-        # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
-        plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
-        self.main_plot = plots[0]
-        self.residual_plots = plots[1:]
 
         # Get the first (only) observation
         observation = self.observations[self.observations.keys()[0]]
@@ -1541,7 +1587,7 @@ class SEDPlotter(Configurable):
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                 residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
-                residual_plot.plot(wavelengths_residuals, residuals, linestyle="-", color="lightgrey")
+                self.residual_plot.plot(wavelengths_residuals, residuals, linestyle="-", color="lightgrey")
 
             elif self.config.residual_reference == "observations":
 
@@ -1557,7 +1603,7 @@ class SEDPlotter(Configurable):
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                 residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
-                residual_plot.plot(wavelengths_residuals, residuals, linestyle=line_styles_models[counter], color=line_colors_models[counter], label='model')
+                self.residual_plot.plot(wavelengths_residuals, residuals, linestyle=line_styles_models[counter], color=line_colors_models[counter], label='model')
 
                 counter += 1
 
@@ -1716,20 +1762,6 @@ class SEDPlotter(Configurable):
 
         # Debuggging
         log.debug("Plotting multiple observed SEDs with models ...")
-
-        # Determine number of plot rows
-        if self.config.residual_reference == observations_reference: nplots = 1 + self.nobservations
-        elif self.config.residual_reference == models_reference: nplots = 1 + self.nmodels_for_residuals
-        else: raise ValueError("Invalid residual reference")
-
-        # Set subplot height ratios
-        height_ratios = [4] + [1] * (nplots - 1)
-
-        # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
-        plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
-        self.main_plot = plots[0]
-        self.residual_plots = plots[1:]
-        #print(self.residual_plots)
 
         # Make iterable from distinct colors
         different_colors = iter(dark_pretty_colors)

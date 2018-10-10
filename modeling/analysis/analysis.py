@@ -3092,7 +3092,28 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         figure = MPLFigure()
 
         # Create 2 plots
-        plots = figure.create_row(2, share_axis=True)
+        main_plots, residual_plots = figure.create_row_of_sed_plots(2, nresiduals=[1,0])
+
+        # Plot first panel
+        seds1 = OrderedDict()
+        #add_seds(self.get_reference_seds(additional_error=additional_error))
+
+        #components = [bulge, disk, old, young, sfr, unevolved, total]
+
+        # Add component simulation SEDs
+        seds1["Total"] = self.get_simulation_sed(total)
+        seds1["Old"] = self.get_simulation_sed(old)
+        seds1["Young"] = self.get_simulation_sed(young)
+        seds1["Ionizing"] = self.get_simulation_sed(sfr)
+
+        # Plot FIRST
+        plot_seds(seds1, figure=figure, main_plot=main_plots[0], residual_plots=residual_plots[0], show=False) # don't show yet
+
+        # Second panel
+        seds2 = OrderedDict()
+
+        # Plot SECOND
+        plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False) # don't show yet
 
         # Save or show
         if path is not None: figure.saveto(path)

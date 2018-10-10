@@ -115,36 +115,18 @@ class SimulationStatus(object):
 
     @property
     def nlines(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.log_lines)
 
     # -----------------------------------------------------------------
 
     @property
     def last_line(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.log_lines[-1]
 
     # -----------------------------------------------------------------
 
     @property
     def last_message(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.nlines == 0: return None
         else: return get_message(self.last_line)
 
@@ -152,24 +134,12 @@ class SimulationStatus(object):
 
     @property
     def first_line(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.log_lines[0]
 
     # -----------------------------------------------------------------
 
     @property
     def first_message(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return get_message(self.first_line)
 
     # -----------------------------------------------------------------
@@ -224,60 +194,30 @@ class SimulationStatus(object):
 
     @property
     def running(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status == "running"
 
     # -----------------------------------------------------------------
 
     @property
     def finished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status == "finished"
 
     # -----------------------------------------------------------------
 
     @property
     def crashed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status == "crashed"
 
     # -----------------------------------------------------------------
 
     @property
     def aborted(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status == "aborted"
 
     # -----------------------------------------------------------------
 
     @property
     def not_started(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status == "not started"
 
 # -----------------------------------------------------------------
@@ -1107,7 +1047,7 @@ class SpawnSimulationStatus(SimulationStatus):
         for line in reversed(self.log_lines):
 
             message = get_message(line)
-            print("MESS", message)
+            #print("MESS", message)
             if "Finished simulation" in message:
                 if show: log.success("Simulation finished")
                 self.status = "finished"

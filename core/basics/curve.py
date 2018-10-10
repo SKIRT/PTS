@@ -185,7 +185,7 @@ class Curve(Relation):
                 # Value is the same: add
                 #if x_a == x_b:
                 isclose = np.isclose(x_a, x_b)
-                if not isclose: print("NOT CLOSE:", x_a, x_b)
+                #if not isclose: print("NOT CLOSE:", x_a, x_b)
                 if isclose:
 
                     # Try to get wavelength and distance for unit conversion
@@ -324,7 +324,7 @@ class Curve(Relation):
                 # Value is the same: subtract
                 #if x_a == x_b:
                 isclose = np.isclose(x_a, x_b)
-                if not isclose: print("NOT CLOSE:", x_a, x_b)
+                #if not isclose: print("NOT CLOSE:", x_a, x_b)
                 if isclose:
 
                     # Try to get wavelength and distance for unit conversion
@@ -712,6 +712,12 @@ class Curve(Relation):
 
     # -----------------------------------------------------------------
 
+    def get_zero_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values == 0)
+
+    # -----------------------------------------------------------------
+
     def get_nonzero_indices(self):
         values = self.get_y(unit=self.y_unit, asarray=True)
         return np.nonzero(values)
@@ -788,6 +794,26 @@ class Curve(Relation):
 
         # Replace
         for index in indices: self[self.y_name][index] = 0.0
+
+    # -----------------------------------------------------------------
+
+    def replace_zeros_by_lowest(self, factor=1):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Get indices of zeroes
+        indices = self.get_zero_indices()
+
+        # Get minimum value (except for zero)
+        min_value = self.get_min_y_value(self.y_unit, add_unit=False, ignore_zero=True)
+        value = min_value * factor
+
+        # Replace
+        for index in indices: self[self.y_name][index] = value
 
     # -----------------------------------------------------------------
 
