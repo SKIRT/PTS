@@ -128,7 +128,7 @@ class AbsorptionBase(object):
         if extrapolate: sed = sed.extrapolated_from(self.observed_stellar_sed_extrapolate_from, regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True, replace_nan=0.)
         else: sed = sed.copy()
         sed.set_negatives_to_zero()
-        sed = sed.extended_to(self.maximum_wavelength, logscale=True)
+        sed = sed.extended_to_right(self.maximum_wavelength, logscale=True, points=self.wavelengths)
         sed.distance = self.distance
         return sed
 
@@ -140,12 +140,19 @@ class AbsorptionBase(object):
 
     # -----------------------------------------------------------------
 
-    def correct_dust_sed(self, sed, trim=True):
+    @lazyproperty
+    def minimum_wavelength(self):
+        return q("0.01 micron")
+
+    # -----------------------------------------------------------------
+
+    def correct_dust_sed(self, sed, trim=True, make_full=False):
         if trim: sed = sed.stripped_negatives_and_zeroes()
         else:
             sed = sed.copy()
             sed.set_negatives_to_zero()
         if trim: sed = sed.splice_right(self.min_dust_wavelength)
+        if make_full: sed = sed.extended_to_left(self.minimum_wavelength, logscale=True, points=self.wavelengths)
         sed.distance = self.distance
         return sed
 
@@ -180,6 +187,12 @@ class AbsorptionBase(object):
     @property
     def observed_sed(self):
         return self.simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths(self):
+        return self.observed_sed.wavelengths(unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -295,7 +308,7 @@ class SimpleAbsorption(AbsorptionBase):
 
     @lazyproperty
     def dust_sed_cells_complete(self):
-        return self.correct_dust_sed(self.emission_curve_cells, trim=False)
+        return self.correct_dust_sed(self.emission_curve_cells, trim=False, make_full=True)
 
     # -----------------------------------------------------------------
 

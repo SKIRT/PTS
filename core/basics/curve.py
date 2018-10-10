@@ -21,7 +21,6 @@ from scipy.interpolate import interp1d
 from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
-from .table import SmartTable
 from ..filter.filter import parse_filter
 from ..units.parsing import parse_unit as u
 from ..units.unit import get_common_unit
@@ -29,6 +28,7 @@ from ..tools import arrays
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from .relation import Relation
+from .range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -189,9 +189,16 @@ class Curve(Relation):
                 if isclose:
 
                     # Try to get wavelength and distance for unit conversion
-                    if isinstance(self, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(i), "distance": self.distance}
-                    elif isinstance(other, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(j), "distance": self.distance}
-                    else: conversion_info = None
+                    conversion_info = {}
+
+                    # Set wavelength
+                    if isinstance(self, WavelengthCurve): conversion_info["wavelength"] = self.get_wavelength(i)
+                    elif isinstance(other, WavelengthCurve): conversion_info["wavelength"] = other.get_wavelength(j)
+
+                    # Set distance
+                    if hasattr(self, "distance") and self.distance is not None: conversion_info["distance"] = self.distance
+                    elif hasattr(other, "distance") and other.distance is not None: conversion_info["distance"] = other.distance
+                    if len(conversion_info) == 0: conversion_info = None
 
                     # Calculate the sum of the y values
                     result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False, conversion_info=conversion_info) + other.get_value(other.y_name, j, unit=y_unit, add_unit=False, conversion_info=conversion_info)
@@ -320,8 +327,22 @@ class Curve(Relation):
                 if not isclose: print("NOT CLOSE:", x_a, x_b)
                 if isclose:
 
-                    result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
+                    # Try to get wavelength and distance for unit conversion
+                    conversion_info = {}
 
+                    # Set wavelength
+                    if isinstance(self, WavelengthCurve): conversion_info["wavelength"] = self.get_wavelength(i)
+                    elif isinstance(other, WavelengthCurve): conversion_info["wavelength"] = other.get_wavelength(j)
+
+                    # Set distance
+                    if hasattr(self, "distance") and self.distance is not None: conversion_info["distance"] = self.distance
+                    elif hasattr(other, "distance") and other.distance is not None: conversion_info["distance"] = other.distance
+                    if len(conversion_info) == 0: conversion_info = None
+
+                    # Calculate the difference of the y values
+                    result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False, conversion_info=conversion_info) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False, conversion_info=conversion_info)
+
+                    # Add the x value and the new y value
                     x_values.append(x_a)
                     y_values.append(result)
 
@@ -770,14 +791,14 @@ class Curve(Relation):
 
     # -----------------------------------------------------------------
 
-    def extended_to(self, to_x, logscale=False, value=0., npoints=10):
+    def extended_to_right(self, to_x, logscale=False, value=0., points=10):
 
         """
         This function ...
         :param to_x:
         :param logscale:
         :param value:
-        :param npoints:
+        :param points: CAN BE INTEGER OR LIST OF VALUES TO PICK FROM
         :return:
         """
 
@@ -795,16 +816,70 @@ class Curve(Relation):
 
         # Add values if necessary
         if to_x > x_values[-1]:
-            from pts.core.basics.range import RealRange
+
+            # Set range of new values
             new_x_range = RealRange(x_values[-1], to_x, inclusive=False)
-            if logscale: new_x_values = new_x_range.log(npoints)
-            else: new_x_values = new_x_range.linear(npoints)
-            for new_x_value in new_x_values:
-            #x_values.extend(new_x_values)
-            #y_values.extend([value] * npoints)
+
+            # Get new x points
+            if isinstance(points, int): new_x_values = generate_values(new_x_range, points, logscale=logscale)
+            else:
+                if self.x_unit is not None: points = [point.to(self.x_unit).value for point in points]
+                new_x_values = generate_values(new_x_range, pick_from=points)
+            npoints = len(new_x_values)
+
+            # Add new values
+            x_values.extend(new_x_values)
+            y_values.extend([value] * npoints)
+
+            #for new_x_value in new_x_values:
                 #print("Adding " + str(new_x_value) + ", " + str(value) + " ...")
-                x_values.append(new_x_value)
-                y_values.append(value)
+                #x_values.append(new_x_value)
+                #y_values.append(value)
+
+        # Create new curve
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
+
+    # -----------------------------------------------------------------
+
+    def extended_to_left(self, to_x, logscale=False, value=0., points=10):
+
+        """
+        This function ...
+        :param to_x:
+        :param logscale:
+        :param value:
+        :param points:
+        :return:
+        """
+
+        # Convert to_x
+        if self.x_unit is not None: to_x = to_x.to(self.x_unit).value
+        elif hasattr(to_x, "unit"): raise RuntimeError("Unexpected value: has unit")
+
+        # Get values, as lists
+        x_values = self.get_x(unit=self.x_unit, add_unit=False)
+        y_values = self.get_y(unit=self.y_unit, add_unit=False)
+
+        # Get units and names
+        names = [self.x_name, self.y_name]
+        units = [self.x_unit, self.y_unit]
+
+        # Add values if necessary
+        if to_x < x_values[0]:
+
+            # Set range of new values
+            new_x_range = RealRange(to_x, x_values[0], inclusive=False)
+
+            # Get new x points
+            if isinstance(points, int): new_x_values = generate_values(new_x_range, points, logscale=logscale)
+            else:
+                if self.x_unit is not None: points = [point.to(self.x_unit).value for point in points]
+                new_x_values = generate_values(new_x_range, pick_from=points)
+            npoints = len(new_x_values)
+
+            # Add new values
+            x_values = new_x_values + x_values
+            y_values = [value] * npoints + y_values
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
@@ -1552,5 +1627,25 @@ class FilterCurve(WavelengthCurve):
 
         # Parse the filter
         return parse_filter(instrument + " " + band)
+
+# -----------------------------------------------------------------
+
+def generate_values(value_range, npoints=None, logscale=False, pick_from=None):
+
+    """
+    This function ...
+    :param value_range:
+    :param npoints:
+    :param logscale:
+    :param pick_from:
+    :return:
+    """
+
+    # Pick from list, within range
+    if pick_from is not None: return value_range.values_in_range(pick_from)
+    else:
+        if npoints is None: raise ValueError("Number of points must be defined")
+        if logscale: return value_range.log(npoints)
+        else: return value_range.linear(npoints)
 
 # -----------------------------------------------------------------

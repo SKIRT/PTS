@@ -109,6 +109,7 @@ _attenuation_command_name = "attenuation"
 _map_command_name = "map"
 _images_command_name = "images"
 _cubes_command_name = "cubes"
+_paper_command_name = "paper"
 
 # Evaluate
 _evaluate_command_name = "evaluate"
@@ -197,11 +198,13 @@ show_commands[_data_command_name] = ("show_data", False, "show the simulation da
 
 # Plot subcommands
 plot_commands = OrderedDict()
+
 plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
 plot_commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the observed, modeled and residual images", None)
 plot_commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
+plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
 
 # -----------------------------------------------------------------
 
@@ -3018,6 +3021,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        pass
+
     # -----------------------------------------------------------------
 
     def plot_edgeon_cube(self):
@@ -3026,6 +3031,72 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         Thisn function ...
         :return:
         """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_paper_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Which plot
+        definition.add_required("which", "positive_integer", "index of the plot to make")
+
+        # Path for plot file
+        definition.add_optional("path", "new_path", "save plot to file")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_paper_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_paper_definition, **kwargs)
+
+        # Plot #1
+        if config.which == 1: return self.plot_paper1(path=config.path)
+
+        # Invalid
+        else: raise ValueError("Invalid plot index: " + str(config.which))
+
+    # -----------------------------------------------------------------
+
+    def plot_paper1(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from pts.core.basics.plot import MPLFigure
+
+        # Create figure
+        figure = MPLFigure()
+
+        # Create 2 plots
+        plots = figure.create_row(2, share_axis=True)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
 
     # -----------------------------------------------------------------
 

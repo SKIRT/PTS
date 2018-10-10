@@ -1047,6 +1047,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.total_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_absorption_curve_or_none(self):
+        if self.has_total_contribution_spectral_absorption: return self.total_spectral_absorption_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     # BULGE
     # -----------------------------------------------------------------
 
@@ -1084,6 +1091,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # bulge_absorption_luminosity_name
         return self.bulge_spectral_absorption_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_spectral_absorption_curve_or_none(self):
+        if self.has_bulge_contribution_spectral_absorption: return self.bulge_spectral_absorption_curve
+        else: return None
 
     # -----------------------------------------------------------------
     # DISK
@@ -1125,6 +1139,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.disk_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def disk_spectral_absorption_curve_or_none(self):
+        if self.has_disk_contribution_spectral_absorption: return self.disk_spectral_absorption_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     # OLD
     # -----------------------------------------------------------------
 
@@ -1162,6 +1183,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # old_absorption_luminosity_name
         return self.old_spectral_absorption_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_spectral_absorption_curve_or_none(self):
+        if self.has_old_contribution_spectral_absorption: return self.old_spectral_absorption_curve
+        else: return None
 
     # -----------------------------------------------------------------
     # YOUNG
@@ -1203,6 +1231,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.young_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def young_spectral_absorption_curve_or_none(self):
+        if self.has_young_contribution_spectral_absorption: return self.young_spectral_absorption_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     # SFR
     # -----------------------------------------------------------------
 
@@ -1240,6 +1275,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # sfr_absorption_luminosity_name
         return self.sfr_spectral_absorption_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_spectral_absorption_curve_or_none(self):
+        if self.has_sfr_contribution_spectral_absorption: return self.sfr_spectral_absorption_curve
+        else: return None
 
     # -----------------------------------------------------------------
     #   UNEVOLVED
@@ -1281,6 +1323,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.unevolved_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_absorption_curve_or_none(self):
+        if self.has_unevolved_contribution_spectral_absorption: return self.unevolved_spectral_absorption_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     # CURVES FROM SPECTRAL 3D EMISSION DATA
     #   TOTAL
     # -----------------------------------------------------------------
@@ -1318,6 +1367,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         """
 
         return self.total_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_curve_or_none(self):
+        if self.has_total_contribution_spectral_emission: return self.total_spectral_emission_curve
+        else: return None
 
     # -----------------------------------------------------------------
     #   BULGE
@@ -1358,6 +1414,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.bulge_spectral_emission_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def bulge_spectral_emission_curve_or_none(self):
+        if self.has_bulge_contribution_spectral_emission: return self.bulge_spectral_emission_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     #   DISK
     # -----------------------------------------------------------------
 
@@ -1394,6 +1457,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         """
 
         return self.disk_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_spectral_emission_curve_or_none(self):
+        if self.has_disk_contribution_spectral_emission: return self.disk_spectral_emission_curve
+        else: return None
 
     # -----------------------------------------------------------------
     #   OLD
@@ -1434,6 +1504,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.old_spectral_emission_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def old_spectral_emission_curve_or_none(self):
+        if self.has_old_contribution_spectral_emission: return self.old_spectral_emission_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     #   YOUNG
     # -----------------------------------------------------------------
 
@@ -1470,6 +1547,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         """
 
         return self.young_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_spectral_emission_curve_or_none(self):
+        if self.has_young_contribution_spectral_emission: return self.young_spectral_emission_curve
+        else: return None
 
     # -----------------------------------------------------------------
     #   SFR
@@ -1510,6 +1594,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.sfr_spectral_emission_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def sfr_spectral_emission_curve_or_none(self):
+        if self.has_sfr_contribution_spectral_emission: return self.sfr_spectral_emission_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     #   UNEVOLVED
     # -----------------------------------------------------------------
 
@@ -1548,6 +1639,13 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.unevolved_spectral_emission_data.get_global_sed()
 
     # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_curve_or_none(self):
+        if self.has_unevolved_contribution_spectral_emission: return self.unevolved_spectral_emission_curve
+        else: return None
+
+    # -----------------------------------------------------------------
     # TOTAL ABSORPTION
     # -----------------------------------------------------------------
 
@@ -1560,8 +1658,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyproperty
     def total_absorption(self):
         return TotalAbsorption(self.model.total_simulations, self.old_absorption, self.unevolved_absorption,
-                               absorption_curve_cells=self.total_spectral_absorption_curve,
-                               emission_curve_cells=self.total_spectral_emission_curve, distance=self.galaxy_distance)
+                               absorption_curve_cells=self.total_spectral_absorption_curve_or_none,
+                               emission_curve_cells=self.total_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     #   Diffuse
@@ -1673,8 +1771,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_absorption(self):
-        return SimpleAbsorption(self.model.bulge_simulations, absorption_curve_cells=self.bulge_spectral_absorption_curve,
-                                emission_curve_cells=self.bulge_spectral_emission_curve, distance=self.galaxy_distance)
+        return SimpleAbsorption(self.model.bulge_simulations, absorption_curve_cells=self.bulge_spectral_absorption_curve_or_none,
+                                emission_curve_cells=self.bulge_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1736,8 +1834,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_absorption(self):
-        return SimpleAbsorption(self.model.disk_simulations, absorption_curve_cells=self.disk_spectral_absorption_curve,
-                                emission_curve_cells=self.disk_spectral_emission_curve, distance=self.galaxy_distance)
+        return SimpleAbsorption(self.model.disk_simulations, absorption_curve_cells=self.disk_spectral_absorption_curve_or_none,
+                                emission_curve_cells=self.disk_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1799,7 +1897,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def old_absorption(self):
-        return SimpleAbsorption(self.model.old_simulations, distance=self.galaxy_distance)
+        return SimpleAbsorption(self.model.old_simulations, absorption_curve_cells=self.old_spectral_absorption_curve_or_none,
+                                emission_curve_cells=self.old_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1861,8 +1960,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_absorption(self):
-        return SimpleAbsorption(self.model.young_simulations, absorption_curve_cells=self.young_spectral_absorption_curve,
-                                emission_curve_cells=self.young_spectral_emission_curve, distance=self.galaxy_distance)
+        return SimpleAbsorption(self.model.young_simulations, absorption_curve_cells=self.young_spectral_absorption_curve_or_none,
+                                emission_curve_cells=self.young_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1925,8 +2024,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyproperty
     def sfr_absorption(self):
         return SFRAbsorption(self.model.sfr_simulations, self.model.unattenuated_mappings_sed, self.model.attenuation_sed_sfr_internal,
-                             self.model.intrinsic_sfr_dust_sed, absorption_curve_cells=self.sfr_spectral_absorption_curve,
-                             emission_curve_cells=self.sfr_spectral_emission_curve, distance=self.galaxy_distance)
+                             self.model.intrinsic_sfr_dust_sed, absorption_curve_cells=self.sfr_spectral_absorption_curve_or_none,
+                             emission_curve_cells=self.sfr_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     #   Internal
@@ -2088,8 +2187,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyproperty
     def unevolved_absorption(self):
         return UnevolvedAbsorption(self.model.unevolved_simulations, self.young_absorption, self.sfr_absorption,
-                                   absorption_curve_cells=self.unevolved_spectral_absorption_curve,
-                                   emission_curve_cells=self.unevolved_spectral_emission_curve, distance=self.galaxy_distance)
+                                   absorption_curve_cells=self.unevolved_spectral_absorption_curve_or_none,
+                                   emission_curve_cells=self.unevolved_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     #   Diffuse

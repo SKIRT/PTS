@@ -61,7 +61,7 @@ class TotalAbsorption(AbsorptionBase):
     # STELLAR SEDs and LUMINOSITIES
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def observed_stellar_sed_diffuse(self):
         return self.correct_observed_stellar_sed(self.simulations.observed_stellar_sed, extrapolate=False)
 
@@ -168,6 +168,12 @@ class TotalAbsorption(AbsorptionBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def dust_sed_diffuse_cells_complete(self):
+        return self.correct_dust_sed(self.emission_curve_cells, trim=False, make_full=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dust_sed_diffuse_cells(self):
         return self.correct_dust_sed(self.emission_curve_cells)
 
@@ -176,6 +182,12 @@ class TotalAbsorption(AbsorptionBase):
     @property
     def has_dust_sed_diffuse_cells(self):
         return self.has_emission_curve_cells
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_sed_diffuse_complete(self):
+        return self.correct_dust_sed(self.simulations.observed_diffuse_dust_sed, trim=False)
 
     # -----------------------------------------------------------------
 
@@ -235,7 +247,7 @@ class TotalAbsorption(AbsorptionBase):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_sed_all_alt(self):
         return self.correct_dust_sed(self.simulations.observed_dust_sed)
 
@@ -255,10 +267,23 @@ class TotalAbsorption(AbsorptionBase):
     # DIFFUSE
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def best_observed_stellar_sed_diffuse(self):
+        return self.correct_observed_stellar_sed(self.simulations.observed_sed - self.best_dust_sed_diffuse_complete, extrapolate=False)
+
+    # -----------------------------------------------------------------
+
     @property
     def best_absorption_sed_diffuse(self):
         if self.has_absorption_sed_diffuse_cells: return self.absorption_sed_diffuse_cells
         else: return self.absorption_sed_diffuse
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_dust_sed_diffuse_complete(self):
+        if self.has_dust_sed_diffuse_cells: return self.dust_sed_diffuse_cells_complete
+        else: return self.dust_sed_diffuse_complete
 
     # -----------------------------------------------------------------
 
@@ -271,7 +296,13 @@ class TotalAbsorption(AbsorptionBase):
     # ALL
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def best_observed_stellar_sed_all(self):
+        return self.correct_observed_stellar_sed(self.evolved.best_observed_stellar_sed + self.unevolved.best_observed_stellar_sed_all)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def best_absorption_sed_all(self):
         return self.correct_absorption_sed(self.best_absorption_sed_diffuse + self.unevolved.absorption_sed_internal)
 
@@ -301,7 +332,7 @@ class TotalAbsorption(AbsorptionBase):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def best_dust_sed_all(self):
         return self.correct_dust_sed(self.best_dust_sed_diffuse + self.unevolved.dust_sed_internal)
 
