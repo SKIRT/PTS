@@ -173,22 +173,30 @@ class Curve(Relation):
             # Loop over the values of this curve and the other curve simultaneously
             i = 0
             j = 0
+            #print("ADDING CURVES")
             while True:
-
-                # Try to get wavelength
-                if isinstance(self, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(i)}
-                elif isinstance(other, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(j)}
-                else: conversion_info = None
 
                 # Get the values
                 x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
                 x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
 
-                # Value is the same: add
-                if x_a == x_b:
+                #print(x_a, x_b, x_a==x_b)
 
+                # Value is the same: add
+                #if x_a == x_b:
+                isclose = np.isclose(x_a, x_b)
+                if not isclose: print("NOT CLOSE:", x_a, x_b)
+                if isclose:
+
+                    # Try to get wavelength and distance for unit conversion
+                    if isinstance(self, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(i), "distance": self.distance}
+                    elif isinstance(other, WavelengthCurve): conversion_info = {"wavelength": self.get_wavelength(j), "distance": self.distance}
+                    else: conversion_info = None
+
+                    # Calculate the sum of the y values
                     result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False, conversion_info=conversion_info) + other.get_value(other.y_name, j, unit=y_unit, add_unit=False, conversion_info=conversion_info)
 
+                    # Add the x value and the new y value
                     x_values.append(x_a)
                     y_values.append(result)
 
@@ -297,14 +305,20 @@ class Curve(Relation):
             # Loop over the values of this curve and the other curve simultaneously
             i = 0
             j = 0
+            #print("SUBTRACTING CURVES")
             while True:
 
                 # Get the values
                 x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
                 x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
 
-                # Value is the same: add
-                if x_a == x_b:
+                #print(x_a, x_b, x_a==x_b)
+
+                # Value is the same: subtract
+                #if x_a == x_b:
+                isclose = np.isclose(x_a, x_b)
+                if not isclose: print("NOT CLOSE:", x_a, x_b)
+                if isclose:
 
                     result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
 
@@ -594,7 +608,7 @@ class Curve(Relation):
 
     # -----------------------------------------------------------------
 
-    def extrapolate_from(self, from_x, regression_from_x, xlog=False, ylog=False, degree=1):
+    def extrapolate_from(self, from_x, regression_from_x, xlog=False, ylog=False, degree=1, replace_nan=None):
 
         """
         This function ...
@@ -603,6 +617,7 @@ class Curve(Relation):
         :param xlog:
         :param ylog:
         :param degree: 1 is default, means linear regression
+        :param replace_nan:
         :return:
         """
 
@@ -643,12 +658,17 @@ class Curve(Relation):
         for index, y in zip(indices, larger_y):
 
             # Set
-            if ylog: self.y_data[index] = 10 ** y
-            else: self.y_data[index] = y
+            if ylog: y = 10**y
+
+            # Replace Nan?
+            if replace_nan is not None and np.isnan(y): y = replace_nan
+
+            # Set value
+            self.y_data[index] = y
 
     # -----------------------------------------------------------------
 
-    def extrapolated_from(self, from_x, regression_from_x, xlog=False, ylog=False):
+    def extrapolated_from(self, from_x, regression_from_x, xlog=False, ylog=False, replace_nan=None):
 
         """
         This function ...
@@ -656,6 +676,7 @@ class Curve(Relation):
         :param regression_from_x:
         :param xlog:
         :param ylog:
+        :param replace_nan:
         :return:
         """
 
@@ -663,7 +684,7 @@ class Curve(Relation):
         sed = self.copy()
 
         # Extrapolate
-        sed.extrapolate_from(from_x, regression_from_x, xlog=xlog, ylog=ylog)
+        sed.extrapolate_from(from_x, regression_from_x, xlog=xlog, ylog=ylog, replace_nan=replace_nan)
 
         # Return
         return sed
@@ -731,6 +752,62 @@ class Curve(Relation):
 
         # Return the new curve
         return self.splice(first, last, include_min=True, include_max=True)
+
+    # -----------------------------------------------------------------
+
+    def set_negatives_to_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get indices
+        indices = self.get_negative_indices()
+
+        # Replace
+        for index in indices: self[self.y_name][index] = 0.0
+
+    # -----------------------------------------------------------------
+
+    def extended_to(self, to_x, logscale=False, value=0., npoints=10):
+
+        """
+        This function ...
+        :param to_x:
+        :param logscale:
+        :param value:
+        :param npoints:
+        :return:
+        """
+
+        # Convert to_x
+        if self.x_unit is not None: to_x = to_x.to(self.x_unit).value
+        elif hasattr(to_x, "unit"): raise RuntimeError("Unexpected value: has unit")
+
+        # Get values, as lists
+        x_values = self.get_x(unit=self.x_unit, add_unit=False)
+        y_values = self.get_y(unit=self.y_unit, add_unit=False)
+
+        # Get units and names
+        names = [self.x_name, self.y_name]
+        units = [self.x_unit, self.y_unit]
+
+        # Add values if necessary
+        if to_x > x_values[-1]:
+            from pts.core.basics.range import RealRange
+            new_x_range = RealRange(x_values[-1], to_x, inclusive=False)
+            if logscale: new_x_values = new_x_range.log(npoints)
+            else: new_x_values = new_x_range.linear(npoints)
+            for new_x_value in new_x_values:
+            #x_values.extend(new_x_values)
+            #y_values.extend([value] * npoints)
+                #print("Adding " + str(new_x_value) + ", " + str(value) + " ...")
+                x_values.append(new_x_value)
+                y_values.append(value)
+
+        # Create new curve
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
 # -----------------------------------------------------------------
 
