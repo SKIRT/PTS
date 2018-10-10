@@ -28,7 +28,7 @@ from ...core.plot.grids import make_grid_plot
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ..core.environment import load_modeling_environment
-from .absorption import AbsorptionAnalyser
+from .absorption.absorption import AbsorptionAnalyser
 from ..config.analyse_absorption import definition as analyse_absorption_definition
 from ...core.plot.sed import plot_seds, SEDPlotter, plot_sed
 from ...core.config.plot_seds import definition as plot_seds_definition
