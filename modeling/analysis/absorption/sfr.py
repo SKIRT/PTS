@@ -359,6 +359,30 @@ class SFRAbsorption(AbsorptionBase):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def best_absorption_luminosity_diffuse(self):
+        return self.best_absorption_sed_diffuse.integrate().to(self.bolometric_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_absorption_fraction_diffuse(self):
+        return self.best_absorption_luminosity_diffuse.value / self.stellar_luminosity.value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_fuv_absorption_luminosity_diffuse(self):
+        return self.best_absorption_sed_diffuse.photometry_at(self.fuv_wavelength, unit=self.specific_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_fuv_absorption_fraction_diffuse(self):
+        return self.best_fuv_absorption_luminosity_diffuse.value / self.intrinsic_fuv_luminosity.value
+
+    # -----------------------------------------------------------------
+
     @property
     def best_dust_sed_diffuse_complete(self):
         if self.has_dust_sed_diffuse_cells: return self.dust_sed_diffuse_cells_complete
@@ -370,6 +394,18 @@ class SFRAbsorption(AbsorptionBase):
     def best_dust_sed_diffuse(self):
         if self.has_dust_sed_diffuse_cells: return self.dust_sed_diffuse_cells
         else: return self.dust_sed_diffuse
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_dust_luminosity_diffuse(self):
+        return self.best_dust_sed_diffuse.integrate().to(self.bolometric_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_dust_fraction_diffuse(self):
+        return self.best_dust_luminosity_diffuse.value / self.stellar_luminosity.value
 
     # -----------------------------------------------------------------
     # INTERNAL
@@ -387,9 +423,45 @@ class SFRAbsorption(AbsorptionBase):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def best_absorption_luminosity_internal(self):
+        return self.best_absorption_sed_internal.integrate().to(self.bolometric_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_absorption_fraction_internal(self):
+        return self.best_absorption_luminosity_internal.value / self.stellar_luminosity.value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_fuv_absorption_luminosity_internal(self):
+        return self.best_absorption_sed_internal.photometry_at(self.fuv_wavelength, unit=self.specific_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_fuv_absorption_fraction_internal(self):
+        return self.best_fuv_absorption_luminosity_internal.value / self.intrinsic_fuv_luminosity.value
+
+    # -----------------------------------------------------------------
+
     @property
     def best_dust_sed_internal(self):
         return self.dust_sed_internal
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_dust_luminosity_internal(self):
+        return self.best_dust_sed_internal.integrate().to(self.bolometric_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_dust_fraction_internal(self):
+        return self.best_dust_luminosity_internal.value / self.stellar_luminosity.value
 
     # -----------------------------------------------------------------
     # ALL

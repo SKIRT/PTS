@@ -365,14 +365,26 @@ class SimpleAbsorption(AbsorptionBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def best_fuv_absorption_luminosity_all(self):
+    def best_absorption_luminosity(self):
+        return self.best_absorption_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_absorption_fraction(self):
+        return self.best_absorption_luminosity.value / self.stellar_luminosity.value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_fuv_absorption_luminosity(self):
         return self.best_absorption_sed.photometry_at(self.fuv_wavelength, unit=self.specific_luminosity_unit, distance=self.distance)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def best_fuv_absorption_fraction_all(self):
-        return self.best_fuv_absorption_luminosity_all.value / self.intrinsic_fuv_luminosity.value
+    def best_fuv_absorption_fraction(self):
+        return self.best_fuv_absorption_luminosity.value / self.intrinsic_fuv_luminosity.value
 
     # -----------------------------------------------------------------
 
@@ -387,6 +399,18 @@ class SimpleAbsorption(AbsorptionBase):
     def best_dust_sed(self):
         if self.has_dust_sed_cells: return self.dust_sed_cells
         else: return self.dust_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_dust_luminosity(self):
+        return self.best_dust_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_dust_fraction(self):
+        return self.best_dust_luminosity.value / self.stellar_luminosity.value
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------

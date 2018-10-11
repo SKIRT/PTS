@@ -32,26 +32,9 @@ from ..basics.log import log
 
 # -----------------------------------------------------------------
 
-#import Tkinter
-#import threading
-#import matplotlib.backends.backend_tkagg
-##root = Tkinter.Tk()
-# # From https://stackoverflow.com/questions/7275646/creating-a-matplotlib-interactive-plotting-window-for-an-existing-figure
-# class Plotter():
-#     def __init__(self,fig):
-#         t = threading.Thread(target=self.PlottingThread,args=(fig,))
-#         t.start()
-#
-#     def PlottingThread(self,fig):
-#         canvas = matplotlib.backends.backend_tkagg.FigureCanvasTkAgg(fig, master=root)
-#         canvas.show()
-#         canvas.get_tk_widget().pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
-#
-#         toolbar = matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg(canvas, root)
-#         toolbar.update()
-#         canvas._tkcanvas.pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
-#
-#         Tkinter.mainloop()
+#import sys
+#reload(sys)
+#sys.setdefaultencoding('utf-8')
 
 # -----------------------------------------------------------------
 
@@ -1777,85 +1760,41 @@ class MPLPlot(Plot):
 
     @property
     def xscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.xaxis.get_scale()
 
     # -----------------------------------------------------------------
 
     @property
     def linear_xscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.xscale == "linear"
 
     # -----------------------------------------------------------------
 
     @property
     def log_xscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.xscale == "log"
 
     # -----------------------------------------------------------------
 
     def set_yscale(self, *args, **kwargs):
-
-        """
-        Thisf unction ...
-        :param args:
-        :param kwargs:
-        :return:
-        """
-
         self._plot.set_yscale(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
     @property
     def yscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.yaxis.get_scale()
 
     # -----------------------------------------------------------------
 
     @property
     def linear_yscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.yscale == "linear"
 
     # -----------------------------------------------------------------
 
     @property
     def log_yscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.yscale == "log"
 
     # -----------------------------------------------------------------
@@ -1972,6 +1911,30 @@ class MPLPlot(Plot):
         """
 
         if config.add_grid: self.axes.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle, color=config.grid_color, which=which)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xticks(self):
+        return self.axes.get_xticklabels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xtick_labels(self):
+        return [tick.get_text() for tick in self.xticks]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yticks(self):
+        return self.axes.get_yticklabels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ytick_labels(self):
+        return [tick.get_text() for tick in self.yticks]
 
 # -----------------------------------------------------------------
 
@@ -2298,8 +2261,8 @@ class MPLFigure(Figure):
                 # Create the main plot
                 rect = grid[:-nres, index]
 
-                #plot = self._create_plot_not_shared(rect)
-                #plot = self._create_plot_shared(rect, , reference_main_plot.axes)
+                # Create plot
+                #main_plot = self._create_plot_not_shared(rect)
                 if index == 0: main_plot = self._create_plot_not_shared(rect)
                 else: main_plot = self._create_plot_shared_y(rect, main_plots[0].axes)
                 main_plots.append(main_plot)
@@ -2310,6 +2273,7 @@ class MPLFigure(Figure):
                     resrect = grid[nrows_for_main+j, index]
                     #resplot = self._create_plot_not_shared(resrect)
                     resplot = self._create_plot_shared_x(resrect, main_plot.axes)
+                    #resplot = self._create_plot_not_shared(resrect)
                     res_plots.append(resplot)
                 residual_plots.append(res_plots)
 

@@ -64,7 +64,8 @@ residual_references = [models_reference, observations_reference]
 
 # -----------------------------------------------------------------
 
-def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf", unit=None, wavelength_unit=None, distance=None):
+def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf", unit=None,
+             wavelength_unit=None, distance=None):
 
     """
     This function ...
@@ -144,6 +145,7 @@ def plot_seds(seds, **kwargs):
     unit = kwargs.pop("unit", None)
     distance = kwargs.pop("distance", None)
     options = kwargs.pop("options", {})
+    tex = kwargs.pop("tex", True)
 
     # Figure and plots
     figure = kwargs.pop("figure", None)
@@ -151,11 +153,22 @@ def plot_seds(seds, **kwargs):
     residual_plot = kwargs.pop("residual_plot", None)
     residual_plots = kwargs.pop("residual_plots", None)
 
+    # Position of axis ticks and labels
+    xaxis_position = kwargs.pop("xaxis_position", "bottom")
+    yaxis_position = kwargs.pop("yaxis_position", "left")
+
     # Show the figure after plotting
     show = kwargs.pop("show", None)
 
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
+
+    # Set TeX flag
+    plotter.config.tex = tex
+
+    # Set axis positions
+    plotter.config.xaxis_position = xaxis_position
+    plotter.config.yaxis_position = yaxis_position
 
     # Set show flag (None means automatically determined)
     plotter.config.show = show
@@ -266,10 +279,22 @@ class SEDPlotter(Configurable):
 
         # The figure
         self.figure = None
+        self._external_figure = False
 
         # The main plot and the residual plots
         self.main_plot = None
         self.residual_plots = []
+
+        # Legend
+        self.for_legend_patches = None
+        self.for_legend_parameters = None
+        self.extra_legend = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_figure(self):
+        return self.figure is not None
 
     # -----------------------------------------------------------------
 
@@ -496,6 +521,12 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_set_defaults(self):
+        return not self._external_figure
+
+    # -----------------------------------------------------------------
+
     def _run(self, **kwargs):
 
         """
@@ -510,8 +541,11 @@ class SEDPlotter(Configurable):
         # Plot the SEDs
         self.plot()
 
+        # Finish the plot
+        self.finish_plot()
+
         # Reset matplotlib defaults
-        self.set_defaults()
+        if self.do_set_defaults: self.set_defaults()
 
     # -----------------------------------------------------------------
 
@@ -527,7 +561,7 @@ class SEDPlotter(Configurable):
         super(SEDPlotter, self).setup(**kwargs)
 
         # Use LaTeX rendering
-        rc('text', usetex=True)
+        if self.config.tex: rc('text', usetex=True)
 
         # Set the title
         self.title = kwargs.pop("title", None)
@@ -581,7 +615,9 @@ class SEDPlotter(Configurable):
         if self.config.add_templates: self.create_templates()
 
         # Create the figure
-        if kwargs.get("figure", None) is not None: self.figure = kwargs.pop("figure")
+        if kwargs.get("figure", None) is not None:
+            self.figure = kwargs.pop("figure")
+            self._external_figure = True
         else:
             if self.config.library == mpl: self.figure = MPLFigure(size=self.figsize)
             elif self.config.library == bokeh: self.figure = BokehFigure()
@@ -732,12 +768,11 @@ class SEDPlotter(Configurable):
             # One SED per file
             else:
 
-                print(path)
+                #print(path)
 
                 # Load SED
                 sed = load_sed(path, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
-
-                print(sed)
+                #print(sed)
 
                 # Add the SED
                 self.add_sed(sed, label=name)
@@ -930,9 +965,6 @@ class SEDPlotter(Configurable):
 
         # Plot
         self.draw_observation(instruments, bands, wavelengths, fluxes, errors, colors)
-
-        # Finish the plot
-        self.finish_plot()
 
     # -----------------------------------------------------------------
 
@@ -1163,8 +1195,10 @@ class SEDPlotter(Configurable):
         # fancybox=True makes the legend corners rounded
         observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
 
-        # Finish the plot
-        self.finish_plot(for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
+        # Set
+        self.for_legend_patches = legend_patches
+        self.for_legend_parameters = legend_labels
+        self.extra_legend = observations_legend
 
     # -----------------------------------------------------------------
 
@@ -1383,9 +1417,6 @@ class SEDPlotter(Configurable):
 
                     # Plot
                     self.residual_plot.plot(wavelengths_residuals, residuals, linestyle=linestyle, color=linecolor, label=model_label.replace("_", "\_"))
-
-        # Finish the plot
-        self.finish_plot()
 
     # -----------------------------------------------------------------
 
@@ -1748,9 +1779,6 @@ class SEDPlotter(Configurable):
 
                 counter_no_residuals += 1
 
-        # Finish the plot
-        self.finish_plot()
-
     # -----------------------------------------------------------------
 
     def plot_more_observations_with_models(self):
@@ -2008,8 +2036,10 @@ class SEDPlotter(Configurable):
         # Extra legend: the different observations
         observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
 
-        # Finish the plot
-        self.finish_plot(for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
+        # Set
+        self.for_legend_patches = legend_patches
+        self.for_legend_parameters = legend_labels
+        self.extra_legend = observations_legend
 
     # -----------------------------------------------------------------
 
@@ -2340,13 +2370,10 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def finish_plot(self, for_legend_patches=None, for_legend_parameters=None, extra_legend=None):
+    def finish_plot(self):
 
         """
         This function ...
-        :param for_legend_patches:
-        :param for_legend_parameters:
-        :param extra_legend:
         :return:
         """
 
@@ -2396,8 +2423,10 @@ class SEDPlotter(Configurable):
             self.residual_plots[last_residual_plot_index].set_xticks(fontsize=self.config.plot.ticks_fontsize)
 
         # Set x label of the last residual plot
-        if len(self.residual_plots) > 0: self.residual_plots[len(self.residual_plots)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
-        else: self.main_plot.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
+        xlabel = r"Wavelength $\lambda\,[\mu \mathrm{m}]$"
+        #print(xlabel)
+        if len(self.residual_plots) > 0: self.residual_plots[len(self.residual_plots)-1].set_xlabel(xlabel, fontsize='large')
+        else: self.main_plot.set_xlabel(xlabel, fontsize='large')
 
         # Set log x scale
         self.main_plot.set_xscale('log')
@@ -2409,7 +2438,24 @@ class SEDPlotter(Configurable):
 
         # Add axis labels and a legend
         y_label = r"Log $" + self.config.unit.latex_string + r"$"
+        #print(y_label)
         self.main_plot.set_ylabel(y_label, fontsize='large')
+
+        # SHOW TICK LABELS
+        #print(self.main_plot.xtick_labels, self.main_plot.ytick_labels)
+        #for res in self.residual_plots: print(res.xtick_labels, res.ytick_labels)
+
+        # Set position
+        # X: only for main plot
+        if self.config.xaxis_position == "top":
+            self.main_plot.xaxis.set_ticks_position("top")
+            self.main_plot.xaxis.set_label_position("top")
+
+        # Y: for main and residual plots
+        if self.config.yaxis_position == "right":
+            for plot in [self.main_plot] + self.residual_plots:
+                plot.yaxis.set_ticks_position("right")
+                plot.yaxis.set_label_position("right")
 
         # Set grid
         #self.figure.set_grid(self.config.plot, which="both")
@@ -2417,13 +2463,14 @@ class SEDPlotter(Configurable):
         for plot in self.residual_plots: plot.set_grid(self.config.plot, which="both")
 
         # Set borders
-        self.figure.set_borders(self.config.plot)
+        if not self._external_figure: self.figure.set_borders(self.config.plot)
 
         # Set flux axis limits
         #print(self.min_flux, self.max_flux)
         plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
         #print(plot_min, plot_max)
 
+        # Set Y limits
         if plot_min is None:
             if plot_max is None: pass
             else: self.main_plot.set_ylim(top=plot_max)
@@ -2432,19 +2479,15 @@ class SEDPlotter(Configurable):
             else: self.main_plot.set_ylim((plot_min, plot_max)) # NORMAL
 
         # Set wavelength axis limits
-        #from ..basics.plot import get_plot_wavelength_limits
-        #plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self.min_wavelength, self.max_wavelength)
-        #self.main_plot.set_xlim(plot_min_wavelength, plot_max_wavelength)
         self.main_plot.set_xlim(self.min_wavelength, self.max_wavelength)
 
         # Add the plots to the figure
-        if self.config.library == bokeh:
-            self.figure.add_column(self.main_plot, *self.residual_plots)
+        if self.config.library == bokeh and not self._external_figure: self.figure.add_column(self.main_plot, *self.residual_plots)
 
         legends = []
 
         # Add the legend
-        if for_legend_patches is not None:
+        if self.for_legend_patches is not None:
 
             legend_properties = dict()
             legend_properties["loc"] = "lower center"
@@ -2459,14 +2502,14 @@ class SEDPlotter(Configurable):
             # Set legend
             # fancybox=True makes the legend corners rounded
             #legend = self.main_plot.legend([l[0] for l in for_legend_patches], for_legend_parameters, **legend_properties)
-            legend = self.main_plot.legend(for_legend_patches, for_legend_parameters, **legend_properties)
+            legend = self.main_plot.legend(self.for_legend_patches, self.for_legend_parameters, **legend_properties)
             legends.append(legend)
 
             # Extra legend
-            if extra_legend is not None:
+            if self.extra_legend is not None:
 
-                self.main_plot.add_artist(extra_legend)
-                legends.append(extra_legend)
+                self.main_plot.add_artist(self.extra_legend)
+                legends.append(self.extra_legend)
 
         # No extra legend, no patches for the legend
         else:
@@ -2484,13 +2527,9 @@ class SEDPlotter(Configurable):
             legend = self.main_plot.legend(**legend_properties)
             legends.append(legend)
 
-        # Set legend properties
-        #for legend in legends:
-        #    if legend is None: continue # Bokeh
-        #    set_legend(legend, self.config.plot)
-
         # Add title if requested
-        if self.title is not None: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
+        #print(self.title)
+        if self.title is not None and not self._external_figure: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
 
         # Save or show the plot
         #if self.out_path is None: self.figure.show()
@@ -2508,8 +2547,8 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        # Close the figure
-        if self.figure is not None: self.figure.close()
+        # Close the figure, if it was saved or told to show: in other cases, the user probably wants to use the figure later
+        if self.has_figure and (not self._external_figure) and (self.out_path is not None or self.config.show): self.figure.close()
 
     # -----------------------------------------------------------------
 

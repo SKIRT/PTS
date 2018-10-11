@@ -38,11 +38,13 @@ from ..config.analyse_cell_heating import definition as analyse_cell_heating_def
 from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
 from ..config.analyse_spectral_heating import definition as analyse_spectral_heating_definition
 from ..config.analyse_images import definition as analyse_images_definition
+from ..config.analyse_fluxes import definition as analyse_fluxes_definition
 from ..config.analyse_residuals import definition as analyse_residuals_definition
 from .heating.cell import CellDustHeatingAnalyser
 from .heating.projected import ProjectedDustHeatingAnalyser
 from .heating.spectral import SpectralDustHeatingAnalyser
 from .images import ImagesAnalyser
+from .fluxes import FluxesAnalyser
 from .residuals import ResidualAnalyser
 from ..config.analyse_properties import definition as analyse_properties_definition
 from .properties import PropertiesAnalyser
@@ -65,6 +67,9 @@ from ...core.units.parsing import parse_unit as u
 from ...core.data.sed import SED
 from ...magic.core.dataset import StaticDataSet
 from ...core.basics.distribution import Distribution
+from ...core.basics.plot import MPLFigure
+from ...core.units.parsing import parse_quantity as q
+from ...core.units.quantity import PhotometricQuantity
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -120,6 +125,7 @@ _heating_command_name = "heating"
 _energy_command_name = "energy"
 _sfr_command_name = "sfr"
 _correlations_command_name = "correlations"
+_fluxes_command_name = "fluxes"
 _residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
@@ -155,6 +161,7 @@ commands[_energy_command_name] = (None, None, "analyse the energy budget in the 
 commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
 commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
 commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
+commands[_fluxes_command_name] = ("analyse_fluxes_command", True, "analyse the simulation fluxes", None)
 commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
 
 # -----------------------------------------------------------------
@@ -1032,6 +1039,31 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_reference_sed(self, label, additional_error=None):
+
+        """
+        This function ...
+        :param label:
+        :param additional_error:
+        :return:
+        """
+
+        # Get sed
+        if label == clipped_name: sed = self.clipped_sed
+        elif label == truncated_name: sed = self.truncated_sed
+        elif label == asymptotic_sed: sed = self.asymptotic_sed
+        else: raise ValueError("Invalid reference SED name")
+
+        # Add relative error?
+        if additional_error is not None:
+            sed = sed.copy()
+            sed.add_or_set_relative_error(additional_error)
+
+        # Return
+        return sed
+
+    # -----------------------------------------------------------------
+
     def get_reference_seds(self, additional_error=None, references=default_sed_references):
 
         """
@@ -1051,15 +1083,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         for label in references:
 
             # Get sed
-            if label == clipped_name: sed = self.clipped_sed
-            elif label == truncated_name: sed = self.truncated_sed
-            elif label == asymptotic_sed: sed = self.asymptotic_sed
-            else: raise ValueError("Invalid reference SED name")
-
-            # Add relative error?
-            if additional_error is not None:
-                sed = sed.copy()
-                sed.add_or_set_relative_error(additional_error)
+            sed = self.get_reference_sed(label, additional_error=additional_error)
 
             # Add
             description = sed_reference_descriptions[label]
@@ -1078,12 +1102,20 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_positional_optional("orientations", "string_list", "instrument orientation", default_orientations, choices=orientations)
         definition.add_flag("add_references", "add reference SEDs", False)
         definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1105,7 +1137,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         self.plot_total_sed(orientations=config.orientations, add_references=config.add_references,
-                            additional_error=config.additional_error, unit=unit)
+                            additional_error=config.additional_error, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1167,11 +1199,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_required("observed_intrinsic", "string_tuple", "plot observed stellar SED, intrinsic stellar SED, or both", choices=observed_intrinsic_choices)
         definition.add_positional_optional("components", "string_list", "components", [total], choices=components)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1192,7 +1232,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_stellar_sed(config.observed_intrinsic, components=config.components, unit=unit)
+        self.plot_stellar_sed(config.observed_intrinsic, components=config.components, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1279,10 +1319,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1303,7 +1351,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_dust_sed(config.components, unit=unit)
+        self.plot_dust_sed(config.components, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1363,12 +1411,20 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_positional_optional("contributions", "string_list", "contributions", default_contributions, choices=contributions)
         definition.add_optional("component", "string", "component", total, choices=components)
         definition.import_settings(plot_seds_definition)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1390,7 +1446,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_contribution_seds(contributions, unit=unit)
+        self.plot_contribution_seds(contributions, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1490,11 +1546,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
-        #definition.import_settings(plot_seds_definition)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1518,7 +1581,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_component_seds(components, unit=unit)
+        self.plot_component_seds(components, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1637,13 +1700,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_component_sed(self, component, observed_stellar_intrinsic, unit=None):
+    def plot_component_sed(self, component, observed_stellar_intrinsic, unit=None, path=None):
 
         """
         This function ...
         :param component:
         :param observed_stellar_intrinsic:
         :param unit:
+        :param path:
         :return:
         """
 
@@ -1654,14 +1718,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             sed = self.get_observed_stellar_or_intrinsic_sed(component, observed_stellar_intrinsic[0])
 
             # Plot
-            plot_sed(sed, unit=unit, distance=self.galaxy_distance)
+            plot_sed(sed, unit=unit, distance=self.galaxy_distance, path=path)
 
         # Both
         else:
 
             seds = OrderedDict()
             for osi in observed_stellar_intrinsic: seds[osi] = self.get_observed_stellar_or_intrinsic_sed(component, osi)
-            plot_seds(seds, residuals=False, unit=unit, distance=self.galaxy_distance)
+            plot_seds(seds, residuals=False, unit=unit, distance=self.galaxy_distance, path=path)
 
     # -----------------------------------------------------------------
 
@@ -1673,10 +1737,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1697,7 +1769,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot component
-        self.plot_component_sed(bulge, config.observed_stellar_intrinsic, unit=unit)
+        self.plot_component_sed(bulge, config.observed_stellar_intrinsic, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1709,10 +1781,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1733,7 +1813,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot component
-        self.plot_component_sed(disk, config.observed_stellar_intrinsic, unit=unit)
+        self.plot_component_sed(disk, config.observed_stellar_intrinsic, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1745,8 +1825,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1767,7 +1855,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot component
-        self.plot_component_sed(old, config.observed_stellar_intrinsic, unit=unit)
+        self.plot_component_sed(old, config.observed_stellar_intrinsic, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1779,10 +1867,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1803,7 +1899,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_component_sed(young, config.observed_stellar_intrinsic, unit=unit)
+        self.plot_component_sed(young, config.observed_stellar_intrinsic, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1815,10 +1911,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1837,7 +1941,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_component_sed(sfr, config.observed_stellar_intrinsic, unit=unit)
+        self.plot_component_sed(sfr, config.observed_stellar_intrinsic, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1849,9 +1953,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1872,15 +1984,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_sfr_intrinsic_sed(unit=unit)
+        self.plot_sfr_intrinsic_sed(unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
-    def plot_sfr_intrinsic_sed(self, unit=None):
+    def plot_sfr_intrinsic_sed(self, unit=None, path=None):
 
         """
         This function ...
         :param unit:
+        :param path:
         :return:
         """
 
@@ -1905,7 +2018,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #print(dust)
 
         # Plot
-        plot_seds(seds, unit=unit, distance=self.galaxy_distance)
+        plot_seds(seds, unit=unit, distance=self.galaxy_distance, path=path)
 
     # -----------------------------------------------------------------
 
@@ -1917,10 +2030,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+        
+        # Add options
         definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
         definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
         definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+        
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -1941,7 +2062,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = self.photometric_units[config.quantity][config.spectral]
 
         # Plot
-        self.plot_component_sed(unevolved, config.observed_stellar_intrinsic, unit=unit)
+        self.plot_component_sed(unevolved, config.observed_stellar_intrinsic, unit=unit, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1963,10 +2084,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def absorption_path(self):
+        return self.analysis_run.absorption_path
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_absorption_cells_sed_filepath(self):
         total_filename = "total_curve_absorption.dat"
-        return fs.get_filepath(self.spectral_heating_cells_path, total_filename, error_message="total spectral absorption SED file is not present: run spectral heating analysis first")
+        return fs.get_filepath(self.absorption_path, total_filename, error_message="total spectral absorption SED file is not present: run absorption analysis first")
 
     # -----------------------------------------------------------------
 
@@ -1979,7 +2106,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @lazyproperty
     def unevolved_absorption_cells_sed_filepath(self):
         unevolved_filename = "unevolved_curve_absorption.dat"
-        return fs.get_filepath(self.spectral_heating_cells_path, unevolved_filename, error_message="unevolved spectral absorption SED file is not present: run spectral heating analysis first")
+        return fs.get_filepath(self.absorption_path, unevolved_filename, error_message="unevolved spectral absorption SED file is not present: run absorption analysis first")
 
     # -----------------------------------------------------------------
 
@@ -2002,8 +2129,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Component
         definition.add_positional_optional("component", "string", "component", total, choices=components)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
         return definition
 
     # -----------------------------------------------------------------
@@ -2021,112 +2156,140 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         config = self.get_config_from_command(command, self.plot_absorption_sed_definition, **kwargs)
 
         # Total?
-        if config.component == total: self.plot_absorption_sed_total()
+        if config.component == total: self.plot_absorption_sed_total(path=config.path)
 
         # Bulge
-        elif config.component == bulge: self.plot_absorption_sed_bulge()
+        elif config.component == bulge: self.plot_absorption_sed_bulge(path=config.path)
 
         # Disk
-        elif config.component == disk: self.plot_absorption_sed_disk()
+        elif config.component == disk: self.plot_absorption_sed_disk(path=config.path)
 
         # Old
-        elif config.component == old: self.plot_absorption_sed_old()
+        elif config.component == old: self.plot_absorption_sed_old(path=config.path)
 
         # Young
-        elif config.component == young: self.plot_absorption_sed_young()
+        elif config.component == young: self.plot_absorption_sed_young(path=config.path)
 
         # SFR
-        elif config.component == sfr: self.plot_absorption_sed_sfr()
+        elif config.component == sfr: self.plot_absorption_sed_sfr(path=config.path)
 
         # Unevolved
-        elif config.component == unevolved: self.plot_absorption_sed_unevolved()
+        elif config.component == unevolved: self.plot_absorption_sed_unevolved(path=config.path)
 
         # Invalid
         else: raise ValueError("Invalid component '" + config.component + "'")
 
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_total(self):
+    def plot_absorption_sed_total(self, path=None):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for the total model ...")
 
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("total"), path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_bulge(self):
+    def plot_absorption_sed_bulge(self, path=None):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for old bulge component ...")
 
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("bulge"), path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_disk(self):
+    def plot_absorption_sed_disk(self, path=None):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for old disk component ...")
 
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("disk"), path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_old(self):
+    def plot_absorption_sed_old(self, path=None):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for old stars ...")
 
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("old"), path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_young(self):
+    def plot_absorption_sed_young(self, path=None):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for young stars ...")
 
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("young"), path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_sfr(self):
+    def plot_absorption_sed_sfr(self, path=None):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for star formation regions ...")
 
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("sfr"), path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_absorption_sed_unevolved(self):
+    def plot_absorption_sed_unevolved(self, path=None):
 
         """
         Thisfunction ...
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Plotting absorption for unevolved stars ...")
+
+        # Plot
+        plot_sed(self.get_dust_absorption_sed("unevolved"), path=path)
 
     # -----------------------------------------------------------------
 
@@ -3037,6 +3200,236 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "total")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorption(self):
+        return not fs.is_empty(self.total_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "bulge")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_absorption(self):
+        return not fs.is_empty(self.bulge_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "disk")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_absorption(self):
+        return not fs.is_empty(self.disk_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "old")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorption(self):
+        return not fs.is_empty(self.old_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "young")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorption(self):
+        return not fs.is_empty(self.young_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "sfr")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_absorption(self):
+        return not fs.is_empty(self.sfr_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorption_path(self):
+        return fs.create_directory_in(self.absorption_path, "unevolved")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_absorption(self):
+        return not fs.is_empty(self.unevolved_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def get_absorption_path(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        if component == total: return self.total_absorption_path
+        elif component == bulge: return self.bulge_absorption_path
+        elif component == disk: return self.disk_absorption_path
+        elif component == old: return self.old_absorption_path
+        elif component == young: return self.young_absorption_path
+        elif component == sfr: return self.sfr_absorption_path
+        elif component == unevolved: return self.unevolved_absorption_path
+        else: raise ValueError("Invalid component name: '" + component + "'")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_dust_absorption_sed(self, component, dust_contribution="all"):
+
+        """
+        This function ...
+        :param component:
+        :param dust_contribution:
+        :return:
+        """
+
+        # Get directory path
+        dirpath = self.get_absorption_path(component)
+        if fs.is_empty(dirpath): raise IOError("The absorption data for the '" + component + "' simulation is not (yet) present: run the absorption analysis first")
+
+        # Get filepath
+        # For Simple absorption situations, it does not matter whether you want the diffuse, or all absorption (there is only diffuse)
+        if dust_contribution == "all":
+            filepath = fs.join(dirpath, "absorption_all.dat")
+            simple_filepath = fs.join(dirpath, "absorption.dat")
+        elif dust_contribution == "diffuse":
+            filepath = fs.join(dirpath, "absorption_diffuse.dat")
+            simple_filepath = fs.join(dirpath, "absorption.dat")
+        elif dust_contribution == "internal":
+            filepath = fs.join(dirpath, "absorption_internal.dat")
+            simple_filepath = None
+        else: raise ValueError("Invalid dust contribution '" + dust_contribution + "': must be 'all', 'diffuse', or 'internal'")
+
+        # Load the SED
+        if fs.is_file(filepath): sed = SED.from_file(filepath)
+        elif fs.is_file(simple_filepath): sed = SED.from_file(simple_filepath)
+        else: raise IOError("Absorption SED file is missing")
+
+        # Return
+        return sed
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_dust_emission_sed(self, component, dust_contribution="all"):
+
+        """
+        This function ...
+        :param component:
+        :param dust_contribution:
+        :return:
+        """
+
+        # Get directory path
+        dirpath = self.get_absorption_path(component)
+        if fs.is_empty(dirpath): raise IOError("The absorption data for the '" + component + "' simulation is not (yet) present: run the absorption analysis first")
+
+        # Get filepath
+        # For Simple absorption situations, it does not matter whether you want the diffuse, or all absorption (there is only diffuse)
+        if dust_contribution == "all":
+            filepath = fs.join(dirpath, "emission_all.dat")
+            simple_filepath = fs.join(dirpath, "emission.dat")
+        elif dust_contribution == "diffuse":
+            filepath = fs.join(dirpath, "emission_diffuse.dat")
+            simple_filepath = fs.join(dirpath, "emission.dat")
+        elif dust_contribution == "internal":
+            filepath = fs.join(dirpath, "emission_internal.dat")
+            simple_filepath = None
+        else: raise ValueError("Invalid dust contribution '" + dust_contribution + "': must be 'all', 'diffuse', or 'internal'")
+
+        # Load the SED
+        if fs.is_file(filepath): sed = SED.from_file(filepath)
+        elif fs.is_file(simple_filepath): sed = SED.from_file(simple_filepath)
+        else: raise IOError("Emission SED file is missing")
+
+        # Return
+        return sed
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_observed_stellar_sed(self, component, dust_contribution="all"):
+
+        """
+        This function ...
+        :param component:
+        :param dust_contribution:
+        :return:
+        """
+
+        # Get directory path
+        dirpath = self.get_absorption_path(component)
+        if fs.is_empty(dirpath): raise IOError("The absorption data for the '" + component + "' simulation is not (yet) present: run the absorption analysis first")
+
+        # Get filepath
+        # For Simple absorption situations, it does not matter whether you want the diffuse, or all absorption (there is only diffuse)
+        if dust_contribution == "all":
+            filepath = fs.join(dirpath, "observed_stellar_all.dat")
+            simple_filepath = fs.join(dirpath, "observed_stellar.dat")
+        elif dust_contribution == "diffuse":
+            filepath = fs.join(dirpath, "observed_stellar_diffuse.dat")
+            simple_filepath = fs.join(dirpath, "observed_stellar.dat")
+        elif dust_contribution == "internal":
+            filepath = fs.join(dirpath, "observed_stellar_internal.dat")
+            simple_filepath = None
+        else: raise ValueError("Invalid dust contribution '" + dust_contribution + "': must be 'all', 'diffuse', or 'internal'")
+
+        # Load the SED
+        if fs.is_file(filepath): sed = SED.from_file(filepath)
+        elif fs.is_file(simple_filepath): sed = SED.from_file(simple_filepath)
+        else: raise IOError("Observed stellar SED file is missing")
+
+        # Return sed
+        return sed
+
+    # -----------------------------------------------------------------
+
+    def get_scattered_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Get the simulations
+        simulations = self.simulations[component]
+
+        # Return
+        return simulations.observed_sed_scattered if simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def plot_paper_definition(self):
 
         """
@@ -3086,34 +3479,64 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        from pts.core.basics.plot import MPLFigure
+        # Set limits
+        unit = u("Lsun", density=True)
+        min_wavelength = q("0.02 micron")
+        max_wavelength = q("2000 micron")
+        #min_flux = q("1e-13.5 W/m2", density=True)
+        #max_flux = q("1e-10 W/m2", density=True)
+        #min_flux = q("10**6.5 Lsun", density=True) # doesn't parse because is splitted at **
+        #max_flux = q("10**11 Lsun", density=True) # doesn't parse because is splitted at **
+        min_flux = PhotometricQuantity(10**6.5, unit)
+        max_flux = PhotometricQuantity(10**10, unit)
 
         # Create figure
-        figure = MPLFigure()
+        figsize = (20,6,)
+        figure = MPLFigure(size=figsize)
 
         # Create 2 plots
         main_plots, residual_plots = figure.create_row_of_sed_plots(2, nresiduals=[1,0])
 
         # Plot first panel
         seds1 = OrderedDict()
-        #add_seds(self.get_reference_seds(additional_error=additional_error))
 
-        #components = [bulge, disk, old, young, sfr, unevolved, total]
+        # Set options
+        plot_options1 = dict()
+        plot_options1["Total"] = {"residuals": True}
+        plot_options1["Old"] = {"residuals": False}
+        plot_options1["Young"] = {"residuals": False}
+        plot_options1["Ionizing"] = {"residuals": False}
 
         # Add component simulation SEDs
         seds1["Total"] = self.get_simulation_sed(total)
         seds1["Old"] = self.get_simulation_sed(old)
         seds1["Young"] = self.get_simulation_sed(young)
         seds1["Ionizing"] = self.get_simulation_sed(sfr)
+        seds1["Observation"] = self.get_reference_sed(clipped_name, additional_error=0.1) # 10 % additional errorbars
 
         # Plot FIRST
-        plot_seds(seds1, figure=figure, main_plot=main_plots[0], residual_plots=residual_plots[0], show=False) # don't show yet
+        plot_seds(seds1, figure=figure, main_plot=main_plots[0], residual_plots=residual_plots[0], show=False,  # don't show yet
+                  min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
+                  distance=self.galaxy_distance, options=plot_options1, tex=False, unit=unit)
 
         # Second panel
         seds2 = OrderedDict()
 
+        # Add SEDs
+        seds2["Observed stellar"] = self.get_observed_stellar_sed("total")
+        seds2["Absorbed"] = self.get_dust_absorption_sed("total")
+        seds2["Dust"] = self.get_dust_emission_sed("total")
+        seds2["Scattered"] = self.get_scattered_sed("total")
+
+        # Set options
+        plot_options2 = dict()
+        plot_options2["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar"}
+        plot_options2["Dust"] = {"above": "Observed stellar"}
+
         # Plot SECOND
-        plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False) # don't show yet
+        plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False, # don't show yet
+                  min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
+                  distance=self.galaxy_distance, options=plot_options2, tex=False, unit=unit, yaxis_position="right")
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -4532,6 +4955,65 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create the analyser
         analyser = CorrelationsAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_fluxes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_fluxes_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_fluxes_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_fluxes_definition, **kwargs)
+        
+        # Analyse
+        self.analyse_fluxes(config=config)
+
+    # -----------------------------------------------------------------
+    
+    def analyse_fluxes(self, config=None):
+        
+        """
+        This function ...
+        :param config: 
+        :return: 
+        """
+
+        # Create the analyser
+        analyser = FluxesAnalyser(config=config)
 
         # Set the modeling path
         analyser.config.path = self.config.path

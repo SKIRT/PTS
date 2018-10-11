@@ -2388,12 +2388,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Diffuse
         diffuse = Box(ordered_box=True)
-        #if self.has_total_absorption_luminosity_diffuse: diffuse.absorbed = self.total_absorption_luminosity_diffuse
-        #diffuse.absorbed_cells = self.total_absorption_luminosity_diffuse_cells # CELLS
-        #diffuse.dust = self.total_dust_luminosity_diffuse
-        #if self.has_total_absorption_fraction_diffuse: diffuse.rel_absorbed = self.total_absorption_fraction_diffuse
-        #diffuse.rel_absorbed_cells = self.total_absorption_fraction_diffuse_cells # CELLS
-        #diffuse.rel_dust = self.total_dust_fraction_diffuse
+        diffuse.absorbed = self.total_absorption.best_absorption_luminosity_diffuse
+        diffuse.dust = self.total_absorption.best_dust_luminosity_diffuse
+        diffuse.rel_absorbed = self.total_absorption.best_absorption_fraction_diffuse
+        diffuse.rel_dust = self.total_absorption.best_dust_fraction_diffuse
+        diffuse.absorbed_fuv = self.total_absorption.best_fuv_absorption_luminosity_diffuse
+        diffuse.rel_absorbed_fuv = self.total_absorption.best_fuv_absorption_fraction_diffuse
 
         # All
         all = Box(ordered_box=True)
@@ -2440,12 +2440,10 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props.observed_stellar_bol = self.bulge_observed_stellar_luminosity
 
         # Absorption
-        #if self.has_bulge_absorption_luminosity: props.absorbed = self.bulge_absorption_luminosity
-        #props.absorbed_cells = self.bulge_absorption_luminosity_cells
-        #props.dust = self.bulge_dust_luminosity
-        #if self.has_bulge_absorption_fraction: props.rel_absorbed = self.bulge_absorption_fraction
-        #props.rel_absorbed_cells = self.bulge_absorption_fraction_cells
-        #props.rel_dust = self.bulge_dust_fraction
+        props.absorbed = self.bulge_absorption.best_absorption_luminosity
+        props.dust = self.bulge_absorption.best_dust_luminosity
+        props.rel_absorbed = self.bulge_absorption.best_absorption_fraction
+        props.rel_dust = self.bulge_absorption.best_dust_fraction
 
         # Return
         return props
@@ -2481,12 +2479,10 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props.observed_stellar_bol = self.disk_observed_stellar_luminosity
 
         # Absorption
-        if self.has_disk_absorption_luminosity: props.absorbed = self.disk_absorption_luminosity
-        props.absorbed_cells = self.disk_absorption_luminosity_cells
-        props.dust = self.disk_dust_luminosity
-        if self.has_disk_absorption_fraction: props.rel_absorbed = self.disk_absorption_fraction
-        props.rel_absorbed_cells = self.disk_absorption_fraction_cells
-        props.rel_dust = self.disk_dust_fraction
+        props.absorbed = self.disk_absorption.best_absorption_luminosity
+        props.dust = self.disk_absorption.best_dust_luminosity
+        props.rel_absorbed = self.disk_absorption.best_absorption_fraction
+        props.rel_dust = self.disk_absorption.best_dust_fraction
 
         # Return
         return props
@@ -2522,12 +2518,10 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props.observed_stellar_bol = self.old_observed_stellar_luminosity
 
         # Absorption
-        #if self.has_old_absorption_luminosity: props.absorbed = self.old_absorption_luminosity
-        #props.absorbed_cells = self.old_absorption_luminosity_cells
-        #props.dust = self.old_dust_luminosity
-        #if self.has_old_absorption_fraction: props.rel_absorbed = self.old_absorption_fraction
-        #props.rel_absorbed_cells = self.old_absorption_fraction_cells
-        #props.rel_dust = self.old_dust_fraction
+        props.absorbed = self.old_absorption.best_absorption_luminosity
+        props.dust = self.old_absorption.best_dust_luminosity
+        props.rel_absorbed = self.old_absorption.best_absorption_fraction
+        props.rel_dust = self.old_absorption.best_dust_fraction
 
         # Return
         return props
@@ -2563,15 +2557,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         props.observed_stellar_bol = self.young_observed_stellar_luminosity
 
         # Absorption
-        if self.has_young_absorption_luminosity: props.absorbed = self.young_absorption_luminosity
-        props.absorbed_cells = self.young_absorption_luminosity_cells
-        props.dust = self.young_dust_luminosity
-        if self.has_young_absorption_fraction: props.rel_absorbed = self.young_absorption_fraction
-        props.rel_absorbed_cells = self.young_absorption_fraction_cells
-        props.rel_dust = self.young_dust_fraction
-
-        props.absorbed_fuv = self.best_young_fuv_absorption_luminosity_all
-        props.rel_absorbed_fuv = self.best_young_fuv_absorption_fraction_all
+        props.absorbed = self.young_absorption.best_absorption_luminosity
+        props.dust = self.young_absorption.best_dust_luminosity
+        props.rel_absorbed = self.young_absorption.best_absorption_fraction
+        props.rel_dust = self.young_absorption.best_dust_fraction
+        props.absorbed_fuv = self.young_absorption.best_fuv_absorption_luminosity
+        props.rel_absorbed_fuv = self.young_absorption.best_fuv_absorption_fraction
 
         # Return
         return props
@@ -2610,30 +2601,30 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Diffuse
         diffuse = Box(ordered_box=True)
-        #if self.has_sfr_absorption_luminosity_diffuse: diffuse.absorbed = self.sfr_absorption_luminosity_diffuse
-        #diffuse.absorbed_cells = self.sfr_absorption_luminosity_diffuse_cells
-        #diffuse.dust = self.sfr_dust_luminosity_diffuse
-        #if self.has_sfr_absorption_fraction_diffuse: diffuse.rel_absorbed = self.sfr_absorption_fraction_diffuse
-        #diffuse.rel_absorbed_cells = self.sfr_absorption_fraction_diffuse_cells
-        #diffuse.rel_dust = self.sfr_dust_fraction_diffuse
+        diffuse.absorbed = self.sfr_absorption.best_absorption_luminosity_diffuse
+        diffuse.dust = self.sfr_absorption.best_dust_luminosity_diffuse
+        diffuse.rel_absorbed = self.sfr_absorption.best_absorption_fraction_diffuse
+        diffuse.rel_dust = self.sfr_absorption.best_dust_fraction_diffuse
+        diffuse.absorbed_fuv = self.sfr_absorption.best_fuv_absorption_luminosity_diffuse
+        diffuse.rel_absorbed_fuv = self.sfr_absorption.best_fuv_absorption_fraction_diffuse
 
         # Internal
-        #internal = Box(ordered_box=True)
-        #internal.absorbed = self.sfr_absorption_luminosity_internal
-        #internal.dust = self.sfr_dust_luminosity_internal
-        #internal.dust_alt = self.sfr_dust_luminosity_internal_alt
-        #internal.rel_absorbed = self.sfr_absorption_fraction_internal
-        #internal.rel_dust = self.sfr_dust_fraction_internal
-        #internal.rel_dust_alt = self.sfr_dust_fraction_internal_alt
+        internal = Box(ordered_box=True)
+        internal.absorbed = self.sfr_absorption.best_absorption_luminosity_internal
+        internal.dust = self.sfr_absorption.best_dust_luminosity_internal
+        internal.rel_absorbed = self.sfr_absorption.best_absorption_fraction_internal
+        internal.rel_dust = self.sfr_absorption.best_dust_fraction_internal
+        internal.absorbed_fuv = self.sfr_absorption.best_fuv_absorption_luminosity_internal
+        internal.rel_absorbed_fuv = self.sfr_absorption.best_fuv_absorption_fraction_internal
 
         # All
-        #all = Box(ordered_box=True)
-        #all.absorbed = self.best_sfr_absorption_luminosity_all
-        #all.dust = self.best_sfr_dust_luminosity_all
-        #all.rel_absorbed = self.best_sfr_absorption_fraction_all
-        #all.rel_dust = self.best_sfr_dust_fraction_all
-        #all.absorbed_fuv = self.best_sfr_fuv_absorption_luminosity_all
-        #all.rel_absorbed_fuv = self.best_sfr_fuv_absorption_fraction_all
+        all = Box(ordered_box=True)
+        all.absorbed = self.sfr_absorption.best_absorption_luminosity_all
+        all.dust = self.sfr_absorption.best_dust_luminosity_all
+        all.rel_absorbed = self.sfr_absorption.best_absorption_fraction_all
+        all.rel_dust = self.sfr_absorption.best_dust_fraction_all
+        all.absorbed_fuv = self.sfr_absorption.best_fuv_absorption_luminosity_all
+        all.rel_absorbed_fuv = self.sfr_absorption.best_fuv_absorption_fraction_all
 
         # Return
         props.diffuse = diffuse
@@ -2674,21 +2665,21 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Diffuse
         diffuse = Box(ordered_box=True)
-        #if self.has_unevolved_absorption_luminosity_diffuse: diffuse.absorbed = self.unevolved_absorption_luminosity_diffuse
-        #diffuse.absorbed_cells = self.unevolved_absorption_luminosity_diffuse_cells
-        #diffuse.dust = self.unevolved_dust_luminosity_diffuse
-        #if self.has_unevolved_absorption_fraction_diffuse: diffuse.rel_absorbed = self.unevolved_absorption_fraction_diffuse
-        #diffuse.rel_absorbed_cells = self.unevolved_absorption_fraction_diffuse_cells
-        #diffuse.rel_dust = self.unevolved_dust_fraction_diffuse
+        diffuse.absorbed = self.unevolved_absorption.best_absorption_luminosity_diffuse
+        diffuse.dust = self.unevolved_absorption.best_dust_luminosity_diffuse
+        diffuse.rel_absorbed = self.unevolved_absorption.best_absorption_fraction_diffuse
+        diffuse.rel_dust = self.unevolved_absorption.best_dust_fraction_diffuse
+        diffuse.absorbed_fuv = self.unevolved_absorption.best_fuv_absorption_luminosity_diffuse
+        diffuse.rel_absorbed_fuv = self.unevolved_absorption.best_fuv_absorption_fraction_diffuse
 
         # All
         all = Box(ordered_box=True)
-        #all.absorbed = self.best_unevolved_absorption_luminosity_all
-        #all.dust = self.best_unevolved_dust_luminosity_all
-        #all.rel_absorbed = self.best_unevolved_absorption_fraction_all
-        #all.rel_dust = self.best_unevolved_dust_fraction_all
-        #all.absorbed_fuv = self.best_unevolved_fuv_absorption_luminosity_all
-        #all.rel_absorbed_fuv = self.best_unevolved_fuv_absorption_fraction_all
+        all.absorbed = self.unevolved_absorption.best_absorption_luminosity_all
+        all.dust = self.unevolved_absorption.best_dust_luminosity_all
+        all.rel_absorbed = self.unevolved_absorption.best_absorption_fraction_all
+        all.rel_dust = self.unevolved_absorption.best_dust_fraction_all
+        all.absorbed_fuv = self.unevolved_absorption.best_fuv_absorption_luminosity_all
+        all.rel_absorbed_fuv = self.unevolved_absorption.best_fuv_absorption_fraction_all
 
         # Return
         props.diffuse = diffuse

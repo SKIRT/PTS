@@ -473,7 +473,7 @@ def reduce_unit(unit):
     # If we have a combination of a flux density and a length to the power of 2
     if "spectral flux density" in base_types and "length" in physical_base_types(unit, power=2):
 
-        print("2")
+        #print("2")
 
         # if they occur more than once, we have something weird
         if len(base_types["spectral flux density"]) == 1:

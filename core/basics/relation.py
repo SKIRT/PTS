@@ -44,11 +44,6 @@ class Relation(SmartTable):
         :param kwargs:
         """
 
-        #print("RELATION")
-        #print(args)
-        #print(kwargs)
-        #print("")
-
         if kwargs.get("from_astropy", None) is None:
             if "x_unit" in kwargs: from_astropy = False
             else: from_astropy = True

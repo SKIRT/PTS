@@ -120,3 +120,14 @@ definition.add_optional("min_flux", "photometric_quantity", "minimum flux")
 definition.add_optional("max_flux", "photometric_quantity", "maximum flux")
 
 # -----------------------------------------------------------------
+
+# TeX rendering of text
+definition.add_flag("tex", "enable TeX rendering", True)
+
+# -----------------------------------------------------------------
+
+# Axis positions
+definition.add_optional("xaxis_position", "string", "position of x axis ticks and label", "bottom", choices=["bottom", "top"])
+definition.add_optional("yaxis_position", "string", "position of y axis ticks and label", "left", choices=["left", "right"])
+
+# -----------------------------------------------------------------

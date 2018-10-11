@@ -80,12 +80,6 @@ class Scatter(SmartTable):
 
     @property
     def nvariables(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.colnames)
 
     # -----------------------------------------------------------------
