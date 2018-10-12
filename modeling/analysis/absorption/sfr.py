@@ -505,7 +505,7 @@ class SFRAbsorption(AbsorptionBase):
 
     @lazyproperty
     def best_dust_sed_all_complete(self):
-        return self.best_dust_sed_diffuse_complete + self.dust_sed_internal_complete
+        return self.correct_dust_sed(self.best_dust_sed_diffuse_complete + self.dust_sed_internal_complete, trim=False, make_full=True)
 
     # -----------------------------------------------------------------
 
