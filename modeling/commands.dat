@@ -82,8 +82,8 @@ launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a
 manage_analysis | -- | analysis.manager.AnalysisManager | arguments | Manage the simulations of an analysis run
 evaluate_analysis | -- | analysis.evaluation.AnalysisModelEvaluator | arguments | Evaluate an analysis model (creates images and compares SEDs and residuals in a quick way)
 analyse_properties | -- | analysis.properties.PropertiesAnalyser | arguments | Analyse basic model properties
-analyse_attenuation_curve | -- | analysis.attenuation.curve.AttenuationCurveAnalyser | arguments | Analyse the dust attenuation curve
-analyse_attenuation_map | -- | analysis.attenuation.map.AttenuationMapAnalyser | arguments | Analyse the attenuation map
+analyse_images | -- | analysis.images.ImagesAnalyser | arguments | Create mock images from analysis model
+analyse_fluxes | -- | analysis.fluxes.FluxesAnalyser | arguments | Calculate mock fluxes from analysis model
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
 analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
 analyse_maps | -- | analysis.maps.maps.MapsAnalyser | arguments | Analyse maps derived from the simulated images
@@ -95,7 +95,7 @@ analyse_old_maps | -- | analysis.maps.old.OldMapsAnalyser | arguments | Analyse 
 analyse_dust_maps | -- | analysis.maps.dust.DustMapsAnalyser | arguments | Analyse dust maps derived from the simulated images
 analyse_young_maps | -- | analysis.maps.young.YoungMapsAnalyser | arguments | Analyse young stellar maps derived from the simulated images
 analyse_ionizing_maps | -- | analysis.maps.ionizing.IonizingMapsAnalyser | arguments | Analyse ionizing stellar maps derived from the simulated images
-analyse_absorption | -- | analysis.absorption.AbsorptionAnalyser | arguments | Analyse the dust absorption
+analyse_absorption | -- | analysis.absorption.absorption.AbsorptionAnalyser | arguments | Analyse the dust absorption
 analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_spectral_heating | -- | analysis.heating.spectral.SpectralDustHeatingAnalyser | arguments | Analyse the spectral dust heating

@@ -1921,26 +1921,18 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
-        #$F_\nu$$[Jy]$
-
         # Spectral density
         if self.is_spectral_density:
 
             if self.is_neutral_density:
-
                 prefix = lambda_latex_symbol + " "
                 suffix = "_" + lambda_latex_symbol
-
             elif self.is_frequency_density:
-
                 prefix = ""
                 suffix = "_" + nu_latex_symbol
-
             elif self.is_wavelength_density:
-
                 prefix = ""
                 suffix = "_" + lambda_latex_symbol
-
             else: raise RuntimeError("Something went wrong")
 
         # Not a spectral density
@@ -1953,13 +1945,7 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def latex_string(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.latex_symbol + " [" + str(self) + "]"
+        return self.latex_symbol + " [" + self.to_string('latex')[1:-1] + "]"
 
     # -----------------------------------------------------------------
 

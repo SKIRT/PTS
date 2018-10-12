@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import StringIO
 from abc import ABCMeta, abstractproperty
 
 # Import the relevant PTS classes and modules
@@ -1564,9 +1565,14 @@ class ComponentSimulations(object):
 
         # GIVE WARNING
         import traceback
-        log.warning("The get_stellar_part function in its current form is deprecated and should NOT be used, as it is very inacurrate")
+        log.warning("The get_stellar_part function in its current form should NOT be used for science results and only for comparisons, as it is very inacurrate")
+        log.warning("This warning is completely normal, though, it is just to remind the developer where and when it is called")
         log.warning("Called from:")
-        traceback.print_stack(limit=6)
+
+        # Write traceback
+        output = StringIO.StringIO()
+        traceback.print_stack(limit=6, file=output)
+        for line in output.getvalue().split("\n"): log.warning(line)
 
         # Fit stuff
         if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")
@@ -1592,9 +1598,14 @@ class ComponentSimulations(object):
 
         # GIVE WARNING
         import traceback
-        log.warning("The get_dust_part function in its current form is deprecated and should NOT be used, as it is very inacurrate")
+        log.warning("The get_dust_part function in its current form should NOT be used for science results and only for comparisons, as it is very inacurrate")
+        log.warning("This warning is completely normal, though, it is just to remind the developer where and when it is called")
         log.warning("Called from:")
-        traceback.print_stack(limit=6)
+
+        # Write traceback
+        output = StringIO.StringIO()
+        traceback.print_stack(limit=6, file=output)
+        for line in output.getvalue().split("\n"): log.warning(line)
 
         # Fit stuff?
         if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")

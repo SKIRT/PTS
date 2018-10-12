@@ -383,6 +383,28 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_file(cls, path, **kwargs):
+
+        """
+        This function ...
+        :param path:
+        :param kwargs:
+        :return:
+        """
+
+        # Load the curve using the base class implementation
+        sed = super(SED, cls).from_file(path, **kwargs)
+
+        # Set x name and y name
+        sed.x_name = "Wavelength"
+        sed.y_name = "Photometry"
+
+        # Return the relation
+        return sed
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_text_file(cls, path, wavelength_unit=None, photometry_unit=None, density=False, wavelength_column=0,
                        photometry_column=1, skiprows=None):
 
@@ -983,6 +1005,28 @@ class ObservedSED(FilterCurve):
             # Add columns
             self.add_column_info("Error-", float, unit, "Lower bound error")
             self.add_column_info("Error+", float, unit, "Upper bound error")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, **kwargs):
+
+        """
+        This function ...
+        :param path:
+        :param kwargs:
+        :return:
+        """
+
+        # Load the curve using the base class implementation
+        sed = super(ObservedSED, cls).from_file(path, **kwargs)
+
+        # Set x name and y name
+        sed.x_name = "Wavelength"
+        sed.y_name = "Photometry"
+
+        # Return the relation
+        return sed
 
     # -----------------------------------------------------------------
 

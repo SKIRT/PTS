@@ -194,6 +194,7 @@ contributions_name = "contributions"
 properties_name = "properties"
 attenuation_name = "attenuation"
 colours_name = "colours"
+fluxes_name = "fluxes"
 images_name = "images"
 residuals_name = "residuals"
 maps_name = "maps"
@@ -484,6 +485,12 @@ class AnalysisRunBase(object):
     @abstractproperty
     def colour_names(self):
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_path(self):
+        return fs.join(self.path, fluxes_name)
 
     # -----------------------------------------------------------------
 
@@ -1302,6 +1309,7 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.evaluation_path): fs.create_directory(self.evaluation_path)
 
         # Analysis directories
+        if not fs.is_directory(self.fluxes_path): fs.create_directory(self.fluxes_path)
         if not fs.is_directory(self.images_path): fs.create_directory(self.images_path)
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.properties_path): fs.create_directory(self.properties_path)

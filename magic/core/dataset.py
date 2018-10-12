@@ -991,10 +991,6 @@ class DataSet(object):
         :return: 
         """
 
-        #names = []
-        #for fltr in filters: names.append(self.get_name_for_filter(fltr))
-        #return names
-
         # FASTER IMPLEMENTATION (NOT USING THE SLOW GET_NAME_FOR_FILTER)
         # ONLY OPENENING EACH IMAGE HEADER ONCE!
 
@@ -1030,18 +1026,27 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frames_for_filters(self, filters):
+    def get_frames_for_filters(self, filters, as_dict=False):
 
         """
         Thisf unction ...
         :param filters:
+        :param as_dict:
         :return:
         """
 
-        frames = []
+        # Initialize
+        frames = OrderedDict()
+
+        # Get frame names
         names = self.get_names_for_filters(filters)
-        for name in names: frames.append(self.get_frame(name))
-        return frames
+
+        # Add the frames
+        for name, fltr in zip(names, filters): frames[fltr] = self.get_frame(name)
+
+        # Return
+        if as_dict: return frames
+        else: return frames.values()
 
     # -----------------------------------------------------------------
 

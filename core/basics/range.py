@@ -219,122 +219,60 @@ class Range(object):
 
     @property
     def min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._min
 
     # -----------------------------------------------------------------
 
     @property
     def max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._max
 
     # -----------------------------------------------------------------
 
     @min.setter
     def min(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
         self._min = value
 
     # -----------------------------------------------------------------
 
     @max.setter
     def max(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
         self._max = value
 
     # -----------------------------------------------------------------
 
     @property
     def log_min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.log10(self._min)
 
     # -----------------------------------------------------------------
 
     @property
     def log_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.log10(self._max)
 
     # -----------------------------------------------------------------
 
     @property
     def mean(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * (self.min + self.max)
 
     # -----------------------------------------------------------------
 
     @property
     def geometric_mean(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sqrt(self.min * self.max)
 
     # -----------------------------------------------------------------
 
     @property
     def center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.mean
 
     # -----------------------------------------------------------------
 
     def as_tuple(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return (self.min, self.max)
+        return (self.min, self.max,)
 
     # -----------------------------------------------------------------
 
@@ -655,7 +593,23 @@ class Range(object):
         :return:
         """
 
-        return self.min <= value <= self.max
+        if self.inclusive: return self.min <= value <= self.max
+        else: return self.min < value < self.max
+
+    # -----------------------------------------------------------------
+
+    def values_in_range(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        in_range = []
+        for value in values:
+            if value in self: in_range.append(value)
+        return in_range
 
 # -----------------------------------------------------------------
 
@@ -862,24 +816,12 @@ class RealRange(Range):
 
     @classmethod
     def infinity(cls):
-
-        """
-        This function ...
-        :return:
-        """
-
         return cls(-float("inf"), float("inf"))
 
     # -----------------------------------------------------------------
 
     @classmethod
     def zero(cls):
-
-        """
-        This function ...
-        :return:
-        """
-
         return cls(-0., 0.)
 
     # -----------------------------------------------------------------
@@ -1002,24 +944,12 @@ class QuantityRange(Range):
 
     @property
     def min(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._min * self.unit
 
     # -----------------------------------------------------------------
 
     @property
     def max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._max * self.unit
 
     # -----------------------------------------------------------------
