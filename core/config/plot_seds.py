@@ -92,7 +92,10 @@ definition.add_optional("ages", "time_quantity_list", "ages for Bruzual-Charlot 
 
 # -----------------------------------------------------------------
 
+# Flags for residuals
 definition.add_flag("interpolate_models_for_residuals", "interpolate models to get the photometry at specific wavelengths", True)
+definition.add_flag("smooth_residuals", "splot a spline interpolation of the residual of the models when they are plotted against observations as reference")
+definition.add_flag("show_smooth", "plot the spline interpolation of the observation")
 
 # -----------------------------------------------------------------
 

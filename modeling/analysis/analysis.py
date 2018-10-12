@@ -1042,12 +1042,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_reference_sed(self, label, additional_error=None):
+    def get_reference_sed(self, label, additional_error=None, filters=None):
 
         """
         This function ...
         :param label:
         :param additional_error:
+        :param filters:
         :return:
         """
 
@@ -1061,6 +1062,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if additional_error is not None:
             sed = sed.copy()
             sed.add_or_set_relative_error(additional_error)
+
+        # Subset of filters?
+        if filters is not None: sed = sed.for_filters(filters)
 
         # Return
         return sed
@@ -2813,6 +2817,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_flag("simulation_residuals", "show the residuals of the simulation to the observed fluxes", True)
         definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
 
+        # Filters
+        definition.add_flag("use_fitting_filters", "limit the mock and observed SEDs to filters that were used for the fitting")
+
         # Save plot file
         definition.add_optional("path", "new_path", "plot file path")
 
@@ -2880,12 +2887,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot
         self.plot_fluxes(add_observed=config.add_observed, add_simulated=config.add_simulated,
                          only_residuals=config.only_residuals, simulation_residuals=config.simulation_residuals,
-                         additional_error=config.additional_error, path=config.path)
+                         additional_error=config.additional_error, use_fitting_filters=config.use_fitting_filters,
+                         path=config.path)
 
     # -----------------------------------------------------------------
 
     def plot_fluxes(self, add_observed=True, add_simulated=False, only_residuals=False, simulation_residuals=True,
-                    additional_error=None, path=None):
+                    additional_error=None, use_fitting_filters=False, path=None):
 
         """
         This function ...
@@ -2894,6 +2902,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param only_residuals:
         :param simulation_residuals:
         :param additional_error:
+        :param use_fitting_filters:
         :param path:
         :return:
         """
@@ -2901,10 +2910,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Inform the user
         log.info("Plotting the mock fluxes ...")
 
+        # Set the filters
+        if use_fitting_filters: use_filters = tuple(self.fitting_run.fitting_filters) # list is not hashable for the memoized get_reference_sed function
+        else: use_filters = None
+
+        # Get the mock fluxes
+        if use_filters is not None: mock_fluxes = self.mock_fluxes.for_filters(use_filters)
+        else: mock_fluxes = self.mock_fluxes
+
         # Set SEDs
         seds = OrderedDict()
-        if add_observed: seds["Observation"] = self.get_reference_sed(clipped_name, additional_error=additional_error)
-        seds["Mock"] = self.mock_fluxes
+        if add_observed: seds["Observation"] = self.get_reference_sed(clipped_name, additional_error=additional_error, filters=use_filters)
+        seds["Mock"] = mock_fluxes
         if add_simulated: seds["Simulation"] = self.get_simulation_sed("total")
 
         # Show chi squared
@@ -2919,10 +2936,10 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Set options
         plot_options = dict()
         plot_options["Mock"] = {"only_residuals": only_residuals, "as_reference": False}
-        plot_options["Simulation"] = {"residuals": simulation_residuals}
+        plot_options["Simulation"] = {"residuals": simulation_residuals, "residual_color": "darkgrey"}
 
         # Plot
-        plot_seds(seds, path=path, options=plot_options, residual_reference="observations")
+        plot_seds(seds, path=path, options=plot_options, residual_reference="observations", smooth_residuals=True)
 
     # -----------------------------------------------------------------
 

@@ -1657,14 +1657,20 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    @property
-    def yticklabels(self):
+    def set_xtick_labels(self, labels):
 
         """
-        Thisn function ...
+        This function ...
+        :param labels:
         :return:
         """
 
+        self.axes.set_xticklabels(labels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yticklabels(self):
         return self._plot.get_yticklabels()
 
     # -----------------------------------------------------------------
@@ -1741,6 +1747,18 @@ class MPLPlot(Plot):
 
         # Set fontsize
         plt.setp(self.yticklabels, rotation='horizontal', fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
+    def set_ytick_labels(self, labels):
+
+        """
+        This function ...
+        :param labels:
+        :return:
+        """
+
+        self.axes.set_yticklabels(labels)
 
     # -----------------------------------------------------------------
 
@@ -1868,6 +1886,34 @@ class MPLPlot(Plot):
 
         # No ticks
         self.yaxis.set_ticks([])
+
+    # -----------------------------------------------------------------
+
+    def hide_xtick_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set labels to empty strings
+        labels = [item.get_text() for item in self.axes.get_xticklabels()]
+        empty_string_labels = [''] * len(labels)
+        self.set_xtick_labels(empty_string_labels)
+
+    # -----------------------------------------------------------------
+
+    def hide_ytick_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set labels to empty strings
+        labels = [item.get_text() for item in self.axes.get_yticklabels()]
+        empty_string_labels = [''] * len(labels)
+        self.set_ytick_labels(empty_string_labels)
 
     # -----------------------------------------------------------------
 
@@ -2036,6 +2082,10 @@ class MPLFigure(Figure):
             first_mpl_plot = self.figure.add_subplot(gs[0], projection=projection)
             first_plot = MPLPlot(plot=first_mpl_plot)
 
+            # Hide x axis for all but last plot (if sharing)
+            # NO: hide x tick labels only
+            first_plot.hide_xtick_labels()
+
             if y_labels is not None:
                 label = y_labels[0]
                 if label is not None: first_plot.set_ylabel(label, fontsize=y_label_fontsize)
@@ -2070,6 +2120,7 @@ class MPLFigure(Figure):
 
             # Create next plots
             for index in range(1, size):
+                is_last = index == size - 1
 
                 # Get projection
                 if projections is not None: projection = projections[index]
@@ -2078,6 +2129,11 @@ class MPLFigure(Figure):
                 # Create next plot
                 next_plot = self.figure.add_subplot(gs[index], sharex=first_mpl_plot, projection=projection)
                 next_plot = MPLPlot(plot=next_plot)
+
+                # Hide x axis for all but last plot (if sharing)
+                # NO: hide x tick labels only
+                #if not is_last: next_plot.hide_xaxis()
+                if not is_last: next_plot.hide_xtick_labels()
 
                 # Set y label
                 if y_labels is not None:
@@ -2102,6 +2158,7 @@ class MPLFigure(Figure):
                 if index != size - 1:
                     next_plot.hide_xticks()
 
+                # Add the plot
                 plots.append(next_plot)
 
             last_plot = plots[-1]
@@ -2379,6 +2436,9 @@ class MPLFigure(Figure):
                 # Create the next plot
                 next_plot = self.figure.add_subplot(gs[index], sharey=first_mpl_plot, projection=projection)
                 next_plot = MPLPlot(plot=next_plot)
+
+                # Hide y tick labels for all but first plot (if sharing)
+                next_plot.hide_ytick_labels()
 
                 # Set x label
                 if x_labels is not None:

@@ -1654,6 +1654,29 @@ class FilterCurve(WavelengthCurve):
         # Parse the filter
         return parse_filter(instrument + " " + band)
 
+    # -----------------------------------------------------------------
+
+    def for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        # Make a copy of this SED
+        new = self.copy()
+
+        # Loop over the rows, remove the row if it does not correspond to a broad band filter
+        for index in reversed(range(len(self))):
+
+            # Remove if filter not in list
+            fltr = self.get_filter(index)
+            if fltr not in filters: new.remove_row(index)
+
+        # Return the new SED
+        return new
+
 # -----------------------------------------------------------------
 
 def generate_values(value_range, npoints=None, logscale=False, pick_from=None):
