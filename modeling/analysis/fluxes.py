@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisRunComponent
 from ...core.basics.log import log
@@ -570,7 +573,12 @@ class FluxesAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Plotting the observed and mock fluxes ...")
 
+        # Set SEDs
+        seds = OrderedDict()
+        seds["observed"] = self.fit_sed
+        seds["mock"] = self.sed
+
         # Plot
-        plot_seds({"observed": self.fit_sed, "mock": self.sed}, path=self.fluxes_plot_path)
+        plot_seds(seds, path=self.fluxes_plot_path)
 
 # -----------------------------------------------------------------

@@ -1808,6 +1808,52 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def get_column_mask(self, colname, invert=False):
+
+        """
+        This function ...
+        :param colname:
+        :param invert:
+        :return:
+        """
+
+        if invert: return np.logical_not(self[colname].mask)
+        else: return self[colname].mask
+
+    # -----------------------------------------------------------------
+
+    def get_column_nmasked(self, colname):
+        return np.sum(self.get_column_mask(colname))
+
+    # -----------------------------------------------------------------
+
+    def get_column_nnotmasked(self, colname):
+        return np.sum(self.get_column_mask(colname, invert=True))
+
+    # -----------------------------------------------------------------
+
+    def get_column_sum(self, colname, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param colname:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        # Get masked array
+        array = self.get_column_array(colname, unit=unit, masked=True)
+
+        # Get sum
+        value = np.sum(array.compressed())
+
+        # Return
+        if add_unit and unit is not None: return value * unit
+        else: return value
+
+    # -----------------------------------------------------------------
+
     def get_values(self, colnames, index, add_unit=True, as_dict=False):
 
         """

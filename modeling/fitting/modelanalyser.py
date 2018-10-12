@@ -794,12 +794,6 @@ class SEDFitModelAnalyser(FittingComponent):
 
     @property
     def ndof(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ndifferences - self.nfree_parameters - 1 # number of data points - number of fitted parameters - 1
 
     # -----------------------------------------------------------------

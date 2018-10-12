@@ -70,6 +70,8 @@ from ...core.basics.distribution import Distribution
 from ...core.basics.plot import MPLFigure
 from ...core.units.parsing import parse_quantity as q
 from ...core.units.quantity import PhotometricQuantity
+from ...core.data.sed import ObservedSED
+from ..fitting.modelanalyser import FluxDifferencesTable
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -210,6 +212,7 @@ plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "p
 plot_commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the observed, modeled and residual images", None)
 plot_commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
+plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
 
@@ -2737,7 +2740,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Add options
         definition.add_positional_optional("orientation", "string", "orientation of the images", earth_name, choices=orientations)
-        #definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
         definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="FUV,NUV,I1,MIPS 24mu,Pacs160,SPIRE350", convert_default=True)
         definition.add_flag("residuals", "show residuals", True)
         definition.add_flag("distributions", "show residual distributions", True)
@@ -2746,7 +2748,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_flag("proper", "use the proper mock observed images if present", True)
         definition.add_flag("only_from_evaluation", "only use filters for which an image was made in the evaluation")
         definition.add_flag("sort_filters", "sort the filters on wavelength", True)
-        definition.add_optional("path", "string", "path for the plot file")
+
+        # Path
+        definition.add_optional("path", "new_path", "path for the plot file")
 
         # Return
         return definition
@@ -2788,6 +2792,137 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Invalid
         else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_fluxes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_flag("add_observed", "add the observed fluxes", True)
+        definition.add_flag("add_simulated", "add the simulated SED")
+        definition.add_flag("only_residuals", "only show the fluxes for the residuals")
+        definition.add_flag("simulation_residuals", "show the residuals of the simulation to the observed fluxes", True)
+        definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+
+        # Save plot file
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_path(self):
+        return self.analysis_run.fluxes_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mock_fluxes_path(self):
+        return fs.join(self.fluxes_path, "fluxes.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mock_fluxes(self):
+        return fs.is_file(self.mock_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mock_fluxes(self):
+        if not self.has_mock_fluxes: raise IOError("The mock fluxes are not (yet) present: run the fluxes analysis first")
+        return ObservedSED.from_file(self.mock_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def flux_differences_path(self):
+        return fs.join(self.fluxes_path, "differences.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_flux_differences(self):
+        return fs.is_file(self.flux_differences_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def flux_differences(self):
+        if not self.has_flux_differences: raise IOError("The flux differences are not (yet) present: run the fluxes analysis first")
+        return FluxDifferencesTable.from_file(self.flux_differences_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes_command(self, command, **kwargs):
+
+        """
+        This function ....
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_fluxes_definition, **kwargs)
+
+        # Plot
+        self.plot_fluxes(add_observed=config.add_observed, add_simulated=config.add_simulated,
+                         only_residuals=config.only_residuals, simulation_residuals=config.simulation_residuals,
+                         additional_error=config.additional_error, path=config.path)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes(self, add_observed=True, add_simulated=False, only_residuals=False, simulation_residuals=True,
+                    additional_error=None, path=None):
+
+        """
+        This function ...
+        :param add_observed
+        :param add_simulated:
+        :param only_residuals:
+        :param simulation_residuals:
+        :param additional_error:
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the mock fluxes ...")
+
+        # Set SEDs
+        seds = OrderedDict()
+        if add_observed: seds["Observation"] = self.get_reference_sed(clipped_name, additional_error=additional_error)
+        seds["Mock"] = self.mock_fluxes
+        if add_simulated: seds["Simulation"] = self.get_simulation_sed("total")
+
+        # Show chi squared
+        ndifferences = self.flux_differences.get_column_nnotmasked("Chi squared term")
+        nfree_parameters = 3
+        ndof = ndifferences - nfree_parameters - 1
+        chi_squared = self.flux_differences.get_column_sum("Chi squared term") / ndof
+
+        # Debugging
+        log.debug("The (reduced) chi squared value is " + str(chi_squared))
+
+        # Set options
+        plot_options = dict()
+        plot_options["Mock"] = {"only_residuals": only_residuals, "as_reference": False}
+        plot_options["Simulation"] = {"residuals": simulation_residuals}
+
+        # Plot
+        plot_seds(seds, path=path, options=plot_options, residual_reference="observations")
 
     # -----------------------------------------------------------------
 
@@ -3512,6 +3647,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         seds1["Old"] = self.get_simulation_sed(old)
         seds1["Young"] = self.get_simulation_sed(young)
         seds1["Ionizing"] = self.get_simulation_sed(sfr)
+        seds1["Mock"] = self.mock_fluxes
         seds1["Observation"] = self.get_reference_sed(clipped_name, additional_error=0.1) # 10 % additional errorbars
 
         # Plot FIRST
