@@ -3700,8 +3700,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                   distance=self.galaxy_distance, options=plot_options2, tex=False, unit=unit, yaxis_position="right")
 
         # Hide some tick labels
-        residual_plots[0][-1].hide_last_xtick_label()
-        main_plots[1].hide_first_xtick_label()
+        #figure.figure.canvas.draw() # GETTING TICK LABELS ONLY WORKS IF WE DRAW FIRST
+        # NO LONGER NECESSARY
+
+        # DOESN'T DO ANYTHING??
+        #residual_plots[0][-1].hide_last_xtick_label()
+        #main_plots[1].hide_first_xtick_label()
 
         # Save or show
         if path is not None: figure.saveto(path)

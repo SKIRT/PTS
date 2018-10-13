@@ -1608,6 +1608,7 @@ class MPLPlot(Plot):
         :param log_subs:
         :param formatter:
         :param minor:
+        :param magnitude:
         :return:
         """
 
@@ -1952,12 +1953,17 @@ class MPLPlot(Plot):
         """
 
         # Get labels
-        labels = self.xtick_labels
+        #labels = self.xtick_labels
 
         # Hide first
-        labels[0] = ""
-        print("XLABELS", labels)
-        self.set_xtick_labels(labels)
+        #labels[0] = ""
+        #print("XLABELS", labels)
+        #self.set_xtick_labels(labels)
+
+        # NEW
+        a = self.axes.get_xticks().tolist()
+        a[0] = " " # SPACE AND NOT EMPTY!!! '' is default and will be replaced by tick value when drawing!!
+        self.axes.set_xticklabels(a)
 
     # -----------------------------------------------------------------
 
@@ -1969,11 +1975,16 @@ class MPLPlot(Plot):
         """
 
         # Get labels
-        labels = self.ytick_labels
+        #labels = self.ytick_labels
 
         # Hide first
-        labels[0] = ""
-        self.set_ytick_labels(labels)
+        #labels[0] = ""
+        #self.set_ytick_labels(labels)
+
+        # NEW
+        a = self.axes.get_yticks().tolist()
+        a[0] = " "  # SPACE AND NOT EMPTY!!! '' is default and will be replaced by tick value when drawing!!
+        self.axes.set_yticklabels(a)
 
     # -----------------------------------------------------------------
 
@@ -1985,12 +1996,17 @@ class MPLPlot(Plot):
         """
 
         # Get labels
-        labels = self.xtick_labels
+        #labels = self.xtick_labels
 
         # Hide last
-        labels[-1] = ""
-        print("XLABELS", labels)
-        self.set_xtick_labels(labels)
+        #labels[-1] = ""
+        #print("XLABELS", labels)
+        #self.set_xtick_labels(labels)
+
+        # NEW
+        a = self.axes.get_xticks().tolist()
+        a[-1] = " "  # SPACE AND NOT EMPTY!!! '' is default and will be replaced by tick value when drawing!!
+        self.axes.set_xticklabels(a)
 
     # -----------------------------------------------------------------
 
@@ -2002,11 +2018,16 @@ class MPLPlot(Plot):
         """
 
         # Get labels
-        labels = self.ytick_labels
+        #labels = self.ytick_labels
 
         # Hide last
-        labels[-1] = ""
-        self.set_ytick_labels(labels)
+        #labels[-1] = ""
+        #self.set_ytick_labels(labels)
+
+        # NEW
+        a = self.axes.get_yticks().tolist()
+        a[-1] = " "  # SPACE AND NOT EMPTY!!! '' is default and will be replaced by tick value when drawing!!
+        self.axes.set_yticklabels(a)
 
     # -----------------------------------------------------------------
 
