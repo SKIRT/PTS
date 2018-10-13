@@ -168,8 +168,18 @@ def plot_seds(seds, **kwargs):
     # Show the figure after plotting
     show = kwargs.pop("show", None)
 
+    # LEGENDS
+    instruments_legend_ncols = kwargs.pop("instruments_legend_ncols", None)
+    observations_legend_ncols = kwargs.pop("observations_legend_ncols", None)
+    models_legend_ncols = kwargs.pop("models_legend_ncols", None)
+
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
+
+    # Legend props
+    if instruments_legend_ncols is not None: plotter.config.legends.instruments_ncols = instruments_legend_ncols
+    if observations_legend_ncols is not None: plotter.config.legends.observations_ncols = observations_legend_ncols
+    if models_legend_ncols is not None: plotter.config.legends.models_ncols = models_legend_ncols
 
     # Set TeX flag
     plotter.config.tex = tex
@@ -299,7 +309,11 @@ class SEDPlotter(Configurable):
         self.main_plot = None
         self.residual_plots = []
 
-        # Legend
+        # Legends
+        self.legends = []
+
+        # OLD
+        self._old_legend_system = True
         self.for_legend_patches = None
         self.for_legend_parameters = None
         self.extra_legend = None
@@ -445,6 +459,8 @@ class SEDPlotter(Configurable):
         # Set options
         self.observation_options[label].only_residuals = kwargs.pop("only_residuals", False)
         self.observation_options[label].as_reference = kwargs.pop("as_reference", True) # will be used as reference if residual_reference = "observations"
+        self.observation_options[label].color = kwargs.pop("color", None)
+        self.observation_options[label].join_residuals = kwargs.pop("join_residuals", None)
 
     # -----------------------------------------------------------------
 
@@ -1248,6 +1264,8 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        self._old_legend_system = False
+
         # Debugging
         log.debug("Plotting only model SEDs ...")
 
@@ -1351,6 +1369,10 @@ class SEDPlotter(Configurable):
             #print(above_fluxes)
             #print(fluxes)
             if above is not None: self.main_plot.axes.fill_between(wavelengths, np.log10(above_fluxes), np.log10(fluxes), facecolor=model_colors[model_label], alpha=0.5, label=model_label.replace("_", "\_"))
+
+        # Create legend
+        models_legend = self.main_plot.create_legend(self.main_plot.legend_handles, self.main_plot.legend_labels, **self.models_legend_properties)
+        self.legends.append(models_legend)
 
         # Plot residual axis
         if self.has_residual_plots:
@@ -1813,12 +1835,50 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observation_labels_to_join(self):
+        return [label for label in self.observation_labels if self.observation_options[label].join_residuals is not None]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def join_observations_with(self):
+        join_with = defaultdict(list)
+        for label in self.observation_labels:
+            for other_label in self.observation_labels_to_join:
+                if self.observation_options[other_label].join_residuals == label: join_with[label].append(other_label)
+        return join_with
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observation_labels_with_joined(self):
+        return self.join_observations_with.keys()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def joined_observations(self):
+        from ..basics.containers import create_subdict
+        joined = dict()
+        for label in self.observation_labels_with_joined:
+            joined_with_labels = self.join_observations_with[label]
+            all_labels = [label] + joined_with_labels
+            seds = create_subdict(self.observations, all_labels)
+            sed = join_observed_seds(seds)
+            joined[label] = sed
+        return joined
+
+    # -----------------------------------------------------------------
+
     def plot_more_observations_with_models(self):
 
         """
         This function ...
         :return:
         """
+
+        self._old_legend_system = False
 
         # Debuggging
         log.debug("Plotting multiple observed SEDs with models ...")
@@ -1835,11 +1895,22 @@ class SEDPlotter(Configurable):
         line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
         line_styles_models_no_residuals = ["-"] * len(self.models)
 
-        legend_patches = []
-        legend_labels = []
+        # 3 LEGENDS
+        #instruments_legend = None
+        #observations_legend = None
+        #models_legend = None
 
-        legend_rectangles = []
-        rectangle_labels = []
+        # FOR INSTRUMENTS LEGEND
+        instruments_legend_patches = []
+        instruments_legend_labels = []
+
+        # FOR OBSERVATIONS LEGEND
+        observations_legend_patches = []
+        observations_legend_labels = []
+
+        # FOR MODELS LEGEND
+        models_legend_patches = []
+        models_legend_labels = []
 
         # Remember colors for each observation
         observation_colors = dict()
@@ -1855,6 +1926,7 @@ class SEDPlotter(Configurable):
             # Get options
             only_residuals = self.observation_options[label].only_residuals
             as_reference = self.observation_options[label].as_reference
+            observation_color = self.observation_options[label].color
 
             # Get wavelengths, fluxes, instruments, bands, errors
             wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
@@ -1864,7 +1936,7 @@ class SEDPlotter(Configurable):
             errors = observation.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
 
             # Create color range
-            observation_color = color_hex[next(different_colors)]
+            if observation_color is None: observation_color = color_hex[next(different_colors)]
             observation_colors[label] = observation_color
 
             # Get labels and descriptions
@@ -1896,6 +1968,7 @@ class SEDPlotter(Configurable):
                 # UNLESS ONLY_RESIDUALS FLAG IS ENABLED
                 if not only_residuals:
 
+                    # Plot the data point
                     patch, new_label = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, observation_color, return_new=True)
 
                     # Add the patch and label
@@ -1903,22 +1976,24 @@ class SEDPlotter(Configurable):
 
                         # Remove color
                         # Remove the color -> make a new patch?
-                        patch = lines.Line2D([], [], marker=marker, markersize=7, label=labels[k], linewidth=0,
-                                             markeredgecolor="black", markerfacecolor="white", markeredgewidth=1)
+                        patch = lines.Line2D([], [], marker=marker, markersize=7, label=labels[k], linewidth=0, markeredgecolor="black", markerfacecolor="white", markeredgewidth=1)
 
                         # Add the patch and label
-                        legend_patches.append(patch)
-                        legend_labels.append(labels[k])
+                        instruments_legend_patches.append(patch)
+                        instruments_legend_labels.append(labels[k])
 
                 # Observations as reference: plot at 0.0 (all in one panel)
                 if self.config.residual_reference == observations_reference:
 
                     #print(label, observation_index, wavelengths[k])
-                    if as_reference:
+                    if as_reference or self.observation_options[label].join_residuals:
 
                         # Get the residual plot
                         #print(observation_reference_index, len(self.residual_plots))
-                        residual_plot = self.residual_plots[observation_reference_index]
+                        if as_reference: residual_plot = self.residual_plots[observation_reference_index]
+                        else:
+                            join_with_label = self.observation_options[label].join_residuals
+                            residual_plot = self.residual_plots[self.observation_labels_as_reference.index(join_with_label)]
                         #print(residual_plot)
 
                         # Plot measurement points on residual plot
@@ -2003,6 +2078,22 @@ class SEDPlotter(Configurable):
 
                 if as_reference:
 
+                    # JOINED WITH OTHER
+                    if label in self.observation_labels_with_joined:
+
+                        #print("WITH JOINED")
+
+                        joined_observation = self.joined_observations[label]
+                        #print(joined_observation)
+                        #print(joined_observation.wavelength_unit, joined_observation.unit)
+
+                        wavelengths = joined_observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                        fluxes = joined_observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                        #instruments = joined_observation.instruments()
+                        bands = joined_observation.bands()
+
+                        #print(joined_sed)
+
                     # Get the residual plot
                     residual_plot = self.residual_plots[observation_reference_index]
 
@@ -2036,8 +2127,8 @@ class SEDPlotter(Configurable):
                             #for grad, band in zip(gradient, bands): print(band, grad)
                             for first_band, first_wavelength, second_band, second_wavelength, reld in zip(bands[:-1], wavelengths[:-1], bands[1:], wavelengths[1:], reldiffs):
                                 #print(first_band + " vs " + second_band + ": " + str(reld))
-                                if abs(reld) < 0.05:
-                                    log.warning("The " + str(first_band) + " and " + second_band + " wavelengths are very close (" + str(first_wavelength) + " and " + str(second_wavelength) + "), but not necessarily their photometric value: this may give artefacts in the residual curve")
+                                if abs(reld) < 0.01:
+                                    log.warning("The " + str(first_band) + " and " + second_band + " wavelengths are very close (" + str(first_wavelength) + " and " + str(second_wavelength) + ", closeness = " + str(abs(reld)) + "), but not necessarily their photometric value: this may give artefacts in the residual curve")
 
                             # Create spline (interpolate in log-log space)
                             logfluxes = np.log10(fluxes)
@@ -2100,8 +2191,8 @@ class SEDPlotter(Configurable):
 
             # Create rectangle for this observation
             rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
-            legend_rectangles.append(rectangle)
-            rectangle_labels.append(label.replace("_", "\_"))
+            observations_legend_patches.append(rectangle)
+            observations_legend_labels.append(label.replace("_", "\_"))
 
             # Increment the observation index
             observation_index += 1
@@ -2128,27 +2219,35 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey", adjust_extrema=False, errors=errors)
+                linestyle = "-"
+                linecolor = "lightgrey"
+                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, adjust_extrema=False, errors=errors)
 
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label.replace("_", "\_"), adjust_extrema=False, errors=errors)
+                linestyle = line_styles[counter]
+                linecolor = "black"
+                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label.replace("_", "\_"), adjust_extrema=False, errors=errors)
                 counter += 1
 
             else:
 
+                linestyle = line_styles_models_no_residuals[counter_no_residuals]
+                linecolor = line_colors_models_no_residuals[counter_no_residuals]
+
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label, adjust_extrema=False, errors=errors)
+                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label, adjust_extrema=False, errors=errors)
                 counter_no_residuals += 1
 
-        # Extra legend: the different observations
-        observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
+            if not ghost:
 
-        # Set
-        self.for_legend_patches = legend_patches
-        self.for_legend_parameters = legend_labels
-        self.extra_legend = observations_legend
+                # Create patch
+                patch = lines.Line2D([], [], label=model_label, color=linecolor, linestyle=linestyle)
+
+                # Add the patch and label
+                models_legend_patches.append(patch)
+                models_legend_labels.append(model_label)
 
         # LOOP OVER OBSERVATIONS AGAIN IF WE HAVE TO PLOT THEIR RESIDUALS AGAINST THE REFERENCE (IF OBSERVATION IS REFERENCE)
         if self.config.residual_reference == observations_reference:
@@ -2166,11 +2265,21 @@ class SEDPlotter(Configurable):
                 # Get the observed SED and its values
                 observation = self.observations[label]
 
-                reference_wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                reference_fluxes = observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
-                reference_instruments = observation.instruments()
-                reference_bands = observation.bands()
-                #errors = observation.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                # JOINED WITH OTHER
+                if label in self.observation_labels_with_joined:
+
+                    joined_observation = self.joined_observations[label]
+                    reference_wavelengths = joined_observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                    reference_fluxes = joined_observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    reference_instruments = joined_observation.instruments()
+                    reference_bands = joined_observation.bands()
+
+                else:
+
+                    reference_wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                    reference_fluxes = observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    reference_instruments = observation.instruments()
+                    reference_bands = observation.bands()
 
                 # Get the residual plot
                 residual_plot = self.residual_plots[observation_reference_index]
@@ -2205,8 +2314,7 @@ class SEDPlotter(Configurable):
 
                         # Find reference flux
                         reference_flux = find_reference_flux(instruments[k], bands[k], wavelengths[k], reference_instruments,
-                                                             reference_bands, reference_wavelengths,
-                                                             reference_fluxes)
+                                                             reference_bands, reference_wavelengths, reference_fluxes)
 
                         # print(fluxes[k], reference_flux)
 
@@ -2231,6 +2339,30 @@ class SEDPlotter(Configurable):
                         residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7,
                                                 color=points_color, markeredgecolor='black', ecolor=points_color,
                                                 capthick=2, lolims=lolims, uplims=uplims, capsize=2)
+
+        # CREATE THE LEGENDS
+
+        # INTRUMENTS
+        instruments_legend = self.main_plot.create_legend(instruments_legend_patches, instruments_legend_labels, **self.instruments_legend_properties)
+
+        # OBSERVATIONS
+        observations_legend = self.main_plot.create_legend(observations_legend_patches, observations_legend_labels, **self.observations_legend_properties)
+        # Extra legend: the different observations
+        #observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
+
+        # MODELS
+        models_legend = self.main_plot.create_legend(models_legend_patches, models_legend_labels, **self.models_legend_properties)
+
+        # Set
+        # OLD
+        # self.for_legend_patches = legend_patches
+        # self.for_legend_parameters = legend_labels
+        # self.extra_legend = observations_legend
+
+        # Add the legends
+        self.legends.append(instruments_legend)
+        self.legends.append(observations_legend)
+        self.legends.append(models_legend)
 
     # -----------------------------------------------------------------
 
@@ -2394,9 +2526,7 @@ class SEDPlotter(Configurable):
                 patch = axis.errorbar(wavelength, logflux, yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else:
-                #print("d", label, new_label)
-                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor)
+            else: patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor)
 
         # Return the patch if requested
         if return_new: return patch, new_label
@@ -2553,11 +2683,89 @@ class SEDPlotter(Configurable):
             bottom = np.array(bottom)
             top = np.array(top)
 
+            # In logspace
             log_bottom = np.log10(bottom)
             log_top = np.log10(top)
 
+            # Fill between min and max of errorbar
             axis.fill_between(errors_wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor=errorcolor, edgecolor=errorcolor, interpolate=True, alpha=0.5)
             axis.plot([], [], color=errorcolor, linewidth=10, label='spread')
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def instruments_legend_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        properties = dict()
+
+        # Set properties
+        properties["loc"] = self.config.legends.instruments_location
+        properties["numpoints"] = 1
+        properties["scatterpoints"] = 4
+        properties["ncol"] = self.config.legends.instruments_ncols
+        properties["shadow"] = False
+        properties["frameon"] = True
+        properties["facecolor"] = None
+        properties["fontsize"] = self.config.plot.legend_fontsize
+
+        # Return
+        return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observations_legend_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        properties = dict()
+
+        # Set properties
+        properties["loc"] = self.config.legends.observations_location
+        properties["numpoints"] = 1
+        properties["scatterpoints"] = 4
+        properties["ncol"] = self.config.legends.observations_ncols
+        properties["shadow"] = False
+        properties["frameon"] = True
+        properties["facecolor"] = None
+        properties["fontsize"] = self.config.plot.legend_fontsize
+
+        # Return
+        return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def models_legend_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        properties = dict()
+
+        # Set properties
+        properties["loc"] = self.config.legends.models_location
+        properties["ncol"] = self.config.legends.models_ncols
+        properties["shadow"] = False
+        properties["frameon"] = True
+        properties["facecolor"] = None
+        properties["fontsize"] = self.config.plot.legend_fontsize
+
+        # Return
+        return properties
 
     # -----------------------------------------------------------------
 
@@ -2628,7 +2836,7 @@ class SEDPlotter(Configurable):
         self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize) # minor = False is possible
 
         # Add axis labels and a legend
-        y_label = r"Log $" + self.config.unit.latex_string + r"$"
+        y_label = r"log$_{10} " + self.config.unit.latex_string + r"$"
         #print(y_label)
         self.main_plot.set_ylabel(y_label, fontsize='large')
 
@@ -2675,6 +2883,48 @@ class SEDPlotter(Configurable):
         # Add the plots to the figure
         if self.config.library == bokeh and not self._external_figure: self.figure.add_column(self.main_plot, *self.residual_plots)
 
+        # Add legends
+        if self._old_legend_system: self.set_legends_old()
+        else: self.add_legends()
+
+        # Add title if requested
+        #print(self.title)
+        if self.title is not None and not self._external_figure: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
+
+        # Save or show the plot
+        #if self.out_path is None: self.figure.show()
+        if self.config.show: self.figure.show()
+
+        # Save the figure
+        if self.out_path is not None: self.save_figure()
+
+    # -----------------------------------------------------------------
+
+    def add_legends(self):
+        
+        """
+        Thisf unction ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Adding the legends to the plot ...")
+
+        # Loop over the legends
+        for legend in self.legends:
+
+            # Add to the plot window
+            self.main_plot.add_artist(legend)
+
+    # -----------------------------------------------------------------
+
+    def set_legends_old(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
         legends = []
 
         # Add the legend
@@ -2682,7 +2932,7 @@ class SEDPlotter(Configurable):
 
             legend_properties = dict()
             legend_properties["loc"] = "lower center"
-            #legend_properties["numpoints"] = 4
+            # legend_properties["numpoints"] = 4
             legend_properties["scatterpoints"] = 4
             legend_properties["ncol"] = 2
             legend_properties["shadow"] = False
@@ -2690,15 +2940,16 @@ class SEDPlotter(Configurable):
             legend_properties["facecolor"] = None
             legend_properties["fontsize"] = self.config.plot.legend_fontsize
 
+            plt.legend()
+
             # Set legend
             # fancybox=True makes the legend corners rounded
-            #legend = self.main_plot.legend([l[0] for l in for_legend_patches], for_legend_parameters, **legend_properties)
+            # legend = self.main_plot.legend([l[0] for l in for_legend_patches], for_legend_parameters, **legend_properties)
             legend = self.main_plot.legend(self.for_legend_patches, self.for_legend_parameters, **legend_properties)
             legends.append(legend)
 
             # Extra legend
             if self.extra_legend is not None:
-
                 self.main_plot.add_artist(self.extra_legend)
                 legends.append(self.extra_legend)
 
@@ -2717,17 +2968,6 @@ class SEDPlotter(Configurable):
 
             legend = self.main_plot.legend(**legend_properties)
             legends.append(legend)
-
-        # Add title if requested
-        #print(self.title)
-        if self.title is not None and not self._external_figure: self.figure.set_title(self.title) #self.figure.figure.suptitle("\n".join(wrap(self.title, 60)))
-
-        # Save or show the plot
-        #if self.out_path is None: self.figure.show()
-        if self.config.show: self.figure.show()
-
-        # Save the figure
-        if self.out_path is not None: self.save_figure()
 
     # -----------------------------------------------------------------
 
@@ -3122,5 +3362,46 @@ def process_errorbar_for_value(value, error, lolim_value=None, uplim_value=None,
     # Return
     yerr = np.array(error_limits).T
     return yerr, lolims, uplims
+
+# -----------------------------------------------------------------
+
+def join_observed_seds(seds):
+
+    """
+    This function ...
+    :param seds:
+    :return:
+    """
+
+    # Get SED objects and original labels
+    if isinstance(seds, dict):
+        labels = seds.keys()
+        seds = seds.values()
+    else: labels = None
+    nseds = len(seds)
+
+    # Create new SED
+    unit = seds[0].unit
+    if labels is not None: joined_sed = ObservedSED(photometry_unit=unit, extra_columns=[("Label", str, None, "original SED label")])
+    else: joined_sed = ObservedSED(photometry_unit=unit)
+
+    # Add the data points
+    if labels is None: labels = [None] * nseds
+    for label, sed in zip(labels, seds):
+
+        # Loop over the data points
+        for index in range(len(sed)):
+
+            # Get filters and photometric values
+            fltr = sed.get_filter(index)
+            phot = sed.get_photometry(index, add_unit=True)
+
+            # Add points
+            if label is not None: extra = [label]
+            else: extra = None
+            joined_sed.add_point(fltr, phot, extra=extra)
+
+    # Return
+    return joined_sed
 
 # -----------------------------------------------------------------

@@ -1971,6 +1971,8 @@ class SmartTable(Table):
         # Setup if necessary
         if len(self.colnames) == 0: self._setup()
 
+        #print(values, self.column_info)
+
         # Resize string columns for the new values
         self._resize_string_columns(values)
 

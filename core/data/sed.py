@@ -484,6 +484,23 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    @property
+    def value_name(self):
+
+        # Check if setup has been performed
+        if len(self.colnames) == 0: self._setup()
+
+        if "Photometry" in self.colnames: return "Photometry"
+        else:
+
+            # Last column that is not errors? # -> BUT IF THERE IS EXTRA COLUMNS? -> currently would still crash
+            for index in reversed(range(len(self.colnames))):
+                name = self.colnames[index]
+                if name == "Error+" or name == "Error-": continue
+                return self.colnames[index]
+
+    # -----------------------------------------------------------------
+
     def get_photometry(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
 
         """
@@ -997,14 +1014,15 @@ class ObservedSED(FilterCurve):
             kwargs["y_description"] = "Photometric points"
             kwargs["y_unit"] = unit
 
+            # Extra columns
+            if "extra_columns" not in kwargs: kwargs["extra_columns"] = []
+            kwargs["extra_columns"].insert(0, ("Error+", float, unit, "Upper bound error"))
+            kwargs["extra_columns"].insert(0, ("Error-", float, unit, "Lower bound error"))
+
+            #print(kwargs["extra_columns"])
+
         # Call the constructor of the base class
         super(ObservedSED, self).__init__(*args, **kwargs)
-
-        if not from_astropy:
-
-            # Add columns
-            self.add_column_info("Error-", float, unit, "Lower bound error")
-            self.add_column_info("Error+", float, unit, "Upper bound error")
 
     # -----------------------------------------------------------------
 
@@ -1146,7 +1164,24 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, fltr, photometry, error=None, conversion_info=None, sort=True):
+    @property
+    def value_name(self):
+
+        # Check if setup has been performed
+        if len(self.colnames) == 0: self._setup()
+
+        if "Photometry" in self.colnames: return "Photometry"
+        else:
+
+            # Last column that is not errors? # -> BUT IF THERE IS EXTRA COLUMNS? -> currently would still crash
+            for index in reversed(range(len(self.colnames))):
+                name = self.colnames[index]
+                if name == "Error+" or name == "Error-": continue
+                return self.colnames[index]
+
+    # -----------------------------------------------------------------
+
+    def add_point(self, fltr, photometry, error=None, conversion_info=None, sort=True, extra=None):
 
         """
         This function ...
@@ -1155,6 +1190,7 @@ class ObservedSED(FilterCurve):
         :param error:
         :param conversion_info:
         :param sort:
+        :param extra:
         :return:
         """
 
@@ -1165,6 +1201,9 @@ class ObservedSED(FilterCurve):
             if not isinstance(error, ErrorBar): error = ErrorBar(error)
             values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, error.lower, error.upper]
         else: values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, None, None]
+
+        # Add extra?
+        if extra is not None: values.extend(extra)
 
         # Set conversion info
         if conversion_info is None:

@@ -26,6 +26,7 @@ from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoL
 from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib import cbook
+from matplotlib.legend import Legend
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -1395,6 +1396,32 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def create_legend(self, handles, labels, **kwargs):
+
+        """
+        Thisf unction ...
+        :param handles:
+        :param labels:
+        :param kwargs:
+        :return:
+        """
+
+        return Legend(self.axes, handles, labels, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def legend_handles(self):
+        return [handle for handle in self.axes._get_legend_handles() if true_and_not_startswith(handle.get_label(), "_")]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def legend_labels(self):
+        return [handle.get_label() for handle in self.legend_handles]
+
+    # -----------------------------------------------------------------
+
     def legend(self, *args, **kwargs):
 
         """
@@ -1917,6 +1944,72 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def hide_first_xtick_label(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get labels
+        labels = self.xtick_labels
+
+        # Hide first
+        labels[0] = ""
+        print("XLABELS", labels)
+        self.set_xtick_labels(labels)
+
+    # -----------------------------------------------------------------
+
+    def hide_first_ytick_label(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get labels
+        labels = self.ytick_labels
+
+        # Hide first
+        labels[0] = ""
+        self.set_ytick_labels(labels)
+
+    # -----------------------------------------------------------------
+
+    def hide_last_xtick_label(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get labels
+        labels = self.xtick_labels
+
+        # Hide last
+        labels[-1] = ""
+        print("XLABELS", labels)
+        self.set_xtick_labels(labels)
+
+    # -----------------------------------------------------------------
+
+    def hide_last_ytick_label(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get labels
+        labels = self.ytick_labels
+
+        # Hide last
+        labels[-1] = ""
+        self.set_ytick_labels(labels)
+
+    # -----------------------------------------------------------------
+
     def hide_xaxis(self):
 
         """
@@ -2277,6 +2370,7 @@ class MPLFigure(Figure):
             # Create plots
             plots = self.create_grid(nplots, npanels, height_ratios=height_ratios, sharex=True, sharey=True)
 
+            # Set main plots and residual plots
             for index in range(npanels):
                 main_plots.append(plots[0][index])
                 residual_plots_panel = [row[index] for row in plots[1:]]
@@ -2295,14 +2389,6 @@ class MPLFigure(Figure):
 
             # Create grid spec
             grid = self.create_gridspec(nrows, npanels, wspace=wspace, hspace=hspace, height_ratios=height_ratios)
-
-            # Create plots
-            #plots = self._create_grid_shared(grid, nrows, ncols, projections=projections,
-            #                                 rows_shared_x=rows_shared_x, rows_shared_y=rows_shared_y,
-            #                                 columns_shared_x=columns_shared_x, columns_shared_y=columns_shared_y,
-            #                                 share_per_row=share_per_row, share_per_column=share_per_column)
-
-            # TODO: SET AXIS SHARING
 
             # Main plots
             main_plots = []
@@ -3953,5 +4039,18 @@ def get_plot_wavelength_limits(min_wavelength, max_wavelength):
 #     __javascript__ = ["https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"]
 #     __css__ = ["https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css"]
 #     __implementation__ = JS_CODE
+
+# -----------------------------------------------------------------
+
+def true_and_not_startswith(x, pattern):
+
+    """
+    This function ...
+    :param x:
+    :param pattern:
+    :return:
+    """
+
+    return x and not x.startswith(pattern)
 
 # -----------------------------------------------------------------

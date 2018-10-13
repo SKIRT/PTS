@@ -341,6 +341,24 @@ def iterate_lists_combinations(*lsts):
 
 # -----------------------------------------------------------------
 
+def get_lists_combinations(*lsts, **kwargs):
+
+    """
+    This function ...
+    :param lsts:
+    :param kwargs:
+    :return:
+    """
+
+    # Combination function
+    combine = kwargs.pop("combine", None)
+
+    # Return
+    if combine is not None: return [combine(result) for result in iterate_lists_combinations(*lsts)]
+    else: return list(iterate_lists_combinations(*lsts))
+
+# -----------------------------------------------------------------
+
 def iterate_enumerated_combinations(*lsts):
 
     """

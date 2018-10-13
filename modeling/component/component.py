@@ -345,6 +345,12 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def jhk_filters(self):
+        return parsing.lazy_broad_band_filter_list("2MASS")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def pacs_red_filter(self):
         return BroadBandFilter("Pacs 160")
 
