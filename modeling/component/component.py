@@ -387,6 +387,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def hfi_filters(self):
+        return parsing.lazy_broad_band_filter_list("HFI")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def lfi_filters(self):
+        return parsing.lazy_broad_band_filter_list("LFI")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def iras_filters(self):
         return parsing.lazy_broad_band_filter_list("IRAS")
 

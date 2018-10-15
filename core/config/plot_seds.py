@@ -160,3 +160,8 @@ definition.sections["legends"].add_optional("observations_ncols", "positive_inte
 definition.sections["legends"].add_optional("models_ncols", "positive_integer", "number of columns for models legend", 2)
 
 # -----------------------------------------------------------------
+
+# For
+definition.add_flag("only_residuals_legend", "for SEDs for which only_residuals is enabled, show only in a seperate legend on the appropriate residuals panel, instead of in the list on the main panel")
+
+# -----------------------------------------------------------------

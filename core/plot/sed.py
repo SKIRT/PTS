@@ -165,6 +165,9 @@ def plot_seds(seds, **kwargs):
     # Smooth residuals
     smooth_residuals = kwargs.pop("smooth_residuals", False)
 
+    # Only residuals on separate legend in the residuals panel
+    only_residuals_legend = kwargs.pop("only_residuals_legend", False)
+
     # Show the figure after plotting
     show = kwargs.pop("show", None)
 
@@ -186,6 +189,7 @@ def plot_seds(seds, **kwargs):
 
     # Set other flags
     plotter.config.smooth_residuals = smooth_residuals
+    plotter.config.only_residuals_legend = only_residuals_legend
 
     # Set residual reference
     plotter.config.residual_reference = residual_reference
@@ -311,6 +315,7 @@ class SEDPlotter(Configurable):
 
         # Legends
         self.legends = []
+        self.legends_residuals = []
 
         # OLD
         self._old_legend_system = True
@@ -1871,6 +1876,24 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observation_labels_only_residuals(self):
+        return [label for label in self.observation_labels if self.observation_options[label].only_residuals]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nobservations_only_residuals(self):
+        return len(self.observation_labels_only_residuals)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observations_only_residuals(self):
+        return self.nobservations_only_residuals > 0
+
+    # -----------------------------------------------------------------
+
     def plot_more_observations_with_models(self):
 
         """
@@ -2190,9 +2213,10 @@ class SEDPlotter(Configurable):
                         #print("Will plot residuals comparing with " + other_observation_label + " observed SED: but only after all observations have been plotted on the main plot")
 
             # Create rectangle for this observation
-            rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
-            observations_legend_patches.append(rectangle)
-            observations_legend_labels.append(label.replace("_", "\_"))
+            if not (only_residuals and self.config.only_residuals_legend):
+                rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
+                observations_legend_patches.append(rectangle)
+                observations_legend_labels.append(label.replace("_", "\_"))
 
             # Increment the observation index
             observation_index += 1
@@ -2353,16 +2377,34 @@ class SEDPlotter(Configurable):
         # MODELS
         models_legend = self.main_plot.create_legend(models_legend_patches, models_legend_labels, **self.models_legend_properties)
 
-        # Set
-        # OLD
-        # self.for_legend_patches = legend_patches
-        # self.for_legend_parameters = legend_labels
-        # self.extra_legend = observations_legend
-
         # Add the legends
         self.legends.append(instruments_legend)
         self.legends.append(observations_legend)
         self.legends.append(models_legend)
+
+        # Add legend for the only_residuals observations?
+        if self.config.only_residuals_legend and self.has_observations_only_residuals:
+
+            legend_patches = []
+            legend_labels = []
+
+            # Loop over the observations for only residuals
+            for label in self.observation_labels_only_residuals:
+
+                rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_colors[label])
+                legend_patches.append(rectangle)
+                legend_labels.append(label.replace("_", "\_"))
+
+            # Create legend for each residual axis
+            for residual_plot in self.residual_plots:
+
+                #residual_plot = self.residual_plots[self.observation_labels_as_reference.index()]
+
+                # Create legend
+                legend = residual_plot.create_legend(legend_patches, legend_labels, **self.observations_legend_properties)
+
+                # Add legend
+                self.legends_residuals.append(legend)
 
     # -----------------------------------------------------------------
 
