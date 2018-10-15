@@ -175,6 +175,13 @@ def plot_seds(seds, **kwargs):
     instruments_legend_ncols = kwargs.pop("instruments_legend_ncols", None)
     observations_legend_ncols = kwargs.pop("observations_legend_ncols", None)
     models_legend_ncols = kwargs.pop("models_legend_ncols", None)
+    instruments_legend_location = kwargs.pop("instruments_legend_location", None)
+    observations_legend_location = kwargs.pop("observations_legend_location", None)
+    models_legend_location = kwargs.pop("models_legend_location", None)
+    observations_residuals_legend_location = kwargs.pop("observations_residuals_legend_location", None)
+    models_residuals_legend_location = kwargs.pop("models_residuals_legend_location", None)
+    observations_residuals_legend_ncols = kwargs.pop("observations_residuals_legend_ncols", None)
+    models_residuals_legend_ncols = kwargs.pop("models_residuals_legend_ncols", None)
 
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
@@ -183,6 +190,13 @@ def plot_seds(seds, **kwargs):
     if instruments_legend_ncols is not None: plotter.config.legends.instruments_ncols = instruments_legend_ncols
     if observations_legend_ncols is not None: plotter.config.legends.observations_ncols = observations_legend_ncols
     if models_legend_ncols is not None: plotter.config.legends.models_ncols = models_legend_ncols
+    if instruments_legend_location is not None: plotter.config.legends.instruments_location = instruments_legend_location
+    if observations_legend_location is not None: plotter.config.legends.observations_location = observations_legend_location
+    if models_legend_location is not None: plotter.config.legends.models_location = models_legend_location
+    if observations_residuals_legend_ncols is not None: plotter.config.legends.observations_residuals_ncols = observations_residuals_legend_ncols
+    if models_residuals_legend_ncols is not None: plotter.config.legends.models_residuals_ncols = models_residuals_legend_ncols
+    if observations_residuals_legend_location is not None: plotter.config.legends.observations_residuals_location = observations_residuals_legend_location
+    if models_residuals_legend_location is not None: plotter.config.legends.models_residuals_location = models_residuals_legend_location
 
     # Set TeX flag
     plotter.config.tex = tex
@@ -375,6 +389,30 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nlegends(self):
+        return len(self.legends)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_legends(self):
+        return self.nlegends > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nlegends_residuals(self):
+        return len(self.legends_residuals)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_legends_residuals(self):
+        return self.nlegends_residuals > 0
+
+    # -----------------------------------------------------------------
+
     #@lazyproperty
     @property # HAS TO BE PROPERTY BECAUSE OF CHECKS IN SETUP
     def nseds(self):
@@ -495,7 +533,9 @@ class SEDPlotter(Configurable):
         self.model_options[label].ghost = kwargs.pop("ghost", False)
         self.model_options[label].above = kwargs.pop("above", None)
         self.model_options[label].above_name = kwargs.pop("above_name", None)
+        self.model_options[label].fill = kwargs.pop("fill", True) # fill if when above other
         self.model_options[label].color = kwargs.pop("color", None) # None means automatic
+        self.model_options[label].linestyle = kwargs.pop("linestyle", None) # None means automatic
         self.model_options[label].residual_color = kwargs.pop("residual_color", None) # None means automatic
 
     # -----------------------------------------------------------------
@@ -1300,6 +1340,7 @@ class SEDPlotter(Configurable):
             #plot_residuals = self.model_options[model_label].residuals
             ghost = self.model_options[model_label].ghost
             above = self.model_options[model_label].above
+            fill = self.model_options[model_label].fill
 
             # Get fluxes, wavelengths and errors
             fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info, asarray=True)
@@ -1356,6 +1397,7 @@ class SEDPlotter(Configurable):
 
                     above_name = self.model_options[model_label].above_name
                     if above_name is not None: actual_label = above_name
+                    elif not fill: actual_label = model_label.replace("_", "\_")
                     else: actual_label = None
 
                 else: actual_label = model_label.replace("_", "\_")
@@ -1373,7 +1415,7 @@ class SEDPlotter(Configurable):
             #print(wavelengths)
             #print(above_fluxes)
             #print(fluxes)
-            if above is not None: self.main_plot.axes.fill_between(wavelengths, np.log10(above_fluxes), np.log10(fluxes), facecolor=model_colors[model_label], alpha=0.5, label=model_label.replace("_", "\_"))
+            if above is not None and fill: self.main_plot.axes.fill_between(wavelengths, np.log10(above_fluxes), np.log10(fluxes), facecolor=model_colors[model_label], alpha=0.5, label=model_label.replace("_", "\_"))
 
         # Create legend
         models_legend = self.main_plot.create_legend(self.main_plot.legend_handles, self.main_plot.legend_labels, **self.models_legend_properties)
@@ -2130,6 +2172,7 @@ class SEDPlotter(Configurable):
                         plot_residuals = self.model_options[model_label].residuals
                         ghost = self.model_options[model_label].ghost
                         model_color = self.model_options[model_label].color
+                        model_linestyle = self.model_options[model_label].linestyle
                         residual_color = self.model_options[model_label].residual_color
 
                         if not plot_residuals: continue
@@ -2201,10 +2244,15 @@ class SEDPlotter(Configurable):
                         elif ghost: color = "lightgrey"
                         else: color = "black"
 
+                        # Determine linestyle
+                        if model_linestyle is not None: linestyle = model_linestyle
+                        elif ghost: linestyle = "-"
+                        else: linestyle = line_styles[counter]
+
                         # Plot
-                        if ghost: residual_plot.plot(wavelengths_residuals, residuals, ls="-", color=color)
+                        if ghost: residual_plot.plot(wavelengths_residuals, residuals, ls=linestyle, color=color)
                         else:
-                            residual_plot.plot(wavelengths_residuals, residuals, ls=line_styles[counter], color=color, label=model_label.replace("_", "\_"))
+                            residual_plot.plot(wavelengths_residuals, residuals, ls=linestyle, color=color, label=model_label.replace("_", "\_"))
                             counter += 1
 
                     # PLOT RESIDUALS WITH OTHER OBSERVATIONS
@@ -2234,6 +2282,20 @@ class SEDPlotter(Configurable):
             sed = self.models[model_label]
             plot_residuals = self.model_options[model_label].residuals
             ghost = self.model_options[model_label].ghost
+            model_color = self.model_options[model_label].color
+            model_linestyle = self.model_options[model_label].linestyle
+
+            # Determine color
+            if model_color is not None: linecolor = model_color
+            elif ghost: linecolor = "lightgrey"
+            elif plot_residuals: linecolor = "black"
+            else: linecolor = line_colors_models_no_residuals[counter_no_residuals]
+
+            # Determine linestyle
+            if model_linestyle is not None: linestyle = model_linestyle
+            elif ghost: linestyle = "-"
+            elif plot_residuals: linestyle = line_styles[counter]
+            else: linestyle = line_styles_models_no_residuals[counter_no_residuals]
 
             # Get fluxes, wavelengths and errors
             fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
@@ -2243,22 +2305,15 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 # Plot the model SED as a line (with errors if present)
-                linestyle = "-"
-                linecolor = "lightgrey"
                 self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, adjust_extrema=False, errors=errors)
 
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                linestyle = line_styles[counter]
-                linecolor = "black"
                 self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label.replace("_", "\_"), adjust_extrema=False, errors=errors)
                 counter += 1
 
             else:
-
-                linestyle = line_styles_models_no_residuals[counter_no_residuals]
-                linecolor = line_colors_models_no_residuals[counter_no_residuals]
 
                 # Plot the model SED as a line (with errors if present)
                 self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label, adjust_extrema=False, errors=errors)
@@ -2401,7 +2456,7 @@ class SEDPlotter(Configurable):
                 #residual_plot = self.residual_plots[self.observation_labels_as_reference.index()]
 
                 # Create legend
-                legend = residual_plot.create_legend(legend_patches, legend_labels, **self.observations_legend_properties)
+                legend = residual_plot.create_legend(legend_patches, legend_labels, **self.observations_residuals_legend_properties)
 
                 # Add legend
                 self.legends_residuals.append(legend)
@@ -2788,6 +2843,32 @@ class SEDPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observations_residuals_legend_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        properties = dict()
+
+        # Set properties
+        properties["loc"] = self.config.legends.observations_residuals_location
+        properties["numpoints"] = 1
+        properties["scatterpoints"] = 4
+        properties["ncol"] = self.config.legends.observations_residuals_ncols
+        properties["shadow"] = False
+        properties["frameon"] = True
+        properties["facecolor"] = None
+        properties["fontsize"] = self.config.plot.legend_fontsize
+
+        # Return
+        return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def models_legend_properties(self):
 
         """
@@ -2801,6 +2882,30 @@ class SEDPlotter(Configurable):
         # Set properties
         properties["loc"] = self.config.legends.models_location
         properties["ncol"] = self.config.legends.models_ncols
+        properties["shadow"] = False
+        properties["frameon"] = True
+        properties["facecolor"] = None
+        properties["fontsize"] = self.config.plot.legend_fontsize
+
+        # Return
+        return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def models_residuals_legend_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        properties = dict()
+
+        # Set properties
+        properties["loc"] = self.config.legends.models_residuals_location
+        properties["ncol"] = self.config.legends.models_residuals_ncols
         properties["shadow"] = False
         properties["frameon"] = True
         properties["facecolor"] = None
@@ -2957,6 +3062,15 @@ class SEDPlotter(Configurable):
 
             # Add to the plot window
             self.main_plot.add_artist(legend)
+
+        # Legends for residual panels?
+        if self.has_legends_residuals:
+
+            # Loop over the residual legends
+            for residual_plot, legend in zip(self.residual_plots, self.legends_residuals):
+
+                # Add to the plot
+                residual_plot.add_artist(legend)
 
     # -----------------------------------------------------------------
 

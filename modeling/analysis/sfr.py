@@ -1477,32 +1477,26 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def absorption_path(self):
+        return self.analysis_run.absorption_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating_path(self):
         return self.analysis_run.heating_path
 
     # -----------------------------------------------------------------
 
     @property
-    def spectral_heating_path(self):
-        return fs.join(self.heating_path, "spectral")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def spectral_heating_cells_path(self):
-        return fs.join(self.spectral_heating_path, "3D")
-
-    # -----------------------------------------------------------------
-
-    @property
     def total_emission_spectral_data_path(self):
-        return fs.join(self.spectral_heating_cells_path, "total_emission.dat")
+        return fs.join(self.absorption_path, "total_emission.dat")
 
     # -----------------------------------------------------------------
 
     @property
     def total_absorption_spectral_data_path(self):
-        return fs.join(self.spectral_heating_cells_path, "total_absorption.dat")
+        return fs.join(self.absorption_path, "total_absorption.dat")
 
     # -----------------------------------------------------------------
 
