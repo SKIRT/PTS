@@ -1323,6 +1323,8 @@ class WavelengthCurve(Curve):
         :return:
         """
 
+        #print("VALUE NAME", self.value_name)
+
         # Create mask
         if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
         else: mask = None
@@ -1332,6 +1334,9 @@ class WavelengthCurve(Curve):
         conversion_info["wavelengths"] = self.wavelengths()
         if distance is not None: conversion_info["distance"] = distance
         elif self.distance is not None: conversion_info["distance"] = self.distance
+
+        #print(self.colnames)
+        #print(self.column_info)
 
         # Create and return
         if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name),
@@ -1357,6 +1362,9 @@ class FilterCurve(WavelengthCurve):
         :param kwargs:
         """
 
+        # Get options
+        extra_columns = kwargs.pop("extra_columns", [])
+
         # Call the constructor of the base class
         super(FilterCurve, self).__init__(*args, **kwargs)
 
@@ -1365,14 +1373,18 @@ class FilterCurve(WavelengthCurve):
         self.column_info.insert(0, ("Instrument", str, None, "instrument"))
         self.column_info.insert(0, ("Observatory", str, None, "observatory"))
 
+        # Extra columns
+        for coldef in extra_columns: self.column_info.append(coldef)
+
     # -----------------------------------------------------------------
 
-    def add_point(self, fltr, value, conversion_info=None):
+    def add_point(self, fltr, value, extra=None, conversion_info=None):
 
         """
         This function ...
         :param fltr:
         :param value:
+        :param extra:
         :param conversion_info:
         :return:
         """
@@ -1385,6 +1397,9 @@ class FilterCurve(WavelengthCurve):
             conversion_info_value = dict()
             conversion_info_value["wavelength"] = fltr.wavelength
             conversion_info = {self.value_name: conversion_info_value}
+
+        # Add extra?
+        if extra is not None: values.extend(extra)
 
         # Add the row
         self.add_row(values, conversion_info=conversion_info)
@@ -1653,6 +1668,29 @@ class FilterCurve(WavelengthCurve):
 
         # Parse the filter
         return parse_filter(instrument + " " + band)
+
+    # -----------------------------------------------------------------
+
+    def for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        # Make a copy of this SED
+        new = self.copy()
+
+        # Loop over the rows, remove the row if it does not correspond to a broad band filter
+        for index in reversed(range(len(self))):
+
+            # Remove if filter not in list
+            fltr = self.get_filter(index)
+            if fltr not in filters: new.remove_row(index)
+
+        # Return the new SED
+        return new
 
 # -----------------------------------------------------------------
 

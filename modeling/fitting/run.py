@@ -269,48 +269,24 @@ class FittingRun(object):
 
     @property
     def fit_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.path)
 
     # -----------------------------------------------------------------
 
     @property
     def modeling_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.fit_path)
 
     # -----------------------------------------------------------------
 
     @property
     def object_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.modeling_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_properties_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..core.environment import properties_name, data_name
         return fs.join(self.modeling_path, data_name, properties_name)
 
@@ -318,12 +294,6 @@ class FittingRun(object):
 
     @lazyproperty
     def galaxy_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Load the properties
         return GalaxyProperties.from_file(self.galaxy_properties_path)
 
@@ -331,96 +301,48 @@ class FittingRun(object):
 
     @property
     def galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.distance
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.center
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_configuration(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Configuration.from_file(self.fitting_configuration_path) if fs.is_file(self.fitting_configuration_path) else None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_method(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.fitting_configuration.method
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def spectral_convolution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.spectral_convolution
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return map(parse_filter, self.fitting_filter_names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.filters if self.fitting_configuration is not None else None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.wavelength for fltr in self.fitting_filters]
 
     # -----------------------------------------------------------------
@@ -621,36 +543,18 @@ class FittingRun(object):
 
     @lazyproperty
     def parameter_descriptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.descriptions
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def parameter_units(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.units
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def parameter_ndigits(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.fitting_configuration.ndigits
 
     # -----------------------------------------------------------------
@@ -684,12 +588,6 @@ class FittingRun(object):
 
     @lazyproperty
     def ndigits_dict(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.parameter_ndigits
 
     # -----------------------------------------------------------------
@@ -731,156 +629,78 @@ class FittingRun(object):
 
     @lazyproperty
     def genetic_settings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.genetic
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def random_seed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.genetic_settings.seed
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def grid_settings(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.fitting_configuration.grid
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def model_definition(self):
-        
-        """
-        This function ...
-        :return: 
-        """
-
         return get_model_definition(self.modeling_path, self.model_name)
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_filters
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_wavelengths
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_center_wavelengths(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.model_definition.normalization_center_wavelengths
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_effective_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_effective_wavelengths
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_pivot_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_pivot_wavelengths
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_mean_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_mean_wavelengths
 
     # -----------------------------------------------------------------
 
     @property
     def normalization_peak_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_definition.normalization_peak_wavelengths
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def initial_representation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.initial_representation
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def initial_representation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         name = self.initial_representation_name
         representation_path = get_representation_path(self.modeling_path, name)
         return Representation(name, self.model_name, representation_path)
@@ -889,108 +709,54 @@ class FittingRun(object):
 
     @lazyproperty
     def parameters_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.parameters
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def descriptions_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.descriptions
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def types_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.types
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def units_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.units
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ndigits_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.ndigits
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ranges_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.ranges
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def filters_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.filters
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def genetic_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.genetic
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def grid_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_configuration.grid
 
     # -----------------------------------------------------------------
@@ -1051,12 +817,6 @@ class FittingRun(object):
 
     @property
     def needs_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Get the input file names
         return self.ski_template.needs_input
 
@@ -1064,24 +824,12 @@ class FittingRun(object):
 
     @property
     def wavelength_grid_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.wavelength_grids_path, extension="dat", not_contains="grids", returns="name")
 
     # -----------------------------------------------------------------
 
     @property
     def has_wavelength_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.wavelength_grid_names) > 0
 
     # -----------------------------------------------------------------
@@ -1277,36 +1025,18 @@ class FittingRun(object):
 
     @lazyproperty
     def timing_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return TimingTable.from_file(self.timing_table_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def memory_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return MemoryTable.from_file(self.memory_table_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def generations_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return GenerationsTable.from_file(self.generations_table_path)
 
     # -----------------------------------------------------------------
@@ -1325,12 +1055,6 @@ class FittingRun(object):
 
     @lazyproperty
     def genetic_generation_indices(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return range(self.ngenetic_generations)
 
     # -----------------------------------------------------------------
@@ -1349,12 +1073,6 @@ class FittingRun(object):
 
     @lazyproperty
     def generation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.generations_table.generation_names
 
     # -----------------------------------------------------------------
@@ -1426,72 +1144,36 @@ class FittingRun(object):
 
     @lazyproperty
     def grid_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.generations_table.grid_generations
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def genetic_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.generations_table.genetic_generations
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def genetic_generations_with_initial(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.generations_table.genetic_generations_with_initial
 
     # -----------------------------------------------------------------
 
     @property
     def finished_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.generations_table.finished_generations
 
     # -----------------------------------------------------------------
 
     @property
     def nfinished_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.finished_generations)
 
     # -----------------------------------------------------------------
 
     @property
     def has_finished_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nfinished_generations > 0
 
     # -----------------------------------------------------------------
@@ -2138,12 +1820,6 @@ class FittingRun(object):
 
     @lazyproperty
     def best_parameter_values(self):
-
-        """
-        Egmrhomg
-        :return: 
-        """
-
         values, chi_squared = self.best_parameter_values_and_chi_squared
         return values
 

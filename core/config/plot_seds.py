@@ -10,6 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.config.plot import definition as plot_definition
 from pts.core.basics.plot import plotting_libraries, mpl
 from pts.core.plot.sed import residual_references
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -25,6 +26,16 @@ default_residual_reference = "models"
 # SEDs
 seds = ["mappings", "bruzual_charlot"]
 default_ages = "8.0 Gyr,0.1 Gyr"
+
+# -----------------------------------------------------------------
+
+# Legends
+default_instruments_loc = "lower center"
+default_observations_loc = "upper left"
+default_models_loc = "upper right"
+
+# Locations
+locations = sequences.get_lists_combinations(["upper", "center", "lower"], ["left", "center", "right"], combine=lambda x: " ".join(x) if x[0] != x[1] else x[0])
 
 # -----------------------------------------------------------------
 
@@ -92,7 +103,10 @@ definition.add_optional("ages", "time_quantity_list", "ages for Bruzual-Charlot 
 
 # -----------------------------------------------------------------
 
+# Flags for residuals
 definition.add_flag("interpolate_models_for_residuals", "interpolate models to get the photometry at specific wavelengths", True)
+definition.add_flag("smooth_residuals", "splot a spline interpolation of the residual of the models when they are plotted against observations as reference")
+definition.add_flag("show_smooth", "plot the spline interpolation of the observation")
 
 # -----------------------------------------------------------------
 
@@ -129,5 +143,20 @@ definition.add_flag("tex", "enable TeX rendering", True)
 # Axis positions
 definition.add_optional("xaxis_position", "string", "position of x axis ticks and label", "bottom", choices=["bottom", "top"])
 definition.add_optional("yaxis_position", "string", "position of y axis ticks and label", "left", choices=["left", "right"])
+
+# -----------------------------------------------------------------
+
+# Legends positions
+definition.add_section("legends", "legend options")
+
+# LOC
+definition.sections["legends"].add_optional("instruments_location", "string", "location of instruments legend", default_instruments_loc, choices=locations)
+definition.sections["legends"].add_optional("observations_location", "string", "location of observations legend", default_observations_loc, choices=locations)
+definition.sections["legends"].add_optional("models_location", "string", "location of models legend", default_models_loc, choices=locations)
+
+# NCOL
+definition.sections["legends"].add_optional("instruments_ncols", "positive_integer", "number of columns for instruments legend", 2)
+definition.sections["legends"].add_optional("observations_ncols", "positive_integer", "number of columns for observations legend", 2)
+definition.sections["legends"].add_optional("models_ncols", "positive_integer", "number of columns for models legend", 2)
 
 # -----------------------------------------------------------------

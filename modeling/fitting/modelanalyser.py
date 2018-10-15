@@ -390,108 +390,54 @@ class SEDFitModelAnalyser(FittingComponent):
 
     @property
     def has_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation is not None
 
     # -----------------------------------------------------------------
 
     @property
     def simulation_base_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation.base_path
 
     # -----------------------------------------------------------------
 
     @property
     def generation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.simulation_base_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def generation_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return GenerationInfo.from_generation_path(self.generation_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def generation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Generation.from_path(self.generation_path)
 
     # -----------------------------------------------------------------
 
     @property
     def generations_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.generation_path)
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_run_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.generations_path)
 
     # -----------------------------------------------------------------
 
     @property
     def generation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.generation_path)
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_run_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.fitting_run_path)
 
     # -----------------------------------------------------------------
@@ -770,36 +716,18 @@ class SEDFitModelAnalyser(FittingComponent):
 
     @property
     def ndifferences(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.differences)
 
     # -----------------------------------------------------------------
 
     @property
     def nfree_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.nfree_parameters
 
     # -----------------------------------------------------------------
 
     @property
     def ndof(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ndifferences - self.nfree_parameters - 1 # number of data points - number of fitted parameters - 1
 
     # -----------------------------------------------------------------
@@ -825,24 +753,12 @@ class SEDFitModelAnalyser(FittingComponent):
 
     @lazyproperty
     def chi_squared_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.chi_squared_table_for_generation(self.generation_name)
 
     # -----------------------------------------------------------------
 
     @property
     def simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation.name
 
     # -----------------------------------------------------------------

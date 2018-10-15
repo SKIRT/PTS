@@ -70,6 +70,8 @@ from ...core.basics.distribution import Distribution
 from ...core.basics.plot import MPLFigure
 from ...core.units.parsing import parse_quantity as q
 from ...core.units.quantity import PhotometricQuantity
+from ...core.data.sed import ObservedSED
+from ..fitting.modelanalyser import FluxDifferencesTable
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -210,6 +212,7 @@ plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "p
 plot_commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the observed, modeled and residual images", None)
 plot_commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
+plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
 
@@ -1039,12 +1042,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_reference_sed(self, label, additional_error=None):
+    def get_reference_sed(self, label, additional_error=None, filters=None):
 
         """
         This function ...
         :param label:
         :param additional_error:
+        :param filters:
         :return:
         """
 
@@ -1058,6 +1062,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if additional_error is not None:
             sed = sed.copy()
             sed.add_or_set_relative_error(additional_error)
+
+        # Subset of filters?
+        if filters is not None: sed = sed.for_filters(filters)
 
         # Return
         return sed
@@ -2737,7 +2744,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Add options
         definition.add_positional_optional("orientation", "string", "orientation of the images", earth_name, choices=orientations)
-        #definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
         definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="FUV,NUV,I1,MIPS 24mu,Pacs160,SPIRE350", convert_default=True)
         definition.add_flag("residuals", "show residuals", True)
         definition.add_flag("distributions", "show residual distributions", True)
@@ -2746,7 +2752,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_flag("proper", "use the proper mock observed images if present", True)
         definition.add_flag("only_from_evaluation", "only use filters for which an image was made in the evaluation")
         definition.add_flag("sort_filters", "sort the filters on wavelength", True)
-        definition.add_optional("path", "string", "path for the plot file")
+
+        # Path
+        definition.add_optional("path", "new_path", "path for the plot file")
 
         # Return
         return definition
@@ -2788,6 +2796,150 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Invalid
         else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_fluxes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_flag("add_observed", "add the observed fluxes", True)
+        definition.add_flag("add_simulated", "add the simulated SED")
+        definition.add_flag("only_residuals", "only show the fluxes for the residuals")
+        definition.add_flag("simulation_residuals", "show the residuals of the simulation to the observed fluxes", True)
+        definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+
+        # Filters
+        definition.add_flag("use_fitting_filters", "limit the mock and observed SEDs to filters that were used for the fitting")
+
+        # Save plot file
+        definition.add_optional("path", "new_path", "plot file path")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_path(self):
+        return self.analysis_run.fluxes_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mock_fluxes_path(self):
+        return fs.join(self.fluxes_path, "fluxes.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mock_fluxes(self):
+        return fs.is_file(self.mock_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mock_fluxes(self):
+        if not self.has_mock_fluxes: raise IOError("The mock fluxes are not (yet) present: run the fluxes analysis first")
+        return ObservedSED.from_file(self.mock_fluxes_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def flux_differences_path(self):
+        return fs.join(self.fluxes_path, "differences.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_flux_differences(self):
+        return fs.is_file(self.flux_differences_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def flux_differences(self):
+        if not self.has_flux_differences: raise IOError("The flux differences are not (yet) present: run the fluxes analysis first")
+        return FluxDifferencesTable.from_file(self.flux_differences_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes_command(self, command, **kwargs):
+
+        """
+        This function ....
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_fluxes_definition, **kwargs)
+
+        # Plot
+        self.plot_fluxes(add_observed=config.add_observed, add_simulated=config.add_simulated,
+                         only_residuals=config.only_residuals, simulation_residuals=config.simulation_residuals,
+                         additional_error=config.additional_error, use_fitting_filters=config.use_fitting_filters,
+                         path=config.path)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes(self, add_observed=True, add_simulated=False, only_residuals=False, simulation_residuals=True,
+                    additional_error=None, use_fitting_filters=False, path=None):
+
+        """
+        This function ...
+        :param add_observed
+        :param add_simulated:
+        :param only_residuals:
+        :param simulation_residuals:
+        :param additional_error:
+        :param use_fitting_filters:
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the mock fluxes ...")
+
+        # Set the filters
+        if use_fitting_filters: use_filters = tuple(self.fitting_run.fitting_filters) # list is not hashable for the memoized get_reference_sed function
+        else: use_filters = None
+
+        # Get the mock fluxes
+        if use_filters is not None: mock_fluxes = self.mock_fluxes.for_filters(use_filters)
+        else: mock_fluxes = self.mock_fluxes
+
+        # Set SEDs
+        seds = OrderedDict()
+        if add_observed: seds["Observation"] = self.get_reference_sed(clipped_name, additional_error=additional_error, filters=use_filters)
+        seds["Mock"] = mock_fluxes
+        if add_simulated: seds["Simulation"] = self.get_simulation_sed("total")
+
+        # Show chi squared
+        ndifferences = self.flux_differences.get_column_nnotmasked("Chi squared term")
+        nfree_parameters = 3
+        ndof = ndifferences - nfree_parameters - 1
+        chi_squared = self.flux_differences.get_column_sum("Chi squared term") / ndof
+
+        # Debugging
+        log.debug("The (reduced) chi squared value is " + str(chi_squared))
+
+        # Set options
+        plot_options = dict()
+        plot_options["Mock"] = {"only_residuals": only_residuals, "as_reference": False}
+        plot_options["Simulation"] = {"residuals": simulation_residuals, "residual_color": "darkgrey"}
+
+        # Plot
+        plot_seds(seds, path=path, options=plot_options, residual_reference="observations", smooth_residuals=True)
 
     # -----------------------------------------------------------------
 
@@ -3500,24 +3652,33 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot first panel
         seds1 = OrderedDict()
 
+        # Define seperate filter tuples
+        fitting_filters = tuple(self.fitting_run.fitting_filters)
+        planck_and_2mass_filters = tuple(self.planck_filters + self.jhk_filters)
+
         # Set options
         plot_options1 = dict()
-        plot_options1["Total"] = {"residuals": True}
+        plot_options1["Total"] = {"residuals": True, "residual_color": "darkgrey"}
         plot_options1["Old"] = {"residuals": False}
         plot_options1["Young"] = {"residuals": False}
         plot_options1["Ionizing"] = {"residuals": False}
+        plot_options1["Mock"] = {"only_residuals": True, "as_reference": False}
+        plot_options1["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
 
         # Add component simulation SEDs
         seds1["Total"] = self.get_simulation_sed(total)
         seds1["Old"] = self.get_simulation_sed(old)
         seds1["Young"] = self.get_simulation_sed(young)
         seds1["Ionizing"] = self.get_simulation_sed(sfr)
-        seds1["Observation"] = self.get_reference_sed(clipped_name, additional_error=0.1) # 10 % additional errorbars
+        seds1["Mock"] = self.mock_fluxes
+        seds1["Observation (fitting)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters) # 10 % additional errorbars
+        seds1["Observation (other)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=planck_and_2mass_filters)
 
         # Plot FIRST
         plot_seds(seds1, figure=figure, main_plot=main_plots[0], residual_plots=residual_plots[0], show=False,  # don't show yet
                   min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
-                  distance=self.galaxy_distance, options=plot_options1, tex=False, unit=unit)
+                  distance=self.galaxy_distance, options=plot_options1, tex=False, unit=unit,
+                  residual_reference="observations", smooth_residuals=True, observations_legend_ncols=1, instruments_legend_ncols=4)
 
         # Second panel
         seds2 = OrderedDict()
@@ -3537,6 +3698,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False, # don't show yet
                   min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
                   distance=self.galaxy_distance, options=plot_options2, tex=False, unit=unit, yaxis_position="right")
+
+        # Hide some tick labels
+        #figure.figure.canvas.draw() # GETTING TICK LABELS ONLY WORKS IF WE DRAW FIRST
+        # NO LONGER NECESSARY
+
+        # DOESN'T DO ANYTHING??
+        #residual_plots[0][-1].hide_last_xtick_label()
+        #main_plots[1].hide_first_xtick_label()
 
         # Save or show
         if path is not None: figure.saveto(path)
