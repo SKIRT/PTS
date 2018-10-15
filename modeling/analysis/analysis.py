@@ -3633,7 +3633,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Set limits
         unit = u("Lsun", density=True)
-        min_wavelength = q("0.02 micron")
+        min_wavelength = q("0.05 micron")
         max_wavelength = q("2000 micron")
         #min_flux = q("1e-13.5 W/m2", density=True)
         #max_flux = q("1e-10 W/m2", density=True)
@@ -3654,7 +3654,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Define seperate filter tuples
         fitting_filters = tuple(self.fitting_run.fitting_filters)
-        planck_and_2mass_filters = tuple(self.planck_filters + self.jhk_filters)
+        hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
 
         # Set options
         plot_options1 = dict()
@@ -3662,23 +3662,43 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot_options1["Old"] = {"residuals": False}
         plot_options1["Young"] = {"residuals": False}
         plot_options1["Ionizing"] = {"residuals": False}
-        plot_options1["Mock"] = {"only_residuals": True, "as_reference": False}
+        plot_options1["Mock fluxes"] = {"only_residuals": True, "as_reference": False}
         plot_options1["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
+        plot_options1["Summed"] = {"ghost": True}
+        #plot_options1["Summed_nosfr"] = {"ghost": True, "residuals": False}
+        #plot_options1["Summed_nosfr_mir"] = {"ghost": True, "residuals": False, "linestyle": ":", "color": "deeppink"}
 
         # Add component simulation SEDs
-        seds1["Total"] = self.get_simulation_sed(total)
-        seds1["Old"] = self.get_simulation_sed(old)
-        seds1["Young"] = self.get_simulation_sed(young)
-        seds1["Ionizing"] = self.get_simulation_sed(sfr)
-        seds1["Mock"] = self.mock_fluxes
+        total_sed = self.get_simulation_sed(total)
+        old_sed = self.get_simulation_sed(old)
+        young_sed = self.get_simulation_sed(young)
+        sfr_sed = self.get_simulation_sed(sfr)
+        #summed_sed = old_sed + young_sed + sfr_sed
+        #summed_sed_no_sfr = old_sed + young_sed
+        #summed_sed_no_sfr_mir = summed_sed_no_sfr.splice(min_wavelength=q("15 micron"), max_wavelength=q("150 micron"))
+
+        # Add simulated SEDs
+        seds1["Total"] = total_sed
+        seds1["Old"] = old_sed
+        seds1["Young"] = young_sed
+        seds1["Ionizing"] = sfr_sed
+        #seds1["Summed"] = summed_sed
+        #seds1["Summed_nosfr"] = summed_sed_no_sfr
+        #seds1["Summed_nosfr_mir"] = summed_sed_no_sfr_mir
+
+        # Add mock fluxes
+        seds1["Mock fluxes"] = self.mock_fluxes
+
+        # Add observed fluxes
         seds1["Observation (fitting)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters) # 10 % additional errorbars
-        seds1["Observation (other)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=planck_and_2mass_filters)
+        seds1["Observation (other)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=hfi_and_2mass_filters)
 
         # Plot FIRST
         plot_seds(seds1, figure=figure, main_plot=main_plots[0], residual_plots=residual_plots[0], show=False,  # don't show yet
                   min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
                   distance=self.galaxy_distance, options=plot_options1, tex=False, unit=unit,
-                  residual_reference="observations", smooth_residuals=True, observations_legend_ncols=1, instruments_legend_ncols=4)
+                  residual_reference="observations", smooth_residuals=True, observations_legend_ncols=1, instruments_legend_ncols=3,
+                  only_residuals_legend=True, observations_residuals_legend_location="lower left")
 
         # Second panel
         seds2 = OrderedDict()
@@ -3688,11 +3708,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         seds2["Absorbed"] = self.get_dust_absorption_sed("total")
         seds2["Dust"] = self.get_dust_emission_sed("total")
         seds2["Scattered"] = self.get_scattered_sed("total")
+        seds2["Internal dust (SFR)"] = self.get_dust_emission_sed("sfr", dust_contribution="internal")
 
         # Set options
         plot_options2 = dict()
         plot_options2["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar"}
         plot_options2["Dust"] = {"above": "Observed stellar"}
+        plot_options2["Internal dust (SFR)"] = {"above": "Observed stellar", "color": "lightgrey", "fill": False} # color does not work yet
 
         # Plot SECOND
         plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False, # don't show yet

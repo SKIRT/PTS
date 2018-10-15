@@ -154,9 +154,22 @@ definition.sections["legends"].add_optional("instruments_location", "string", "l
 definition.sections["legends"].add_optional("observations_location", "string", "location of observations legend", default_observations_loc, choices=locations)
 definition.sections["legends"].add_optional("models_location", "string", "location of models legend", default_models_loc, choices=locations)
 
+# Residuals
+definition.sections["legends"].add_optional("observations_residuals_location", "string", "location of observations legend on residuals panels", default_observations_loc, choices=locations)
+definition.sections["legends"].add_optional("models_residuals_location", "string", "location of models legend on residuals panels", default_observations_loc, choices=locations)
+
 # NCOL
 definition.sections["legends"].add_optional("instruments_ncols", "positive_integer", "number of columns for instruments legend", 2)
 definition.sections["legends"].add_optional("observations_ncols", "positive_integer", "number of columns for observations legend", 2)
 definition.sections["legends"].add_optional("models_ncols", "positive_integer", "number of columns for models legend", 2)
+
+# Residuals
+definition.sections["legends"].add_optional("observations_residuals_ncols", "positive_integer", "number of columns for observations legend on residuals panels", 2)
+definition.sections["legends"].add_optional("models_residuals_ncols", "positive_integer", "number of columns for models legend on residuals panels", 2)
+
+# -----------------------------------------------------------------
+
+# For
+definition.add_flag("only_residuals_legend", "for SEDs for which only_residuals is enabled, show only in a seperate legend on the appropriate residuals panel, instead of in the list on the main panel")
 
 # -----------------------------------------------------------------
