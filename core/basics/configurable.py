@@ -26,6 +26,10 @@ from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
+itemize_symbols = ["-", "*", ">"]
+
+# -----------------------------------------------------------------
+
 def write_input(input_dict, path, light=False):
 
     """
@@ -823,10 +827,10 @@ class InteractiveConfigurable(Configurable):
         key = first
 
         # Has subcommands
-        if self.has_subcommands(key): self._run_subcommand(command)
+        if self.has_subcommands(key): self._run_subcommand(command, self._commands[key])
 
         # Regular command
-        else: self._run_command_impl(command, cmds, interactive=interactive)
+        else: self._run_nosubcommand_impl(command, cmds, interactive=interactive)
 
     # -----------------------------------------------------------------
 
@@ -852,11 +856,12 @@ class InteractiveConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _run_subcommand(self, command, interactive=False):
+    def _run_subcommand(self, command, subcommands, interactive=False):
 
         """
         This function ...
         :param command:
+        :param subcommands:
         :param interactive:
         :return:
         """
@@ -869,10 +874,13 @@ class InteractiveConfigurable(Configurable):
         key = command.split(" ")[0]
 
         # Get the possible subcommands
-        subcommands = self.get_subcommands(key)
+        #subcommands = self.get_subcommands(key)
 
         # Get command without main command
         subcommand = strings.split_at_first(command, key)[1].strip()
+        #print("SUBCOMMAND", subcommand)
+        #print("SUBCOMMANDS", subcommands.keys())
+        #print(strings.startswith_any(subcommand, subcommands))
 
         # No subcommand?
         if not strings.startswith_any(subcommand, subcommands):
@@ -911,7 +919,7 @@ class InteractiveConfigurable(Configurable):
                     subcommand = prompt_string("subcommand", "subcommand", choices=subcommands_descriptions)
 
                     # Run the subcommand in interactive mode
-                    self._run_command_impl(subcommand, subcommands, main_command=key, interactive=True)
+                    self._run_nosubcommand_impl(subcommand, subcommands, main_command=key, interactive=True)
 
                 # Not enough input
                 else: raise InvalidCommandError("Not enough input for '" + key + "' command", command)
@@ -935,10 +943,39 @@ class InteractiveConfigurable(Configurable):
         :return:
         """
 
+        #print("cmd", command)
+        #print("cmds", cmds)
+
+        # Get first word == key
+        key = command.split(" ")[0]
+        has_subcommands = isinstance(cmds[key], dict)
+
+        # Has subcommands
+        if has_subcommands: self._run_subcommand(command, cmds[key])
+
+        # Regular command
+        else: self._run_nosubcommand_impl(command, cmds, main_command=main_command, interactive=interactive)
+
+    # -----------------------------------------------------------------
+
+    def _run_nosubcommand_impl(self, command, cmds, main_command=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param cmds:
+        :param main_command:
+        :param interactive:
+        :return:
+        """
+
         from ..tools import formatting as fmt
 
         # Get first word == key
         key = command.split(" ")[0]
+
+        #print(key)
+        #print(cmds[key])
 
         # Get function name and description
         function_name, pass_command, description, subject = cmds[key]
@@ -969,14 +1006,6 @@ class InteractiveConfigurable(Configurable):
     # -----------------------------------------------------------------
 
     def has_subcommands(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        #return command in self._subcommands.keys()
         return isinstance(self._commands[command], dict)
 
     # -----------------------------------------------------------------
@@ -1270,16 +1299,20 @@ class InteractiveConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _show_help_subcommands(self, subcommands, main_command, prefix="   ", symbol="*"):
+    def _show_help_subcommands(self, subcommands, main_command, level=1):
 
         """
         This function ...
         :param subcommands:
         :param main_command:
+        :param level:
         :return:
         """
 
         from ..tools import formatting as fmt
+
+        prefix = "   " * level
+        symbol = itemize_symbols[level]
 
         # Loop over the commands
         for key in subcommands:
@@ -1313,7 +1346,7 @@ class InteractiveConfigurable(Configurable):
 
                 subsubcommands = spec
                 #print(subsubcommands)
-                self._show_help_subcommands(subsubcommands, main_command + " " + key, prefix=prefix+"   ", symbol=">")
+                self._show_help_subcommands(subsubcommands, main_command + " " + key, level=level+1)
 
             # No input expected
             else: print(prefix + "     " + fmt.blue + "no input" + fmt.reset)
