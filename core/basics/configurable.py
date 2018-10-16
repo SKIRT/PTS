@@ -1308,12 +1308,12 @@ class InteractiveConfigurable(Configurable):
                 # Show
                 for line in usage: print(prefix + "   " + fmt.blue + line + fmt.reset)
 
-            # Has subcommands
+            # Has subcommands: THIRD LEVEL
             elif isinstance(spec, dict):
 
                 subsubcommands = spec
                 #print(subsubcommands)
-                self._show_help_subcommands(subsubcommands, key, prefix=prefix+"   ", symbol=">")
+                self._show_help_subcommands(subsubcommands, main_command + " " + key, prefix=prefix+"   ", symbol=">")
 
             # No input expected
             else: print(prefix + "     " + fmt.blue + "no input" + fmt.reset)
