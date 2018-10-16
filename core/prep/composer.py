@@ -46,17 +46,6 @@ _plot_command_name = "plot"
 
 # -----------------------------------------------------------------
 
-commands = OrderedDict()
-commands[_help_command_name] = ("show_help", False, "show help", None)
-commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
-commands[_show_command_name] = (None, False, "show", None)
-commands[_add_command_name] = (None, False, "add", None)
-commands[_remove_command_name] = (None, False, "remove", None)
-commands[_set_command_name] = (None, False, "set", None)
-commands[_plot_command_name] = (None, False, "plot", None)
-
-# -----------------------------------------------------------------
-
 _stellar_command_name = "stellar"
 _dust_command_name = "dust"
 _instrument_command_name = "instrument"
@@ -72,6 +61,7 @@ _units_command_name = "units"
 
 # Define show commands
 show_commands = OrderedDict()
+show_commands.description = "show"
 show_commands[_stellar_command_name] = ("show_stellar_command", True, "show a stellar component", "stellar")
 show_commands[_dust_command_name] = ("show_dust_command", True, "show a dust component", "dust")
 show_commands[_instrument_command_name] = ("show_instrument_command", True, "show an instrument", "instrument")
@@ -80,6 +70,7 @@ show_commands[_instrument_command_name] = ("show_instrument_command", True, "sho
 
 # Define add commands
 add_commands = OrderedDict()
+add_commands.description = "add"
 add_commands[_stellar_command_name] = ("add_stellar_command", True, "add a stellar component", None)
 add_commands[_dust_command_name] = ("add_dust_command", True, "add a dust component", None)
 add_commands[_instrument_command_name] = ("add_instrument_command", True, "add an instrument", None)
@@ -89,6 +80,7 @@ add_commands[_item_command_name] = ("add_item_command", True, "add an item", Non
 
 # Define remove commands
 remove_commands = OrderedDict()
+remove_commands.description = "remove"
 remove_commands[_stellar_command_name] = ("remove_stellar_command", True, "remove a stellar component", "stellar")
 remove_commands[_dust_command_name] = ("remove_dust_command", True, "remove a dust component", "dust")
 remove_commands[_instrument_command_name] = ("remove_instrument_command", True, "remove an instrument", "instrument")
@@ -97,6 +89,7 @@ remove_commands[_instrument_command_name] = ("remove_instrument_command", True, 
 
 # Define set commands
 set_commands = OrderedDict()
+set_commands.description = "set"
 set_commands[_wavelengths_command_name] = ("set_wavelengths_command", True, "set the wavelength grid", None)
 set_commands[_grid_command_name] = ("set_grid_command", True, "set the dust grid", None)
 set_commands[_npackages_command_name] = ("set_npackages_command", True, "set the number of photon packages", None)
@@ -107,17 +100,30 @@ set_commands[_units_command_name] = ("set_units_command", True, "set the units s
 
 # Define plot commands
 plot_commands = OrderedDict()
+plot_commands.description = "plot"
 plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
 
 # -----------------------------------------------------------------
 
-# Set subcommands
-subcommands = OrderedDict()
-subcommands[_show_command_name] = show_commands
-subcommands[_add_command_name] = add_commands
-subcommands[_remove_command_name] = remove_commands
-subcommands[_set_command_name] = set_commands
-subcommands[_plot_command_name] = plot_commands
+# Set commands
+commands = OrderedDict()
+
+# Standard commands
+commands[_help_command_name] = ("show_help", False, "show help", None)
+commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
+
+# Showing stuff
+commands[_show_command_name] = show_commands # (None, False, "show", None)
+
+# Add & Remove
+commands[_add_command_name] = add_commands # (None, False, "add", None)
+commands[_remove_command_name] = remove_commands # (None, False, "remove", None)
+
+# Set
+commands[_set_command_name] = set_commands # (None, False, "set", None)
+
+# Plot
+commands[_plot_command_name] = plot_commands #(None, False, "plot", None)
 
 # -----------------------------------------------------------------
 
@@ -128,7 +134,6 @@ class ModelComposer(InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
 
     # -----------------------------------------------------------------
 

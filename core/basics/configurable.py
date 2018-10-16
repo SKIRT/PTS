@@ -554,7 +554,6 @@ class InteractiveConfigurable(Configurable):
     # Define class properties
     __metaclass__ = ABCMeta
     _commands = None
-    _subcommands = None
 
     # -----------------------------------------------------------------
 
@@ -747,7 +746,7 @@ class InteractiveConfigurable(Configurable):
                     from ..tools import strings
                     splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
 
-                    if len(splitted) > 1: usage = self.get_usage_for_key(splitted[1], self._subcommands[key])
+                    if len(splitted) > 1: usage = self.get_usage_for_key(splitted[1], self._commands[key])
                     else:
                         # Set subcommands with descriptions
                         subcommands = self.get_subcommands(key)
@@ -977,7 +976,8 @@ class InteractiveConfigurable(Configurable):
         :return:
         """
 
-        return command in self._subcommands.keys()
+        #return command in self._subcommands.keys()
+        return isinstance(self._commands[command], dict)
 
     # -----------------------------------------------------------------
 
@@ -989,8 +989,10 @@ class InteractiveConfigurable(Configurable):
         :return:
         """
 
-        if command not in self._subcommands: raise InvalidCommandError("Invalid command: '" + command + "'", command)
-        return self._subcommands[command]
+        #if command not in self._subcommands: raise InvalidCommandError("Invalid command: '" + command + "'", command)
+        if command not in self._commands: raise InvalidCommandError("Invalid command: '" + command + "'", command)
+        #return self._subcommands[command]
+        return self._commands[command]
 
     # -----------------------------------------------------------------
 
@@ -1188,9 +1190,6 @@ class InteractiveConfigurable(Configurable):
         :return:
         """
 
-        from .configuration import ConfigurationDefinition, get_usage
-        from ..tools import formatting as fmt
-
         # Inform the user
         log.info("Showing help ...")
 
@@ -1199,52 +1198,79 @@ class InteractiveConfigurable(Configurable):
         # Loop over the commands
         for key in self._commands:
 
-            # Get properties
-            function_name, pass_command, description, subject = self._commands[key]
-
-            # Show
-            print(" - " + fmt.bold + key + fmt.reset + ": " + description)
-
-            if function_name is None and not self.has_subcommands(key): raise RuntimeError("Something went wrong")
-
-            # Show usage
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, self._commands)
-
-                # Show
-                for line in usage: print("    " + fmt.blue + line + fmt.reset)
-
-            # Command with subcommands
-            elif self.has_subcommands(key):
-
-                # Set subcommands with descriptions
-                subcommands = self.get_subcommands(key)
-                subcommands_descriptions = OrderedDict()
-                for subkey in subcommands:
-                    function_name, pass_command, description, subject = subcommands[subkey]
-                    subcommands_descriptions[subkey] = description
-
-                # Create definition for the subcommands
-                definition = ConfigurationDefinition(write_config=False)
-                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
-                usage = get_usage(key, definition, add_logging=False, add_cwd=False)
-
-                # Show usage
-                for line in usage: print("    " + fmt.blue + line + fmt.reset)
-
-                # Show help for subcommands
-                self._show_help_subcommands(subcommands, key)
-
-            # No input needed
-            else: print("    " + fmt.blue + "no input" + fmt.reset)
+            # Show help
+            self._show_help_impl(self._commands[key], key)
 
         print("")
 
     # -----------------------------------------------------------------
 
-    def _show_help_subcommands(self, subcommands, main_command):
+    def _show_help_impl(self, spec, key):
+
+        """
+        This function ...
+        :param spec:
+        :param key:
+        :return:
+        """
+
+        from .configuration import ConfigurationDefinition, get_usage
+        from ..tools import formatting as fmt
+
+        # Get properties
+        if isinstance(spec, dict):
+            function_name = pass_command = None
+            if hasattr(spec, "subject"): subject = spec.subject
+            else: subject = None
+            if hasattr(spec, "description"): description = spec.description
+            else: description = "no description"
+        else: function_name, pass_command, description, subject = spec
+
+        # Show
+        print(" - " + fmt.bold + key + fmt.reset + ": " + description)
+
+        #if function_name is None and not self.has_subcommands(key): raise RuntimeError("Something went wrong")
+
+        # Show usage
+        if pass_command:
+
+            # Get usage
+            usage = self.get_usage_for_key(key, self._commands)
+
+            # Show
+            for line in usage: print("    " + fmt.blue + line + fmt.reset)
+
+        # Command with subcommands
+        elif self.has_subcommands(key):
+
+            # Set subcommands with descriptions
+            subcommands = self.get_subcommands(key)
+            subcommands_descriptions = OrderedDict()
+
+            # Get description for each subcommand
+            for subkey in subcommands:
+                sspec = subcommands[subkey]
+                if isinstance(sspec, dict): description = sspec.description if hasattr(sspec, "description") else "no description"
+                else: function_name, pass_command, description, subject = subcommands[subkey]
+                subcommands_descriptions[subkey] = description
+
+            # Create definition for the subcommands
+            definition = ConfigurationDefinition(write_config=False)
+            definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+            usage = get_usage(key, definition, add_logging=False, add_cwd=False)
+
+            # Show usage
+            for line in usage: print("    " + fmt.blue + line + fmt.reset)
+
+            # Show help for subcommands
+            self._show_help_subcommands(subcommands, key)
+
+        # No input needed
+        else: print("    " + fmt.blue + "no input" + fmt.reset)
+
+    # -----------------------------------------------------------------
+
+    def _show_help_subcommands(self, subcommands, main_command, prefix="   ", symbol="*"):
 
         """
         This function ...
@@ -1258,11 +1284,19 @@ class InteractiveConfigurable(Configurable):
         # Loop over the commands
         for key in subcommands:
 
+            spec = subcommands[key]
+
             # Get description
-            function_name, pass_command, description, subject = subcommands[key]
+            if isinstance(spec, dict):
+                function_name = pass_command = None
+                if hasattr(spec, "subject"): subject = spec.subject
+                else: subject = None
+                if hasattr(spec, "description"): description = spec.description
+                else: description = "no description"
+            else: function_name, pass_command, description, subject = subcommands[key]
 
             # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+            print(prefix + " " + symbol + " " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
             # if not pass_command or subject is None: continue
@@ -1272,10 +1306,17 @@ class InteractiveConfigurable(Configurable):
                 usage = self.get_usage_for_key(key, subcommands, main_command=main_command)
 
                 # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+                for line in usage: print(prefix + "   " + fmt.blue + line + fmt.reset)
+
+            # Has subcommands
+            elif isinstance(spec, dict):
+
+                subsubcommands = spec
+                #print(subsubcommands)
+                self._show_help_subcommands(subsubcommands, key, prefix=prefix+"   ", symbol=">")
 
             # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
+            else: print(prefix + "     " + fmt.blue + "no input" + fmt.reset)
 
     # -----------------------------------------------------------------
 

@@ -136,42 +136,6 @@ _residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
 
-# Define commands
-commands = OrderedDict()
-
-# Standard commands
-commands[_help_command_name] = ("show_help", False, "show help", None)
-commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
-commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
-
-# Show stuff
-commands[_show_command_name] = (None, None, "show analysis results", None)
-
-# Examine the model
-commands[_model_command_name] = ("examine_model", False, "examine the radiative transfer model", None)
-
-# Plot stuff
-commands[_sed_command_name] = (None, None, "plot SEDs", None)
-commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
-commands[_map_command_name] = (None, None, "plot a map", None)
-commands[_plot_command_name] = (None, None, "plot other stuff", None)
-
-# Evaluate
-commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the analysis model", None)
-
-# Analysis
-commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
-commands[_absorption_command_name] = ("analyse_absorption_command", True, "analyse the dust absorption", None)
-commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
-commands[_energy_command_name] = (None, None, "analyse the energy budget in the galaxy", None)
-commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
-commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
-commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
-commands[_fluxes_command_name] = ("analyse_fluxes_command", True, "analyse the simulation fluxes", None)
-commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
-
-# -----------------------------------------------------------------
-
 _bulge_name = "bulge"
 _disk_name = "disk"
 
@@ -183,9 +147,6 @@ _young_name = "young"
 _sfr_name = "sfr"
 _sfr_intrinsic_name = "sfr_intrinsic"
 _unevolved_name = "unevolved"
-
-#_sfr_stellar_name = "sfr_stellar"
-#_sfr_dust_name = "sfr_dust"
 
 _stellar_name = "stellar"
 _dust_name = "dust"
@@ -199,6 +160,7 @@ _absorption_name = "absorption"
 
 # Show subcommands
 show_commands = OrderedDict()
+show_commands.description = "show analysis results"
 
 # Properties
 show_commands[_properties_command_name] = ("show_properties", False, "show the model properties", None)
@@ -209,9 +171,21 @@ show_commands[_data_command_name] = ("show_data", False, "show the simulation da
 
 # -----------------------------------------------------------------
 
+map_name = "map"
+difference_name = "difference"
+distribution_name = "distribution"
+curve_name = "curve"
+
+plot_heating_commands = OrderedDict()
+plot_heating_commands.description = "make plots of the heating fraction"
+plot_heating_commands[map_name] = ("plot_heating_map_command", True, "plot map of the heating fraction", None)
+plot_heating_commands[difference_name] = ("plot_heating_difference_command", True, "plot difference between heating fraction maps", None)
+plot_heating_commands[distribution_name] = ("plot_heating_distribution_command", True, "plot distribution of heating fractions", None)
+plot_heating_commands[curve_name] = ("plot_heating_curve_command", True, "plot curve of spectral heating", None)
+
 # Plot subcommands
 plot_commands = OrderedDict()
-
+plot_commands.description = "plot other stuff"
 plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
 plot_commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the observed, modeled and residual images", None)
@@ -219,12 +193,13 @@ plot_commands[_images_command_name] = ("plot_images_command", True, "plot the si
 plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
-plot_commands[_heating_command_name] = ("plot_heating_command", True, "make plots of the heating fraction", None)
+plot_commands[_heating_command_name] = plot_heating_commands #("plot_heating_command", True, "make plots of the heating fraction", None)
 
 # -----------------------------------------------------------------
 
 # SED subcommands
 sed_commands = OrderedDict()
+sed_commands.description = "plot SEDs"
 
 ## TOTAL
 sed_commands[_total_name] = ("plot_total_sed_command", True, "plot the SED of the total simulation", None)
@@ -235,64 +210,36 @@ sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust SED(s)
 sed_commands[_contributions_name] = ("plot_contribution_seds_command", True, "plot the contributions to the total SED(s)", None)
 sed_commands[_components_name] = ("plot_component_seds_command", True, "plot the SED(s) for different components", None)
 
-## OLD BULGE
+## COMPONENTS
 sed_commands[_old_bulge_name] = ("plot_old_bulge_sed_command", True, "plot the SED of the old stellar bulge", None)
-
-## OLD DISK
 sed_commands[_old_disk_name] = ("plot_old_disk_sed_command", True, "plot the SED of the old stellar disk", None)
-
-## OLD
 sed_commands[_old_name] = ("plot_old_sed_command", True, "plot the SED of the old stars", None)
-
-## YOUNG
 sed_commands[_young_name] = ("plot_young_sed_command", True, "plot the SED of the young stars", None)
-
-## SFR
 sed_commands[_sfr_name] = ("plot_sfr_sed_command", True, "plot the SED of the star formation regions", None)
-
-## INTRINSIC SFR
 sed_commands[_sfr_intrinsic_name] = ("plot_sfr_intrinsic_sed_command", True, "plot the intrinsic (stellar and dust) SED of the star formation regions", None)
-
-## UNEVOLVED
 sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
-
-# ABSORPTION
 sed_commands[_absorption_name] = ("plot_absorption_sed_command", True, "plot absorption SEDs", None)
 
 # -----------------------------------------------------------------
 
 # Attenuation subcommands
 attenuation_commands = OrderedDict()
-
-## TOTAL
+attenuation_commands.description = "plot attenuation curves"
 attenuation_commands[_total_name] = ("plot_total_attenuation_command", True, "plot the attenuation curve of the model", None)
-
-## CONTRIBUTIONS
 attenuation_commands[_components_name] = ("plot_component_attenuation_command", True, "plot the attenuation curves of the different components", None)
-
-## OLD BULGE
 attenuation_commands[_old_bulge_name] = ("plot_old_bulge_attenuation_command", True, "plot the attenuation curve of the old stellar bulge", None)
-
-## OLD DISK
 attenuation_commands[_old_disk_name] = ("plot_old_disk_attenuation_command", True, "plot the attenuation curve of the old stellar disk", None)
-
-## OLD
 attenuation_commands[_old_name] = ("plot_old_attenuation_command", True, "plot the attenuation curve of the old stars", None)
-
-## YOUNG
 attenuation_commands[_young_name] = ("plot_young_attenuation_command", True, "plot the attenuation curve of the young stars", None)
-
-## SFR
 attenuation_commands[_sfr_name] = ("plot_sfr_attenuation_command", True, "plot the attenuation curve of the star formation regions", None)
 # BUT WHAT IS THE *INTRINSIC* SFR ATTENUATION CURVE? (by INTERNAL DUST)
-
-## UNEVOLVED
 attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", True, "plot the attenuation curve of the unevolved stellar population (young + sfr)", None)
 
 # -----------------------------------------------------------------
 
 # Map subcommands
 map_commands = OrderedDict()
+map_commands.description = "plot a map"
 map_commands[_total_name] = ("show_total_map_command", True, "show a map of the total model", None)
 map_commands[_bulge_name] = ("show_bulge_map_command", True, "show a map of the old stellar bulge component", None)
 map_commands[_disk_name] = ("show_disk_map_command", True, "show a map of the old stellar disk component", None)
@@ -312,6 +259,7 @@ _spectral_name = "spectral"
 
 # Heating subcommands
 heating_commands = OrderedDict()
+heating_commands.description = "analyse dust heating contributions"
 
 # Cell and projected
 heating_commands[_cell_name] = ("analyse_cell_heating_command", True, "analyse the cell heating", None)
@@ -322,6 +270,7 @@ heating_commands[_spectral_name] = ("analyse_spectral_heating_command", True, "a
 
 # Energy subcommands
 energy_commands = OrderedDict()
+energy_commands.description = "analyse the energy budget in the galaxy"
 
 # Cell and projected
 energy_commands[_cell_name] = ("analyse_cell_energy_command", True, "analyse the cell energy budget", None)
@@ -329,15 +278,39 @@ energy_commands[_projected_name] = ("analyse_projected_energy_command", True, "a
 
 # -----------------------------------------------------------------
 
-# Set subcommands
-subcommands = OrderedDict()
-subcommands[_show_command_name] = show_commands
-subcommands[_plot_command_name] = plot_commands
-subcommands[_sed_command_name] = sed_commands
-subcommands[_attenuation_command_name] = attenuation_commands
-subcommands[_map_command_name] = map_commands
-subcommands[_heating_command_name] = heating_commands
-subcommands[_energy_command_name] = energy_commands
+# Define commands
+commands = OrderedDict()
+
+# Standard commands
+commands[_help_command_name] = ("show_help", False, "show help", None)
+commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
+commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
+
+# Show stuff
+commands[_show_command_name] = show_commands
+
+# Examine the model
+commands[_model_command_name] = ("examine_model", False, "examine the radiative transfer model", None)
+
+# Plot stuff
+commands[_sed_command_name] = sed_commands
+commands[_attenuation_command_name] = attenuation_commands
+commands[_map_command_name] = map_commands
+commands[_plot_command_name] = plot_commands
+
+# Evaluate
+commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the analysis model", None)
+
+# Analysis
+commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
+commands[_absorption_command_name] = ("analyse_absorption_command", True, "analyse the dust absorption", None)
+commands[_heating_command_name] = heating_commands
+commands[_energy_command_name] = energy_commands
+commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
+commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
+commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
+commands[_fluxes_command_name] = ("analyse_fluxes_command", True, "analyse the simulation fluxes", None)
+commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
 
 # -----------------------------------------------------------------
 
@@ -431,7 +404,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "ANALYSIS"
 
     # -----------------------------------------------------------------
@@ -3962,8 +3934,46 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def heating_plot_names(self):
+        return [map_name, difference_name, distribution_name, curve_name]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def plot_heating_definition(self):
+    def heating_fraction_interval(self):
+        return (0,1,)
+
+    # -----------------------------------------------------------------
+
+    # def plot_heating_command(self, command, **kwargs):
+    #
+    #     """
+    #     This function ...
+    #     :param command:
+    #     :param kwargs:
+    #     :return:
+    #     """
+    #
+    #     # Get config
+    #     config = self.get_config_from_command(command, self.plot_heating_definition, **kwargs)
+    #
+    #     # Heating map
+    #     if config.name == map_name: self.plot_heating_map(config)
+    #
+    #     # Heating map difference
+    #     elif config.name == difference_name: self.plot_heating_map_difference(config)
+    #
+    #     # Heating fraction distribution
+    #     elif config.name == distribution_name: self.plot_heating_distribution(config)
+    #
+    #     # Spectral curve
+    #     elif config.name == curve_name: self.plot_heating_curve(config)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_map_definition(self):
 
         """
         This unction ...
@@ -3984,13 +3994,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def heating_fraction_interval(self):
-        return (0,1,)
-
-    # -----------------------------------------------------------------
-
-    def plot_heating_command(self, command, **kwargs):
+    def plot_heating_map_command(self, command, **kwargs):
 
         """
         This function ...
@@ -4000,7 +4004,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get config
-        config = self.get_config_from_command(command, self.plot_heating_definition, **kwargs)
+        config = self.get_config_from_command(command, self.plot_heating_map_definition, **kwargs)
 
         # Get the heating map
         frame = self.get_heating_map(config.projection, fltr=config.filter)
@@ -4014,6 +4018,96 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         plot_map(frame, interval=self.heating_fraction_interval)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_difference_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_difference_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_difference_definition, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_distribution_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_distribution_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_distribution_definition, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_curve_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_curve_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_curve_definition, **kwargs)
 
     # -----------------------------------------------------------------
 

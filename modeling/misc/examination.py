@@ -67,6 +67,22 @@ _luminosities_command_name = "luminosities"
 
 # -----------------------------------------------------------------
 
+_maps_command_name = "maps"
+
+# -----------------------------------------------------------------
+
+plot_commands = OrderedDict()
+plot_commands.description = "plot stuff"
+plot_commands[_maps_command_name] = ("plot_maps_command", True, "plot the model component input maps", None)
+
+# -----------------------------------------------------------------
+
+# Subcommands
+subcommands = OrderedDict()
+subcommands[_plot_command_name] = plot_commands
+
+# -----------------------------------------------------------------
+
 # Define commands
 commands = OrderedDict()
 
@@ -78,7 +94,7 @@ commands[_history_command_name] = ("show_history_command", True, "show history o
 commands[_components_command_name] = ("show_components", False, "show model components", None)
 
 # Plot stuff
-commands[_plot_command_name] = (None, None, "plot stuff", None)
+commands[_plot_command_name] = plot_commands # (None, None, "plot stuff", None)
 
 # Other
 commands[_project_command_name] = ("project_command", True, "project the model from one or multiple orientations", "component")
@@ -87,21 +103,6 @@ commands[_sfr_command_name] = ("show_sfr", True, "show SFR parameters", None)
 commands[_ssfr_command_name] = ("show_ssfr", True, "show sSFR parameters", None)
 commands[_stellar_mass_command_name] = ("show_stellar_mass", True, "show stellar mass parameters", None)
 commands[_luminosities_command_name] = ("show_luminosities", True, "show component luminosities", None)
-
-# -----------------------------------------------------------------
-
-_maps_command_name = "maps"
-
-# -----------------------------------------------------------------
-
-plot_commands = OrderedDict()
-plot_commands[_maps_command_name] = ("plot_maps_command", True, "plot the model component input maps", None)
-
-# -----------------------------------------------------------------
-
-# Subcommands
-subcommands = OrderedDict()
-subcommands[_plot_command_name] = plot_commands
 
 # -----------------------------------------------------------------
 
@@ -134,7 +135,6 @@ class ModelExamination(InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "MODEL"
 
     # -----------------------------------------------------------------
