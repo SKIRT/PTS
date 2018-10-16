@@ -72,6 +72,10 @@ from ...core.units.parsing import parse_quantity as q
 from ...core.units.quantity import PhotometricQuantity
 from ...core.data.sed import ObservedSED
 from ..fitting.modelanalyser import FluxDifferencesTable
+from ...core.tools.parsing import lazy_broad_band_filter_list
+from ...magic.core.frame import Frame
+from ...magic.core.mask import Mask
+from ...magic.tools.plotting import plot_map
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -215,6 +219,7 @@ plot_commands[_images_command_name] = ("plot_images_command", True, "plot the si
 plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
+plot_commands[_heating_command_name] = ("plot_heating_command", True, "make plots of the heating fraction", None)
 
 # -----------------------------------------------------------------
 
@@ -401,6 +406,11 @@ frequency_style_name = "frequency"
 neutral_style_name = "neutral"
 spectral_style_names = [wavelength_style_name, frequency_style_name, neutral_style_name]
 default_spectral_style = wavelength_style_name
+
+# -----------------------------------------------------------------
+
+cells_name = "cells"
+midplane_name = "midplane"
 
 # -----------------------------------------------------------------
 
@@ -2074,24 +2084,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def heating_path(self):
-        return self.analysis_run.heating_path
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def spectral_heating_path(self):
-        return fs.join(self.analysis_run.heating_path, "spectral")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def spectral_heating_cells_path(self):
-        return fs.join(self.spectral_heating_path, "3D")
-
-    # -----------------------------------------------------------------
-
-    @property
     def absorption_path(self):
         return self.analysis_run.absorption_path
 
@@ -3732,6 +3724,296 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Save or show
         if path is not None: figure.saveto(path)
         else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_path(self):
+        return self.analysis_run.heating_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "cell")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def projected_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "projected")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def projected_heating_maps_path(self):
+        return fs.join(self.projected_heating_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "spectral")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_cells_path(self):
+        return fs.join(self.spectral_heating_path, "3D")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_maps_path(self):
+        return fs.join(self.spectral_heating_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    def get_heating_map(self, projection, fltr=None):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Spectral heating
+        if fltr is not None: return self.get_spectral_heating_map(projection, fltr)
+
+        # Bolometric heating
+        else: return self.get_bolometric_heating_map(projection)
+
+    # -----------------------------------------------------------------
+
+    def get_heating_mask(self, projection, fltr=None):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Spectral heating
+        if fltr is not None: return self.get_spectral_heating_mask(projection, fltr)
+
+        # Bolometric heating
+        else: return self.get_bolometric_heating_mask(projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_absorption_filters(self):
+        return lazy_broad_band_filter_list("GALEX,SDSS")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_emission_filters(self):
+        return lazy_broad_band_filter_list("W3,W4,MIPS 24mu,Herschel")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_filters(self):
+        return self.heating_absorption_filters + self.heating_emission_filters
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_heating_map_path(self, projection, fltr):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Absorption or emission filter?
+        if fltr in self.heating_absorption_filters: abs_or_em = "absorption"
+        elif fltr in self.heating_emission_filters: abs_or_em = "emission"
+        else: raise ValueError("The '" + str(fltr) + "' filter does not have an absorption or emission heating fraction map")
+
+        # Determine path
+        if projection == cells_name: return fs.join(self.spectral_heating_cells_path, abs_or_em + "_" + str(fltr) + "_fixed.fits")
+        elif projection == midplane_name: raise NotImplementedError("Spectral heating fraction maps do not exist for the midplane")
+        elif projection == earth_name: return fs.join(self.spectral_heating_maps_path, "earth_" + abs_or_em + "_" + str(fltr) + ".fits")
+        elif projection == faceon_name: return fs.join(self.spectral_heating_maps_path, "faceon_" + abs_or_em + "_" + str(fltr) + ".fits")
+        elif projection == edgeon_name: return fs.join(self.spectral_heating_maps_path, "edgeon_" + abs_or_em + "_" + str(fltr) + ".fits")
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_heating_map(self, projection, fltr):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_spectral_heating_map_path(projection, fltr)
+
+        # Open the frame
+        frame = Frame.from_file(path)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_heating_mask(self, projection, fltr):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Determine path
+        if projection == cells_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan" # CELLS HAVE NANS
+        elif projection == midplane_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan" # CELLS HAVE NANS
+        elif projection == earth_name: path, mask_value = self.get_bolometric_heating_map_path(earth_name), "zero" # these are better interpolated than the spectral heating maps
+        elif projection == faceon_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan"
+        #elif projection == faceon_name: path, mask_value = self.get_bolometric_heating_map_path(faceon_name), "zero" # these are better interpolated than the spectral heating maps
+        elif projection == edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(edgeon_name), "zero" # these are better interpolated than the spectral heating maps
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+        # Get mask
+        if mask_value == "nan": return Mask.nans_from_file(path)
+        elif mask_value == "zero": return Mask.zeroes_from_file(path)
+        else: raise RuntimeError("Invalid mask value: '" + mask_value + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_map_path(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get path
+        if projection == cells_name: return fs.join(self.cell_heating_path, "highres_faceon_interpolated.fits") # cells: only diffuse?
+        elif projection == midplane_name: return fs.join(self.cell_heating_path, "highres_midplane_interpolated.fits") # cells: only diffuse?
+        elif projection == earth_name: return fs.join(self.projected_heating_maps_path, "earth.fits") # there is also diffuse
+        elif projection == edgeon_name: return fs.join(self.projected_heating_maps_path, "edgeon.fits") # there is also diffuse
+        elif projection == faceon_name: return fs.join(self.projected_heating_maps_path, "faceon.fits") # there is also diffuse
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_map(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_bolometric_heating_map_path(projection)
+
+        # Open the frame
+        frame = Frame.from_file(path)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_mask(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Determine path
+        if projection == cells_name: path, mask_value = self.get_bolometric_heating_map_path(cells_name), "nan"  # CELLS HAVE NANS
+        elif projection == midplane_name: path, mask_value = self.get_bolometric_heating_map_path(midplane_name), "nan"  # CELLS HAVE NANS
+        elif projection == earth_name: path, mask_value = self.get_bolometric_heating_map_path(earth_name), "zero"  # these are better interpolated than the spectral heating maps
+        elif projection == faceon_name: path, mask_value = self.get_bolometric_heating_map_path(faceon_name), "zero"  # these are better interpolated than the spectral heating maps
+        elif projection == edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(edgeon_name), "zero"  # these are better interpolated than the spectral heating maps
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+        # Get mask
+        if mask_value == "nan": return Mask.nans_from_file(path)
+        elif mask_value == "zero": return Mask.zeroes_from_file(path)
+        else: raise RuntimeError("Invalid mask value: '" + mask_value + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_heating_projection(self):
+        return cells_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_projections(self):
+        return [cells_name, midplane_name, earth_name, edgeon_name, faceon_name]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_definition(self):
+
+        """
+        This unction ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Orientation
+        definition.add_positional_optional("projection", "string", "projection of heating map", self.default_heating_projection, self.heating_projections)
+
+        # Filter
+        definition.add_optional("filter", "broad_band_filter", "filter for which to plot the heating fraction (in absorption or emission)", choices=self.spectral_heating_filters)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_fraction_interval(self):
+        return (0,1,)
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_definition, **kwargs)
+
+        # Get the heating map
+        frame = self.get_heating_map(config.projection, fltr=config.filter)
+
+        # Get mask
+        mask = self.get_heating_mask(config.projection, fltr=config.filter)
+        print(frame.pixelscale)
+
+        # Apply the mask
+        frame.apply_mask_nans(mask)
+
+        # Plot
+        plot_map(frame, interval=self.heating_fraction_interval)
 
     # -----------------------------------------------------------------
 
