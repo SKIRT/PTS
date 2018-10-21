@@ -178,6 +178,12 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_sources_mask(self):
+        return self.sources_mask is not None
+
+    # -----------------------------------------------------------------
+
     def create_mask(self):
 
         """
@@ -192,7 +198,7 @@ class SkySubtractor(Configurable):
         masks = []
 
         # Add sources mask
-        masks.append(self.sources_mask)
+        if self.has_sources_mask: masks.append(self.sources_mask)
 
         # Add outside mask
         if self.outside_mask is not None: masks.append(self.outside_mask)
@@ -1604,192 +1610,96 @@ class SkySubtractor(Configurable):
 
     @lazyproperty
     def subtracted_compressed(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.subtracted_masked_array.compressed()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_masked_array(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.ma.masked_array(self.frame.data, mask=self.mask.data)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_compressed(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.frame_masked_array.compressed()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mean_frame(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.nanmean(self.frame_compressed)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def median_frame(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.nanmedian(self.frame_compressed)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def stddev_frame(self):
-
-        """
-        This fucntion ...
-        :return: 
-        """
-
         return np.nanstd(self.frame_compressed)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def not_clipped_masked_array(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.ma.masked_array(self.frame.data, mask=self.mask_not_clipped.data)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_not_clipped_compressed(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.not_clipped_masked_array.compressed()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mean_frame_not_clipped(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.nanmean(self.frame_not_clipped_compressed)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def median_frame_not_clipped(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.nanmedian(self.frame_not_clipped_compressed)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def stddev_frame_not_clipped(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.nanstd(self.frame_not_clipped_compressed)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def subtracted_nans(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.isnan(self.subtracted.data)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def subtracted_nans_masked_array(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.ma.masked_array(self.subtracted_nans, mask=self.mask.data)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def subtracted_nans_compressed(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.subtracted_nans_masked_array.compressed()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def subtracted_masked_array(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.ma.masked_array(self.subtracted.data, mask=self.mask.data)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mean_subtracted(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return np.ma.mean(np.ma.masked_array(self.subtracted, mask=self.mask.data))
         return np.nanmean(self.subtracted_compressed)
 
@@ -1797,12 +1707,6 @@ class SkySubtractor(Configurable):
 
     @lazyproperty
     def median_subtracted(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return np.median(np.ma.masked_array(self.subtracted, mask=self.mask.data).compressed())
         #masked_array = np.ma.masked_array(self.subtracted, mask=self.mask.data)
         return np.nanmedian(self.subtracted_compressed)
@@ -1811,12 +1715,6 @@ class SkySubtractor(Configurable):
 
     @lazyproperty
     def stddev_subtracted(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # return np.ma.masked_array(self.subtracted, mask=self.mask.data).std()
         return np.nanstd(self.subtracted_compressed)
 

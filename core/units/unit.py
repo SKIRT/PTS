@@ -2804,7 +2804,7 @@ def multiply_units(unit_a, unit_b, density=None, brightness=None):
         ## SPECTRAL
 
         # Spectral density
-        if unit_a.is_spectral_density:
+        if isinstance(unit_a, PhotometricUnit) and unit_a.is_spectral_density:
 
             # If this is a wavelength density
             if unit_a.is_wavelength_density:
@@ -3002,7 +3002,7 @@ def multiply_units(unit_a, unit_b, density=None, brightness=None):
         ## PER PIXEL AREA OR NOT
 
         # Per pixel area
-        if unit_a.is_per_angular_or_intrinsic_area:
+        if isinstance(unit_a, PhotometricUnit) and unit_a.is_per_angular_or_intrinsic_area:
 
             # Per angular area
             if unit_a.is_per_angular_area:
@@ -3154,9 +3154,9 @@ def multiply_units(unit_a, unit_b, density=None, brightness=None):
     # print(new_unit, type(new_unit))
 
     # Check conversion from bolometric to density or vice versa was made
-    if unit_a.is_bolometric and isinstance(new_unit, PhotometricUnit) and new_unit.is_spectral_density:
+    if isinstance(new_unit, PhotometricUnit) and unit_a.is_bolometric and new_unit.is_spectral_density:
         warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + new_unit.physical_type + " by multiplication with unit '" + str(unit_b) + "'. This may not be the intention.")
-    if unit_a.is_spectral_density and isinstance(new_unit, PhotometricUnit) and new_unit.is_bolometric:
+    if isinstance(new_unit, PhotometricUnit) and unit_a.is_spectral_density and new_unit.is_bolometric:
         warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + new_unit.physical_type + " by multiplication with unit '" + str(unit_b) + "'. This may not be the intention.")
 
     # Return the new unit
@@ -3295,7 +3295,7 @@ def divide_photometric_unit_by_other_unit(unit_a, unit_b, density=None, brightne
     ## SPECTRAL
 
     # If we have a spectral density
-    if unit_a.is_spectral_density:
+    if isinstance(unit_a, PhotometricUnit) and unit_a.is_spectral_density:
 
         # If this is a wavelength density
         if unit_a.is_wavelength_density:
@@ -3573,7 +3573,7 @@ def divide_photometric_unit_by_other_unit(unit_a, unit_b, density=None, brightne
     ## PER PIXEL AREA OR NOT
 
     # Per pixel area
-    if unit_a.is_per_angular_or_intrinsic_area:
+    if isinstance(unit_a, PhotometricUnit) and unit_a.is_per_angular_or_intrinsic_area:
 
         # divide by inverse area = multiply by area
         if is_inverse_area(unit):

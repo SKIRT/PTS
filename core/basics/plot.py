@@ -1412,13 +1412,17 @@ class MPLPlot(Plot):
 
     @property
     def legend_handles(self):
-        return [handle for handle in self.axes._get_legend_handles() if true_and_not_startswith(handle.get_label(), "_")]
+        # changed with matplotlib version?
+        #return [handle for handle in self.axes._get_legend_handles() if true_and_not_startswith(handle.get_label(), "_")]
+        return self.axes.get_legend_handles_labels()[0]
 
     # -----------------------------------------------------------------
 
     @property
     def legend_labels(self):
-        return [handle.get_label() for handle in self.legend_handles]
+        # changed with matplotlib version?
+        #return [handle.get_label() for handle in self.legend_handles]
+        return self.axes.get_legend_handles_labels()[1]
 
     # -----------------------------------------------------------------
 
@@ -2150,7 +2154,7 @@ class MPLFigure(Figure):
 
     def create_column(self, size, share_axis=False, height_ratios=None, x_label=None, x_label_fontsize="small",
                       x_labels=None, y_labels=None, y_label_fontsize="small", x_scale="linear", x_scales=None, y_scales=None,
-                      x_limits=None, y_limits=None, x_log_scalar=False, y_log_scalar=False, projections=None):
+                      x_limits=None, y_limits=None, x_log_scalar=False, y_log_scalar=False, projections=None, hspace=None):
 
         """
         This function ...
@@ -2170,16 +2174,17 @@ class MPLFigure(Figure):
         :param x_log_scalar:
         :param y_log_scalar:
         :param projections:
+        :param hspace:
         :return:
         """
 
         # Define hspace
-        wspace = 0.0
-        if share_axis: hspace = 0.0
-        else: hspace = 0.05
+        if hspace is None:
+            if share_axis: hspace = 0.0
+            else: hspace = 0.05
 
         # Make the grid
-        gs = GridSpec(size, 1, height_ratios=height_ratios, hspace=hspace, wspace=wspace)
+        gs = GridSpec(size, 1, height_ratios=height_ratios, hspace=hspace)
 
         # Create the (sub)plots
         plots = []
@@ -2455,7 +2460,7 @@ class MPLFigure(Figure):
     def create_row(self, size, share_axis=False, width_ratios=None, y_label=None, y_label_fontsize="small",
                    y_labels=None, x_labels=None, x_label_fontsize="small", y_scale="linear", y_scales=None,
                    x_scales=None, y_limits=None, x_limits=None, y_log_scalar=False, x_log_scalar=False,
-                   projections=None):
+                   projections=None, wspace=None):
 
         """
         This function ...
@@ -2475,12 +2480,14 @@ class MPLFigure(Figure):
         :param y_log_scalar:
         :param x_log_scalar:
         :param projections:
+        :param wspace:
         :return:
         """
 
-        # Define hspace
-        if share_axis: wspace = 0.0
-        else: wspace = 0.05
+        # Define wspace
+        if wspace is None:
+            if share_axis: wspace = 0.0
+            else: wspace = 0.05
 
         # Make the grid
         gs = GridSpec(1, size, width_ratios=width_ratios, wspace=wspace)

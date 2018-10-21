@@ -31,7 +31,6 @@ from ...magic.core.frame import Frame
 from ...magic.tools.plotting import plot_scatters, plot_stilts
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import sequences
-from ...core.tools import numbers
 from ...magic.core.list import uniformize
 
 # -----------------------------------------------------------------
@@ -1940,7 +1939,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def pixel_funev_path(self):
-        return fs.join(self.projected_heating_maps_path, "earth_diffuse.fits")
+        # is there a reason this was earth_diffuse first?
+        #return fs.join(self.projected_heating_maps_path, "earth_diffuse.fits")
+        return fs.join(self.projected_heating_maps_path, "earth.fits")
 
     # -----------------------------------------------------------------
 

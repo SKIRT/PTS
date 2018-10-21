@@ -271,6 +271,30 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
         string = add_info(string, self)
         return string
 
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_min(self):
+        return self.bounding_box.x_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_max(self):
+        return self.bounding_box.x_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_min(self):
+        return self.bounding_box.y_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_max(self):
+        return self.bounding_box.y_max
+
 # -----------------------------------------------------------------
 
 class SkyCircleRegion(CircleRegion, SkyRegion):

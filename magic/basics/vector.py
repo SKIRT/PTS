@@ -430,6 +430,27 @@ class Pixel(Vector):
         if round_first: return cls(int(round(coordinate.x)), int(round(coordinate.y)))
         else: return cls(int(coordinate.x), int(coordinate.y))
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def center_of(cls, data):
+
+        """
+        This function ...
+        :param data:
+        :return:
+        """
+
+        # Get the shape
+        ny, nx = data.shape
+
+        # Get center
+        x = (nx - 1.) / 2.
+        y = (ny - 1.) / 2.
+
+        # Create
+        return
+
 # -----------------------------------------------------------------
 
 class PixelShape(tuple):
