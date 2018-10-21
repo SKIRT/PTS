@@ -1605,7 +1605,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def unevolved_spectral_absorption_fraction_curve_path(self):
-        return fs.join(self.curves_path, "cells_absorption.dat")
+        return fs.join(self.curves_path, "absorption_cells.dat")
 
     # -----------------------------------------------------------------
 
@@ -1680,7 +1680,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def unevolved_spectral_emission_fraction_curve_path(self):
-        return fs.join(self.curves_path, "cells_emission.dat")
+        return fs.join(self.curves_path, "emission_cells.dat")
 
     # -----------------------------------------------------------------
 
@@ -3727,7 +3727,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.debug("Writing the curve of dust emission from the cell data ...")
 
         # Save
-        self.unevolved_spectral_emission_curve.saveto(self.unevolved_spectral_emission_curve_path)
+        #self.unevolved_spectral_emission_curve.saveto(self.unevolved_spectral_emission_curve_path)
+        self.unevolved_spectral_emission_fraction_curve.saveto(self.unevolved_spectral_emission_fraction_curve_path)
 
     # -----------------------------------------------------------------
 
@@ -3742,7 +3743,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.debug("Writing the curve of dust absorption from the cell data ...")
 
         # Save
-        self.unevolved_spectral_absorption_curve.saveto(self.unevolved_spectral_absorption_curve_path)
+        #self.unevolved_spectral_absorption_curve.saveto(self.unevolved_spectral_absorption_curve_path)
+        self.unevolved_spectral_absorption_fraction_curve.saveto(self.unevolved_spectral_absorption_fraction_curve_path)
 
     # -----------------------------------------------------------------
 

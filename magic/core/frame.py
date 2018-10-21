@@ -585,6 +585,9 @@ class Frame(NDDataArray):
 
         # Get data and unit of other
         other_value, other_unit = get_value_and_unit(other)
+        if self.unit is not None and other_unit is None:
+            log.warning("Subtraction with scalar value while the frame has a unit: assuming same units ...")
+            other_unit = self.unit
 
         # Get new data
         new_data = subtract_with_units(self.data, self.unit, other_value, other_unit=other_unit, conversion_info=self.conversion_info)
@@ -4253,48 +4256,24 @@ class Frame(NDDataArray):
 
     @property
     def x_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * (self.xsize - 1)
 
     # -----------------------------------------------------------------
 
     @property
     def y_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * (self.ysize - 1)
 
     # -----------------------------------------------------------------
 
     @property
     def center(self):
-
-        """
-        Thisf unction ....
-        :return:
-        """
-
         return PixelCoordinate(self.x_center, self.y_center)
 
     # -----------------------------------------------------------------
 
     @property
     def center_sky(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_wcs: raise ValueError("Cannot determine the center as sky coordinate: coordinate system not defined")
         else: return self.center.to_sky(self.wcs)
 
@@ -4302,48 +4281,24 @@ class Frame(NDDataArray):
 
     @property
     def pixel_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Pixel.for_coordinate(self.center)
 
     # -----------------------------------------------------------------
 
     @property
     def reference_pixel(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wcs.reference_pixel if self.has_wcs else None
 
     # -----------------------------------------------------------------
 
     @property
     def reference_coordinate(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wcs.reference_coordinate if self.has_wcs else None
 
     # -----------------------------------------------------------------
 
     @property
     def center_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data[self.pixel_center.y, self.pixel_center.x]
 
     # -----------------------------------------------------------------

@@ -1565,12 +1565,13 @@ def get_xy(curve, return_labels=False):
 
 # -----------------------------------------------------------------
 
-def get_multiple_xy(curves, return_labels=False):
+def get_multiple_xy(curves, return_labels=False, return_units=False):
 
     """
     Thisf unction ...
     :param curves:
     :param return_labels:
+    :param return_units:
     :return:
     """
 
@@ -1623,8 +1624,12 @@ def get_multiple_xy(curves, return_labels=False):
     if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
     # Return
-    if return_labels: return x, y, x_label, y_label
-    else: return x, y
+    if return_labels:
+        if return_units: return x, y, x_label, y_label, x_unit, y_unit
+        else: return x, y, x_label, y_label
+    else:
+        if return_units: return x, y, x_unit, y_unit
+        else: return x, y
 
 # -----------------------------------------------------------------
 # PLOTTING CURVES
@@ -1659,6 +1664,18 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
     if x_label is None: x_label = _x_label
     if y_label is None: y_label = _y_label
 
+    # Convert x limits if necessary
+    if xlimits is not None:
+        xlimits = list(xlimits) # for when tuple
+        if hasattr(xlimits[0], "unit"): xlimits[0] = xlimits[0].to(curve.x_unit).value
+        if hasattr(xlimits[1], "unit"): xlimits[1] = xlimits[1].to(curve.x_unit).value
+
+    # Convert y limits if necessary
+    if ylimits is not None:
+        ylimits = list(ylimits) # for when tuple
+        if hasattr(ylimits[0], "unit"): ylimits[0] = ylimits[0].to(curve.y_unit).value
+        if hasattr(ylimits[1], "unit"): ylimits[1] = ylimits[1].to(curve.y_unit).value
+
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
             xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
@@ -1691,9 +1708,21 @@ def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=N
     """
 
     # Get data
-    x, y, _x_label, _y_label = get_multiple_xy(curves, return_labels=True)
+    x, y, _x_label, _y_label, x_unit, y_unit = get_multiple_xy(curves, return_labels=True, return_units=True)
     if x_label is None: x_label = _x_label
     if y_label is None: y_label = _y_label
+
+    # Convert x limits if necessary
+    if xlimits is not None:
+        xlimits = list(xlimits) # for when tuple
+        if hasattr(xlimits[0], "unit"): xlimits[0] = xlimits[0].to(x_unit).value
+        if hasattr(xlimits[1], "unit"): xlimits[1] = xlimits[1].to(x_unit).value
+
+    # Convert y limits if necessary
+    if ylimits is not None:
+        ylimits = list(ylimits)
+        if hasattr(ylimits[0], "unit"): ylimits[0] = ylimits[0].to(y_unit).value
+        if hasattr(ylimits[1], "unit"): ylimits[1] = ylimits[1].to(y_unit).value
 
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
@@ -1876,9 +1905,14 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     # Check
     if connect and density: raise ValueError("Cannot enable 'connect' and 'density' at the same time")
 
+    from ...core.basics.plot import MPLFigure
+
     # Create plot
-    fig = plt.figure()
-    ax = fig.gca()
+    figure = MPLFigure()
+    figure.transparent = transparent
+    plot = figure.create_one_plot()
+    #fig = plt.figure()
+    #ax = fig.gca()
 
     original_xlimits = xlimits
     original_ylimits = ylimits
@@ -1901,7 +1935,7 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
                                                    xnonzero=xnonzero, ynonzero=ynonzero, adjust_limits=False)
 
             # Plot
-            _plot_xy(_x, _y, label=name, connect=connect, density=density)
+            _plot_xy(_x, _y, label=name, connect=connect, density=density, plot=plot)
 
     # Sequence
     elif types.is_sequence_or_array(x):
@@ -1917,7 +1951,7 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
                                              xnonzero=xnonzero, ynonzero=ynonzero, adjust_limits=False)
 
         # Plot
-        _plot_xy(x, y, connect=connect, density=density)
+        _plot_xy(x, y, connect=connect, density=density, plot=plot)
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
@@ -1926,13 +1960,13 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     if vlines is not None:
         for vline in vlines:
             if xlog: vline = np.log10(vline)
-            plt.axvline(x=vline)
+            plot.axvline(x=vline)
 
     # Add horizontal lines
     if hlines is not None:
         for hline in hlines:
             if ylog: hline = np.log10(hline)
-            plt.axhline(y=hline)
+            plot.axhline(y=hline)
 
     # Set axes limits
     if xlimits is not None: plt.xlim(xlimits[0], xlimits[1])
@@ -1954,29 +1988,31 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         #xlabel = x_label.replace("_", "\_").replace("[", "\[").replace("]", "\]")
         xlabel = x_label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
         #print(xlabel)
-        plt.xlabel(xlabel)
+        #plt.xlabel(xlabel)
+        plot.set_xlabel(xlabel)
     if y_label is not None:
         #ylabel = y_label.replace("_", "\_").replace("[", "\[").replace("]", "\]")
         ylabel = y_label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
         #print(ylabel)
-        plt.ylabel(ylabel)
+        #plt.ylabel(ylabel)
+        plot.set_ylabel(ylabel)
 
     # Create legend
-    if legend: plt.legend()
+    if legend: plot.legend()
 
     # Add title
-    if title is not None: plt.title(title)
+    if title is not None: figure.set_title(title) #plt.title(title)
 
     # Show or save
-    if path is None: plt.show()
-    else: plt.savefig(path, format=format, transparent=transparent)
+    if path is None: figure.show()
+    else: figure.saveto(path)
 
     # Close
     plt.close()
 
 # -----------------------------------------------------------------
 
-def _plot_xy(x, y, label=None, connect=True, density=False):
+def _plot_xy(x, y, label=None, connect=True, density=False, plot=None):
 
     """
     This function ...
@@ -1985,11 +2021,15 @@ def _plot_xy(x, y, label=None, connect=True, density=False):
     :param label:
     :param connect:
     :param density:
+    :param plot:
     :return:
     """
 
     # Connect with lines
-    if connect: plt.plot(x, y, label=label)
+    if connect:
+
+        if plot is not None: plot.plot(x, y, label=label)
+        else: plt.plot(x, y, label=label)
 
     # Points with density
     elif density:
@@ -2006,10 +2046,13 @@ def _plot_xy(x, y, label=None, connect=True, density=False):
         xi, yi, zi = x[idx], y[idx], z[idx]
 
         # Plot
-        plt.scatter(xi, yi, c=zi, s=50, edgecolor='')
+        if plot is not None: plot.scatter(xi, yi, c=zi, s=50, edgecolor='')
+        else: plt.scatter(xi, yi, c=zi, s=50, edgecolor='')
 
     # Just points
-    else: plt.scatter(x, y, label=label)
+    else:
+        if plot is not None: plot.scatter(x, y, label=label)
+        else: plt.scatter(x, y, label=label)
 
 # -----------------------------------------------------------------
 

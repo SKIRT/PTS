@@ -101,12 +101,6 @@ class RectangleRegion(Region):
 
     @property
     def corners(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [self.corner11, self.corner12, self.corner21, self.corner22]
 
     # -----------------------------------------------------------------

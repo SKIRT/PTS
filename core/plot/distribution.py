@@ -71,7 +71,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
                       xsize=5, ysize=5, return_image=False, colors=None, statistics=True, soft_xmin=False,
                       soft_xmax=False, soft_ymin=False, soft_ymax=False, mean=None, median=None, most_frequent=None,
                       stddev=None, fwhm=None, show_mean=None, show_median=None, show_most_frequent=None,
-                      show_stddev=False, show_fwhm=False, alpha=None):
+                      show_stddev=False, show_fwhm=False, alpha=None, plot=None):
 
     """
     This function ...
@@ -117,6 +117,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     if colors is not None: color = colors
 
     # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
         figure = plt.figure(figsize=(xsize, ysize))

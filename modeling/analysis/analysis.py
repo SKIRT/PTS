@@ -52,7 +52,7 @@ from ..config.analyse_cell_energy import definition as analyse_cell_energy_defin
 from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
-from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube
+from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube, plot_curve, plot_curves
 from ...core.filter.filter import Filter, parse_filter
 from ...core.tools import types
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
@@ -76,6 +76,9 @@ from ...core.tools.parsing import lazy_broad_band_filter_list
 from ...magic.core.frame import Frame
 from ...magic.core.mask import Mask
 from ...magic.tools.plotting import plot_map
+from ...core.basics.curve import WavelengthCurve
+from ...core.plot.distribution import plot_distribution
+from ...magic.core.list import uniformize
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -183,6 +186,10 @@ plot_heating_commands[difference_name] = ("plot_heating_difference_command", Tru
 plot_heating_commands[distribution_name] = ("plot_heating_distribution_command", True, "plot distribution of heating fractions", None)
 plot_heating_commands[curve_name] = ("plot_heating_curve_command", True, "plot curve of spectral heating", None)
 
+plot_absorption_commands = OrderedDict()
+plot_absorption_commands.description = "make plots of the absorbed energy"
+plot_absorption_commands[map_name] = ("plot_absorption_map_command", True, "plot map of the absorbed energy", None)
+
 # Plot subcommands
 plot_commands = OrderedDict()
 plot_commands.description = "plot other stuff"
@@ -193,7 +200,8 @@ plot_commands[_images_command_name] = ("plot_images_command", True, "plot the si
 plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
-plot_commands[_heating_command_name] = plot_heating_commands #("plot_heating_command", True, "make plots of the heating fraction", None)
+plot_commands[_heating_command_name] = plot_heating_commands
+plot_commands[_absorption_command_name] = plot_absorption_commands
 
 # -----------------------------------------------------------------
 
@@ -382,6 +390,13 @@ default_spectral_style = wavelength_style_name
 
 # -----------------------------------------------------------------
 
+all_name = "all"
+diffuse_name = "diffuse"
+internal_name = "internal"
+dust_contributions = [all_name, diffuse_name, internal_name]
+
+# -----------------------------------------------------------------
+
 cells_name = "cells"
 midplane_name = "midplane"
 
@@ -394,6 +409,12 @@ default_plotting_format = "pdf"
 from ..core.model import contributions, total_contribution, direct_contribution, scattered_contribution, dust_contribution, transparent_contribution
 from ..core.model import dust_direct_contribution, dust_scattered_contribution
 default_contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, transparent_contribution]
+
+# -----------------------------------------------------------------
+
+absorption_name = "absorption"
+emission_name = "emission"
+differences_name = "differences"
 
 # -----------------------------------------------------------------
 
@@ -3419,7 +3440,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_dust_absorption_sed(self, component, dust_contribution="all"):
+    def get_dust_absorption_sed(self, component, dust_contribution=all_name):
 
         """
         This function ...
@@ -3434,13 +3455,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get filepath
         # For Simple absorption situations, it does not matter whether you want the diffuse, or all absorption (there is only diffuse)
-        if dust_contribution == "all":
+        if dust_contribution == all_name:
             filepath = fs.join(dirpath, "absorption_all.dat")
             simple_filepath = fs.join(dirpath, "absorption.dat")
-        elif dust_contribution == "diffuse":
+        elif dust_contribution == diffuse_name:
             filepath = fs.join(dirpath, "absorption_diffuse.dat")
             simple_filepath = fs.join(dirpath, "absorption.dat")
-        elif dust_contribution == "internal":
+        elif dust_contribution == internal_name:
             filepath = fs.join(dirpath, "absorption_internal.dat")
             simple_filepath = None
         else: raise ValueError("Invalid dust contribution '" + dust_contribution + "': must be 'all', 'diffuse', or 'internal'")
@@ -3456,7 +3477,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_dust_emission_sed(self, component, dust_contribution="all"):
+    def get_dust_emission_sed(self, component, dust_contribution=all_name):
 
         """
         This function ...
@@ -3471,13 +3492,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get filepath
         # For Simple absorption situations, it does not matter whether you want the diffuse, or all absorption (there is only diffuse)
-        if dust_contribution == "all":
+        if dust_contribution == all_name:
             filepath = fs.join(dirpath, "emission_all.dat")
             simple_filepath = fs.join(dirpath, "emission.dat")
-        elif dust_contribution == "diffuse":
+        elif dust_contribution == diffuse_name:
             filepath = fs.join(dirpath, "emission_diffuse.dat")
             simple_filepath = fs.join(dirpath, "emission.dat")
-        elif dust_contribution == "internal":
+        elif dust_contribution == internal_name:
             filepath = fs.join(dirpath, "emission_internal.dat")
             simple_filepath = None
         else: raise ValueError("Invalid dust contribution '" + dust_contribution + "': must be 'all', 'diffuse', or 'internal'")
@@ -3493,7 +3514,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_observed_stellar_sed(self, component, dust_contribution="all"):
+    def get_observed_stellar_sed(self, component, dust_contribution=all_name):
 
         """
         This function ...
@@ -3508,13 +3529,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get filepath
         # For Simple absorption situations, it does not matter whether you want the diffuse, or all absorption (there is only diffuse)
-        if dust_contribution == "all":
+        if dust_contribution == all_name:
             filepath = fs.join(dirpath, "observed_stellar_all.dat")
             simple_filepath = fs.join(dirpath, "observed_stellar.dat")
-        elif dust_contribution == "diffuse":
+        elif dust_contribution == diffuse_name:
             filepath = fs.join(dirpath, "observed_stellar_diffuse.dat")
             simple_filepath = fs.join(dirpath, "observed_stellar.dat")
-        elif dust_contribution == "internal":
+        elif dust_contribution == internal_name:
             filepath = fs.join(dirpath, "observed_stellar_internal.dat")
             simple_filepath = None
         else: raise ValueError("Invalid dust contribution '" + dust_contribution + "': must be 'all', 'diffuse', or 'internal'")
@@ -3581,6 +3602,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot #1
         if config.which == 1: return self.plot_paper1(path=config.path)
+
+        # Plot #2
+        elif config.which == 2: return self.plot_paper2(path=config.path)
 
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
@@ -3699,6 +3723,287 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def plot_paper2(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from matplotlib import gridspec
+        import aplpy
+
+        # Create figure
+        figsize = (20, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Set width ratios
+        width_ratios = []
+
+        # Create 2 plots
+        # Create grid
+        gs = gridspec.GridSpec(1, 2)  # ROWS, COLUMNS
+        gs.update(wspace=0., hspace=0.)
+
+        # Get the heating map
+        frame = self.get_heating_map("cells")
+        hdu = frame.to_hdu()
+        #print(frame.wcs)
+        print(frame.pixelscale)
+
+        # zoom from the normal galaxy truncation
+        zoom = 0.7
+        radius = self.truncation_radius * zoom
+
+        # Get center pix
+        center_pix = frame.pixel_center
+
+        plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno")
+
+        # OBSERVATION
+        #fig1 = aplpy.FITSFigure(hdu, figure=figure.figure, subplot=list(gs[0].get_position(figure.figure).bounds))
+        #setup_map_plot(fig1, colormap, vmin=vmin, vmax=vmax, label=r'' + str(title), center=center, radius=radius, scale=scale)
+        #set_ticks(fig1, is_first, is_last)
+
+        #fig1.show_colorscale(cmap="inferno", vmin=0, vmax=1, smooth=None, stretch="linear")
+
+        # Enable y ticks and axis labels BECAUSE OBSERVATION IS THE FIRST COLUMN
+        #fig1.tick_labels.show_y()
+        #fig1.axis_labels.show_y()
+
+        # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+        #if is_last: fig1.tick_labels.show_x()
+        #if is_last: fig1.axis_labels.show_x()
+
+        # Plot distribution
+        distr_axes = figure.figure.add_subplot(gs[1])
+        plot_distribution(self.heating_distribution, axes=distr_axes)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_absorption_map_definition(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("component", "string", "component", total, choices=components)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_optional("dust_contribution", "string", "dust contribution", default=all_name, choices=dust_contributions)
+
+        # Flags
+        definition.add_flag("specific", "specific absorption luminosities (per dust mass)")
+
+        # Return
+        return definition
+        
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def projected_heating_absorptions_path(self):
+        return fs.join(self.projected_heating_path, "absorptions")
+
+    # -----------------------------------------------------------------
+
+    def get_absorption_map_path(self, contribution, projection=earth_name):
+
+        """
+        This function ...
+        :param contribution:
+        :param projection:
+        :return:
+        """
+
+        # Total
+        if contribution == total: return fs.join(self.projected_heating_absorptions_path, "total_" + projection + ".fits")
+        elif contribution == young: return fs.join(self.projected_heating_absorptions_path, "young_" + projection + ".fits")
+        elif contribution == sfr: return fs.join(self.projected_heating_absorptions_path, "ionizing_" + projection + ".fits")
+        elif contribution == internal_name: return fs.join(self.projected_heating_absorptions_path, "internal_" + projection + ".fits")
+        else: raise ValueError("Invalid contribution")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_absorption_map(self, contribution, projection=earth_name, dust_contribution=all_name):
+
+        """
+        This function ...
+        :param contribution:
+        :param projection:
+        :param dust_contribution:
+        :return:
+        """
+
+        # Total
+        if contribution == total:
+
+            # Diffuse dust
+            if dust_contribution == diffuse_name:
+
+                all_map = Frame.from_file(self.get_absorption_map_path(total, projection=projection))
+                internal_map = Frame.from_file(self.get_absorption_map_path(internal_name, projection=projection))
+                all_map, internal_map = uniformize(all_map, internal_map, convolve=False)
+
+                # Return
+                return all_map - internal_map
+
+            # All dust
+            elif dust_contribution == all_name: return Frame.from_file(self.get_absorption_map_path(total, projection=projection))
+
+            # Invalid
+            else: raise ValueError("Invalid dust contribution for total model: '" + dust_contribution + "'")
+
+        # Bulge
+        elif contribution == bulge: raise ValueError("Absorption maps for the bulge component are not available")
+
+        # DIsk
+        elif contribution == disk: raise ValueError("Absorption maps for the disk component are not available")
+
+        # Old
+        elif contribution == old:
+
+            total_map = Frame.from_file(self.get_absorption_map_path(total, projection=projection))
+            internal_map = Frame.from_file(self.get_absorption_map_path(internal_name, projection=projection))
+            young_map = Frame.from_file(self.get_absorption_map_path(young, projection=projection))
+            sfr_map = Frame.from_file(self.get_absorption_map_path(sfr, projection=projection))
+            total_map, internal_map, young_map, sfr_map = uniformize(total_map, internal_map, young_map, sfr_map, convolve=False)
+
+            # Return
+            return total_map - internal_map - young_map - sfr_map
+
+        # Young
+        elif contribution == young:
+
+            if dust_contribution == diffuse_name or dust_contribution == all_name: return Frame.from_file(self.get_absorption_map_path(young, projection=projection))
+            else: raise ValueError("Invalid dust contribution for young component: '" + dust_contribution + "'")
+
+        # Star formation
+        elif contribution == sfr:
+
+            # Diffuse dust
+            if dust_contribution == diffuse_name: return Frame.from_file(self.get_absorption_map_path(sfr, projection=projection))
+
+            # Internal dust
+            elif dust_contribution == internal_name: return Frame.from_file(self.get_absorption_map_path(internal_name, projection=projection))
+
+            # All dust
+            elif dust_contribution == all_name:
+
+                diffuse_map = Frame.from_file(self.get_absorption_map_path(sfr, projection=projection))
+                internal_map = Frame.from_file(self.get_absorption_map_path(internal_name, projection=projection))
+                diffuse_map, internal_map = uniformize(diffuse_map, internal_map, convolve=False)
+
+                # Return
+                return diffuse_map + internal_map
+
+            # Invalid
+            else: raise ValueError("Invalid dust contribution: '" + dust_contribution + "'")
+
+        # Unevolved
+        elif contribution == unevolved:
+
+            # Diffuse dust
+            if dust_contribution == diffuse_name:
+
+                young_map = Frame.from_file(self.get_absorption_map_path(young, projection=projection))
+                sfr_map = Frame.from_file(self.get_absorption_map_path(sfr, projection=projection))
+                young_map, sfr_map = uniformize(young_map, sfr_map, convolve=False)
+
+                # Return
+                return young_map + sfr_map
+
+            # Diffuse dust
+            elif dust_contribution == all_name:
+
+                young_map = Frame.from_file(self.get_absorption_map_path(young, projection=projection))
+                sfr_map = Frame.from_file(self.get_absorption_map_path(sfr, projection=projection))
+                internal_map = Frame.from_file(self.get_absorption_map_path(internal_name, projection=projection))
+                young_map, sfr_map, internal_map = uniformize(young_map, sfr_map, internal_map, convolve=False)
+
+                # Return
+                return young_map + sfr_map + internal_map
+
+            # Invalid
+            else: raise ValueError("Invalid dust contribution for unevolved component: '" + dust_contribution + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid contribution: '" + contribution + "'")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_specific_absorption_map(self, contribution, projection=earth_name, dust_contribution=all_name):
+
+        """
+        This function ...
+        :param contribution:
+        :param projection:
+        :param dust_contribution:
+        :return:
+        """
+
+        # Get maps
+        absorption = self.get_absorption_map(contribution, projection=projection, dust_contribution=dust_contribution)
+        absorption.convert_to_corresponding_brightness_unit()
+        dust_mass = self.get_dust_mass_map(orientation=projection)
+        dust_mass /= dust_mass.physical_pixelscale.average
+        absorption, dust_mass = uniformize(absorption, dust_mass, convert=False, convolve=False)
+        #print(absorption.unit)
+        #print(dust_mass.unit)
+        absorption.convert_to("Lsun")
+        dust_mass *= dust_mass.physical_pixelscale.average
+
+        # Return
+        specific_absorption =  absorption / dust_mass
+        #print(specific_absorption.unit)
+        return specific_absorption
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_absorption_map_definition, **kwargs)
+
+        # Specific absorption
+        if config.specific:
+
+            # Get the map
+            frame = self.get_specific_absorption_map(config.component, projection=config.orientation, dust_contribution=config.dust_contribution)
+
+            # Plot
+            frame.replace_by_nans_where_greater_than(20000)
+            plot_map(frame, scale="log", interval=(50,15000,), cmap="inferno")
+
+        # Absorption luminosity
+        else:
+
+            # Get the map
+            frame = self.get_absorption_map(config.component, projection=config.orientation, dust_contribution=config.dust_contribution)
+
+            # Plot
+            plot_map(frame, scale="log", cmap="inferno")
+
+    # -----------------------------------------------------------------
+
     @property
     def heating_path(self):
         return self.analysis_run.heating_path
@@ -3738,6 +4043,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @lazyproperty
     def spectral_heating_maps_path(self):
         return fs.join(self.spectral_heating_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_curves_path(self):
+        return fs.join(self.spectral_heating_path, "curves")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_distribution_path(self):
+        return fs.join(self.cell_heating_path, "distribution_total.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_distribution(self):
+        return Distribution.from_file(self.heating_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_distribution_diffuse_path(self):
+        return fs.join(self.cell_heating_path, "distribution_diffuse.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_distribution_diffuse(self):
+        return Distribution.from_file(self.heating_distribution_diffuse_path)
 
     # -----------------------------------------------------------------
 
@@ -3803,8 +4138,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Absorption or emission filter?
-        if fltr in self.heating_absorption_filters: abs_or_em = "absorption"
-        elif fltr in self.heating_emission_filters: abs_or_em = "emission"
+        if fltr in self.heating_absorption_filters: abs_or_em = absorption_name
+        elif fltr in self.heating_emission_filters: abs_or_em = emission_name
         else: raise ValueError("The '" + str(fltr) + "' filter does not have an absorption or emission heating fraction map")
 
         # Determine path
@@ -3946,32 +4281,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    # def plot_heating_command(self, command, **kwargs):
-    #
-    #     """
-    #     This function ...
-    #     :param command:
-    #     :param kwargs:
-    #     :return:
-    #     """
-    #
-    #     # Get config
-    #     config = self.get_config_from_command(command, self.plot_heating_definition, **kwargs)
-    #
-    #     # Heating map
-    #     if config.name == map_name: self.plot_heating_map(config)
-    #
-    #     # Heating map difference
-    #     elif config.name == difference_name: self.plot_heating_map_difference(config)
-    #
-    #     # Heating fraction distribution
-    #     elif config.name == distribution_name: self.plot_heating_distribution(config)
-    #
-    #     # Spectral curve
-    #     elif config.name == curve_name: self.plot_heating_curve(config)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def plot_heating_map_definition(self):
 
@@ -4011,7 +4320,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get mask
         mask = self.get_heating_mask(config.projection, fltr=config.filter)
-        print(frame.pixelscale)
 
         # Apply the mask
         frame.apply_mask_nans(mask)
@@ -4031,6 +4339,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Orientation
+        definition.add_positional_optional("projection", "string", "projection of heating map", self.default_heating_projection, self.heating_projections)
+
+        # Filter
+        definition.add_optional("filter", "broad_band_filter", "filter for which to plot the heating fraction (in absorption or emission)", choices=self.spectral_heating_filters)
 
         # Return the definition
         return definition
@@ -4081,6 +4395,24 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def absorption_or_emission(self):
+        return [absorption_name, emission_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_heating_curve_projection(self):
+        return cells_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_curve_projections(self):
+        return [cells_name, earth_name, faceon_name, edgeon_name, differences_name]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def plot_heating_curve_definition(self):
 
@@ -4092,8 +4424,126 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
 
+        # Absorption or emission
+        definition.add_required("abs_or_em", "string", "absorption or emission", choices=self.absorption_or_emission)
+
+        # Projection
+        definition.add_positional_optional("projection", "string", "projection for the curve", self.default_heating_curve_projection, self.heating_curve_projections)
+
         # Return the definition
         return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_absorption_min_wavelength(self):
+        return q("0.1 micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_absorption_max_wavelength(self):
+        return q("2 micron")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_absorption_wavelength_limits(self):
+        return self.heating_absorption_min_wavelength, self.heating_absorption_max_wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_emission_min_wavelength(self):
+        return q("5 micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_emission_max_wavelength(self):
+        return q("1000 micron")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_emission_wavelength_limits(self):
+        return self.heating_emission_min_wavelength, self.heating_emission_max_wavelength
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_absorption_fraction_curve_path(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        if projection == cells_name: return fs.join(self.spectral_heating_curves_path, "absorption_cells.dat")
+        elif projection == earth_name: return fs.join(self.spectral_heating_curves_path, "earth_absorption_seds.dat") # not from SEDs is wrong: from summing datacubes of heating fractions
+        elif projection == faceon_name: return fs.join(self.spectral_heating_curves_path, "faceon_absorption_seds.dat") # not from SEDs is wrong: from summing datacubes of heating fractions
+        elif projection == edgeon_name: return fs.join(self.spectral_heating_curves_path, "edgeon_absorption_seds.dat") # not from SEDs is wrong: from summing datacubes of heating fractions
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_absorption_fraction_curve(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_spectral_absorption_fraction_curve_path(projection)
+
+        # Open the curve
+        curve = WavelengthCurve.from_file(path)
+
+        # Return
+        return curve
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_emission_fraction_curve_path(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        if projection == cells_name: return fs.join(self.spectral_heating_curves_path, "emission_cells.dat")
+        elif projection == earth_name: return fs.join(self.spectral_heating_curves_path, "earth_emission_seds.dat") # not from SEDs is wrong: from summing datacubes of heating fractions
+        elif projection == faceon_name: return fs.join(self.spectral_heating_curves_path, "faceon_emission_seds.dat") # not from SEDs is wrong: from summing datacubes of heating fractions
+        elif projection == edgeon_name: return fs.join(self.spectral_heating_curves_path, "edgeon_emission_seds.dat") # not from SEDs is wrong: from summing datacubes of heating fractions
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_emission_fraction_curve(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_spectral_emission_fraction_curve_path(projection)
+
+        # Opent the curve
+        curve = WavelengthCurve.from_file(path)
+
+        # Return
+        return curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_fraction_name(self):
+        return "Heating fraction"
 
     # -----------------------------------------------------------------
 
@@ -4108,6 +4558,79 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get config
         config = self.get_config_from_command(command, self.plot_heating_curve_definition, **kwargs)
+
+        # Absorption
+        if config.abs_or_em == absorption_name: self.plot_spectral_absorption_fraction_curves(config.projection)
+
+        # Emission
+        elif config.abs_or_em == emission_name: self.plot_spectral_emission_fraction_curves(config.projection)
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'abs_or_em'")
+
+    # -----------------------------------------------------------------
+
+    def plot_spectral_absorption_fraction_curves(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Differences
+        if projection == differences_name:
+
+            # Get cells, earth, faceon, and edgeon
+            cells = self.get_spectral_absorption_fraction_curve(cells_name)
+            earth = self.get_spectral_absorption_fraction_curve(earth_name)
+            faceon = self.get_spectral_absorption_fraction_curve(faceon_name)
+            edgeon = self.get_spectral_absorption_fraction_curve(edgeon_name)
+            curves = {"cells": cells, "earth": earth, "faceon": faceon, "edgeon": edgeon}
+
+            # Plot
+            plot_curves(curves, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+
+        # Single curve
+        else:
+
+            # Get single curve
+            curve = self.get_spectral_absorption_fraction_curve(projection)
+
+            # Plot
+            plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+
+    # -----------------------------------------------------------------
+
+    def plot_spectral_emission_fraction_curves(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Differences
+        if projection == differences_name:
+
+            # Get cells, earth, faceon, and edgeon
+            cells = self.get_spectral_emission_fraction_curve(cells_name)
+            earth = self.get_spectral_emission_fraction_curve(earth_name)
+            faceon = self.get_spectral_emission_fraction_curve(faceon_name)
+            edgeon = self.get_spectral_emission_fraction_curve(edgeon_name)
+            curves = {"cells": cells, "earth": earth, "faceon": faceon, "edgeon": edgeon}
+
+            # Plot
+            plot_curves(curves, xlimits=self.heating_emission_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+
+        # Single curve
+        else:
+
+            # Get curve
+            curve = self.get_spectral_emission_fraction_curve(projection)
+
+            # Plot
+            plot_curve(curve, xlimits=self.heating_emission_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
 
     # -----------------------------------------------------------------
 

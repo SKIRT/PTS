@@ -24,6 +24,9 @@ definition.add_positional_optional("image", "file_path", "name/path of the input
 definition.add_optional("sources_mask_plane", "string", "name of the plane in the input image which contains masks of the sources")
 definition.add_optional("principal_shape_region", "file_path", "region file with one shape that indicates the contour of the principal galaxy")
 
+# Output path
+definition.add_optional("output", "directory_path", "output directory")
+
 # The path of a region file for the sky estimation
 definition.add_optional("sky_region", "file_path", "region file for the sky estimation")
 
