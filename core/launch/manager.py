@@ -175,6 +175,91 @@ _simulation_command_name = "simulation"
 
 # -----------------------------------------------------------------
 
+# Define show commands
+show_commands = OrderedDict()
+show_commands.description = "show"
+show_commands[_assignment_command_name] = ("show_assignment", False, "show the simulation assignment scheme", None)
+show_commands[_status_command_name] = ("show_status", False, "show the simulation status", None)
+show_commands[_runtimes_command_name] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
+show_commands[_memory_command_name] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
+show_commands[_cpu_command_name] = ("show_cpu_command", True, "show the CPU usage of the simulations", "simulations")
+show_commands[_timeline_command_name] = ("show_timeline_command", True, "show the timeline of a simulation", "simulation")
+
+# -----------------------------------------------------------------
+
+# Define plot commands
+plot_commands = OrderedDict()
+plot_commands.description = "plot"
+plot_commands[_runtimes_command_name] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
+plot_commands[_memory_command_name] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
+plot_commands[_timeline_command_name] = ("plot_timeline_command", True, "plot simulation timeline", "simulation")
+plot_commands[_scaling_command_name] = ("plot_scaling_command", True, "plot scaling of simulations", None)
+
+# -----------------------------------------------------------------
+
+# Define open commands
+open_commands = OrderedDict()
+open_commands.description = "open input, output or base simulation directory"
+open_commands[_base_command_name] = ("open_base_command", True, "open simulation base directory", "simulation")
+open_commands[_input_command_name] = ("open_input_command", True, "open simulation input directory", "simulation")
+open_commands[_output_command_name] = ("open_output_command", True, "open simulation output directory", "simulation")
+open_commands[_extraction_command_name] = ("open_extraction_command", True, "open simulation extraction output directory", "simulation")
+open_commands[_plotting_command_name] = ("open_plotting_command", True, "open simulation plotting output directory", "simulation")
+open_commands[_misc_command_name] = ("open_misc_command", True, "open simulation miscellaneous output directory", "simulation")
+
+# -----------------------------------------------------------------
+
+# Define adapt commands
+adapt_commands = OrderedDict()
+adapt_commands.description = "adapt simulation settings or analysis options"
+adapt_commands[_simulation_command_name] = ("adapt_simulation_settings_command", True, "adapt simulation settings", "simulations")
+adapt_commands[_analysis_command_name] = ("adapt_analysis_options_command", True, "adapt analysis options", "simulations")
+
+# -----------------------------------------------------------------
+
+# Define compare commands
+compare_commands = OrderedDict()
+compare_commands.description = "compare simulation settings or analysis options between simulations"
+compare_commands[_simulation_command_name] = ("compare_simulation_settings_command", True, "compare simulation settings", "simulations")
+compare_commands[_analysis_command_name] = ("compare_analysis_options_command", True, "compare analysis options", "simulations")
+
+# -----------------------------------------------------------------
+
+# Define steal commands
+steal_commands = OrderedDict()
+steal_commands.description = "take on simulation settings or analysis options from one simulation to another"
+steal_commands[_simulation_command_name] = ("steal_simulation_settings_command", True, "steal simulation settings", "simulations_simulation")
+steal_commands[_analysis_command_name] = ("steal_analysis_options_command", True, "steal analysis options", "simulations_simulation")
+
+# -----------------------------------------------------------------
+
+# Define clear commands
+clear_commands = OrderedDict()
+clear_commands.subject = "simulation"
+clear_commands.description = "clear simulation output/input/analysis"
+clear_commands[_input_command_name] = ("clear_simulation_input_command", True, "clear simulation input", "simulation")
+clear_commands[_output_command_name] = ("clear_simulation_output_command", True, "clear simulation output", "simulation")
+clear_commands[_analysis_command_name] = ("clear_simulation_analysis_command", True, "clear simulation analysis output", "simulation")
+clear_commands[_extraction_command_name] = ("clear_extraction_command", True, "clear simulation extraction output", "simulation")
+clear_commands[_plotting_command_name] = ("clear_plotting_command", True, "clear simulation plotting output", "simulation")
+clear_commands[_misc_command_name] = ("clear_misc_command", True, "clear simulation misc output", "simulation")
+
+# -----------------------------------------------------------------
+
+# Define cache commands
+cache_commands = OrderedDict()
+cache_commands.subject = "simulations"
+cache_commands.description = "cache simulation/analysis output to another directory/filesystem"
+cache_commands[_output_command_name] = ("cache_simulations_output_command", True, "cache simulation output", "simulations")
+cache_commands[_analysis_command_name] = ("cache_simulations_analysis_command", True, "cache simulation analysis output", "simulations")
+cache_commands[_extraction_command_name] = ("cache_simulations_extraction_command", True, "cache simulation extraction output", "simulations")
+cache_commands[_plotting_command_name] = ("cache_simulations_plotting_command", True, "cache simulation plotting output", "simulations")
+cache_commands[_misc_command_name] = ("cache_simulations_misc_command", True, "cache simulation misc output", "simulations")
+cache_commands[_datacube_command_name] = ("cache_simulations_datacubes_command", True, "cache datacubes", "simulations")
+cache_commands[_images_command_name] = ("cache_simulations_images_command", True, "cache images", "simulations")
+
+# -----------------------------------------------------------------
+
 # Define commands
 commands = OrderedDict()
 commands[_help_command_name] = ("show_help", False, "show help", None)
@@ -184,7 +269,7 @@ commands[_find_command_name] = ("find_simulations_command", True, "find particul
 commands[_hosts_command_name] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
 commands[_parallelizations_command_name] = ("show_parallelizations_command", True, "show parallelization schemes used per host", "host")
 commands[_info_command_name] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
-commands[_open_command_name] = (None, None, "open input, output or base simulation directory", "simulation")
+commands[_open_command_name] = open_commands #(None, None, "open input, output or base simulation directory", "simulation")
 commands[_sed_command_name] = ("plot_seds_command", True, "plot SED(s) of a simulation", "simulation")
 commands[_datacube_command_name] = ("plot_datacubes_command", True, "plot datacube(s) of a simulation", "simulation")
 commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot mock fluxes calculated for a simulation", "simulation")
@@ -198,14 +283,14 @@ commands[_instruments_command_name] = ("show_instruments_command", True, "show s
 commands[_stellar_command_name] = ("show_stellar_components_command", True, "show stellar components", "simulation")
 commands[_dust_command_name] = ("show_dust_components_command", True, "show dust components", "simulation")
 commands[_normalizations_command_name] = ("show_normalizations_command", True, "show model normalizations", "simulation")
-commands[_show_command_name] = (None, None, "show", None)
-commands[_plot_command_name] = (None, None, "plot", None)
+commands[_show_command_name] = show_commands
+commands[_plot_command_name] = plot_commands
 commands[_move_command_name] = ("move_simulations_command", True, "move simulations from one remote to another", "simulations")
 commands[_stop_command_name] = ("stop_simulations_command", True, "stop running simulations", "simulation")
 commands[_cancel_command_name] = ("cancel_simulations_command", True, "cancel queued simulations", "simulations")
 commands[_remove_command_name] = ("remove_simulation_command", True, "remove simulation", "simulations")
-commands[_clear_command_name] = (None, None, "clear simulation output/input/analysis", "simulation")
-commands[_cache_command_name] = (None, None, "cache simulation/analysis output to another directory/filesystem", "simulations")
+commands[_clear_command_name] = clear_commands #(None, None, "clear simulation output/input/analysis", "simulation")
+commands[_cache_command_name] = cache_commands #(None, None, "cache simulation/analysis output to another directory/filesystem", "simulations")
 commands[_unfinish_command_name] = ("unfinish_simulation_command", True, "remove remote output of a simulation and unset finished flag", "simulation")
 commands[_unlaunch_command_name] = ("unlaunch_simulation_command", True, "undo launching a simulation", "simulation")
 commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "remove local (retrieved) output of a simulation and unset retrieved flag", "simulation")
@@ -217,9 +302,9 @@ commands[_error_command_name] = ("show_simulation_errors_command", True, "show e
 commands[_settings_command_name] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
 commands[_analysis_command_name] = ("show_analysis_options_command", True, "show analysis options", "simulation")
 commands[_steps_command_name] = ("show_analysis_steps_command", True, "show analysis steps", "simulation")
-commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
-commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between simulations", "simulations")
-commands[_steal_command_name] = (None, None, "take on simulation settings or analysis options from one simulation to another", "simulations_simulation")
+commands[_adapt_command_name] = adapt_commands #(None, None, "adapt simulation settings or analysis options", "simulations")
+commands[_compare_command_name] = compare_commands #(None, None, "compare simulation settings or analysis options between simulations", "simulations")
+commands[_steal_command_name] = steal_commands #(None, None, "take on simulation settings or analysis options from one simulation to another", "simulations_simulation")
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve one or multiple simulation(s) from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse one or multiple simulation(s)", "simulations")
 commands[_allretrieve_command_name] = ("retrieve_all", False, "retrieve all finished simulations", None) # -> REPLACE BY USING 'RETRIEVE ALL'? -> NO, (not yet), this function loops over all simulations that CAN be retrieved
@@ -227,94 +312,6 @@ commands[_allanalyse_command_name] = ("analyse_all_command", True, "analyse all 
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
 commands[_mimic_command_name] = ("mimic_simulation_command", True, "mimic a simulation", "simulation")
 commands[_launch_command_name] = ("launch_simulation_command", True, "launch a new simulation", None)
-
-# -----------------------------------------------------------------
-
-# Define show commands
-show_commands = OrderedDict()
-show_commands[_assignment_command_name] = ("show_assignment", False, "show the simulation assignment scheme", None)
-show_commands[_status_command_name] = ("show_status", False, "show the simulation status", None)
-show_commands[_runtimes_command_name] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
-show_commands[_memory_command_name] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
-show_commands[_cpu_command_name] = ("show_cpu_command", True, "show the CPU usage of the simulations", "simulations")
-show_commands[_timeline_command_name] = ("show_timeline_command", True, "show the timeline of a simulation", "simulation")
-
-# -----------------------------------------------------------------
-
-# Define plot commands
-plot_commands = OrderedDict()
-plot_commands[_runtimes_command_name] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
-plot_commands[_memory_command_name] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
-plot_commands[_timeline_command_name] = ("plot_timeline_command", True, "plot simulation timeline", "simulation")
-plot_commands[_scaling_command_name] = ("plot_scaling_command", True, "plot scaling of simulations", None)
-
-# -----------------------------------------------------------------
-
-# Define open commands
-open_commands = OrderedDict()
-open_commands[_base_command_name] = ("open_base_command", True, "open simulation base directory", "simulation")
-open_commands[_input_command_name] = ("open_input_command", True, "open simulation input directory", "simulation")
-open_commands[_output_command_name] = ("open_output_command", True, "open simulation output directory", "simulation")
-open_commands[_extraction_command_name] = ("open_extraction_command", True, "open simulation extraction output directory", "simulation")
-open_commands[_plotting_command_name] = ("open_plotting_command", True, "open simulation plotting output directory", "simulation")
-open_commands[_misc_command_name] = ("open_misc_command", True, "open simulation miscellaneous output directory", "simulation")
-
-# -----------------------------------------------------------------
-
-# Define adapt commands
-adapt_commands = OrderedDict()
-adapt_commands[_simulation_command_name] = ("adapt_simulation_settings_command", True, "adapt simulation settings", "simulations")
-adapt_commands[_analysis_command_name] = ("adapt_analysis_options_command", True, "adapt analysis options", "simulations")
-
-# -----------------------------------------------------------------
-
-# Define compare commands
-compare_commands = OrderedDict()
-compare_commands[_simulation_command_name] = ("compare_simulation_settings_command", True, "compare simulation settings", "simulations")
-compare_commands[_analysis_command_name] = ("compare_analysis_options_command", True, "compare analysis options", "simulations")
-
-# -----------------------------------------------------------------
-
-# Define steal commands
-steal_commands = OrderedDict()
-steal_commands[_simulation_command_name] = ("steal_simulation_settings_command", True, "steal simulation settings", "simulations_simulation")
-steal_commands[_analysis_command_name] = ("steal_analysis_options_command", True, "steal analysis options", "simulations_simulation")
-
-# -----------------------------------------------------------------
-
-# Define clear commands
-clear_commands = OrderedDict()
-clear_commands[_input_command_name] = ("clear_simulation_input_command", True, "clear simulation input", "simulation")
-clear_commands[_output_command_name] = ("clear_simulation_output_command", True, "clear simulation output", "simulation")
-clear_commands[_analysis_command_name] = ("clear_simulation_analysis_command", True, "clear simulation analysis output", "simulation")
-clear_commands[_extraction_command_name] = ("clear_extraction_command", True, "clear simulation extraction output", "simulation")
-clear_commands[_plotting_command_name] = ("clear_plotting_command", True, "clear simulation plotting output", "simulation")
-clear_commands[_misc_command_name] = ("clear_misc_command", True, "clear simulation misc output", "simulation")
-
-# -----------------------------------------------------------------
-
-# Define cache commands
-cache_commands = OrderedDict()
-cache_commands[_output_command_name] = ("cache_simulations_output_command", True, "cache simulation output", "simulations")
-cache_commands[_analysis_command_name] = ("cache_simulations_analysis_command", True, "cache simulation analysis output", "simulations")
-cache_commands[_extraction_command_name] = ("cache_simulations_extraction_command", True, "cache simulation extraction output", "simulations")
-cache_commands[_plotting_command_name] = ("cache_simulations_plotting_command", True, "cache simulation plotting output", "simulations")
-cache_commands[_misc_command_name] = ("cache_simulations_misc_command", True, "cache simulation misc output", "simulations")
-cache_commands[_datacube_command_name] = ("cache_simulations_datacubes_command", True, "cache datacubes", "simulations")
-cache_commands[_images_command_name] = ("cache_simulations_images_command", True, "cache images", "simulations")
-
-# -----------------------------------------------------------------
-
-# Set subcommands
-subcommands = OrderedDict()
-subcommands[_show_command_name] = show_commands
-subcommands[_plot_command_name] = plot_commands
-subcommands[_open_command_name] = open_commands
-subcommands[_adapt_command_name] = adapt_commands
-subcommands[_compare_command_name] = compare_commands
-subcommands[_steal_command_name] = steal_commands
-subcommands[_clear_command_name] = clear_commands
-subcommands[_cache_command_name] = cache_commands
 
 # -----------------------------------------------------------------
 
@@ -363,12 +360,6 @@ class MovedSimulationsTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
@@ -450,12 +441,6 @@ class RelaunchedSimulationsTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
@@ -537,12 +522,6 @@ class NewSimulationsTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
@@ -649,7 +628,6 @@ class SimulationManager(InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "SIMULATION MANAGER"
 
     # -----------------------------------------------------------------

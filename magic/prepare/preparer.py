@@ -70,10 +70,6 @@ commands[_plot_command_name] = (None, None, "plotting", "image")
 
 # -----------------------------------------------------------------
 
-subcommands = OrderedDict()
-
-# -----------------------------------------------------------------
-
 class PreparationStatusTable(SmartTable):
 
     """
@@ -241,7 +237,6 @@ class ImagePreparer(InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "IMAGE PREPARER"
 
     # -----------------------------------------------------------------

@@ -39,11 +39,6 @@ commands[_status_command_name] = ("show_status_command", True, "show maps constr
 
 # -----------------------------------------------------------------
 
-# Set subcommands
-subcommands = OrderedDict()
-
-# -----------------------------------------------------------------
-
 class MapsConstruction(MapsComponent, InteractiveConfigurable):
     
     """
@@ -51,7 +46,6 @@ class MapsConstruction(MapsComponent, InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "MAPS"
 
     # -----------------------------------------------------------------

@@ -134,6 +134,50 @@ _clone_command_name = "clone"
 
 # -----------------------------------------------------------------
 
+_seds_command_name = "seds"
+_images_command_name = "images"
+_preparation_command_name = "preparation"
+_decomposition_command_name = "decomposition"
+_truncation_command_name = "truncation"
+_maps_command_name = "maps"
+_fitting_command_name = "fitting"
+_analysis_command_name = "analysis"
+_generation_command_name = "generation"
+_simulations_command_name = "simulations"
+
+# -----------------------------------------------------------------
+
+# Clear
+clear_commands = OrderedDict()
+clear_commands.description = "clear the output of one of the RT modeling steps"
+
+# Modeling steps
+clear_commands[_seds_command_name] = ("clear_seds", False, "clear SEDs", None)
+clear_commands[_images_command_name] = ("clear_images", False, "clear images", None)
+clear_commands[_preparation_command_name] = ("clear_preparation", False, "clear preparation", None)
+clear_commands[_decomposition_command_name] = ("clear_decomposition", False, "clear decomposition", None)
+clear_commands[_truncation_command_name] = ("clear_truncation", False, "clear truncation", None)
+clear_commands[_photometry_command_name] = ("clear_photometry", False, "clear photometry", None)
+clear_commands[_maps_command_name] = ("clear_maps", False, "clear_maps", None)
+clear_commands[_fitting_command_name] = ("clear_fitting", False, "clear fitting", None)
+clear_commands[_analysis_command_name] = ("clear_analysis", False, "clear analysis", None)
+
+# Fitting output
+clear_commands[_generation_command_name] = ("clear_generation_command", True, "clear the output of all simulations of a certain generation", "fitting_run_generation")
+clear_commands[_simulations_command_name] = ("clear_simulations_command", True, "remove the simulation files for a certain generation", "fitting_run_generation_simulations")
+
+# -----------------------------------------------------------------
+
+# Clone
+clone_commands = OrderedDict()
+clone_commands.description = "clone a fitting run or analysis run"
+
+# Fitting run and analysis run
+clone_commands[_fitting_command_name] = ("clone_fitting_command", True, "clone a fitting run (without the generations)", "fitting_run")
+clone_commands[_analysis_command_name] = ("clone_analysis_command", True, "clone an analysis run (without the results)", "analysis_run")
+
+# -----------------------------------------------------------------
+
 # Define commands
 commands = OrderedDict()
 
@@ -175,56 +219,8 @@ commands[_manage_analysis_command_name] = ("manage_analysis_command", True, "man
 commands[_analyse_command_name] = ("analyse_command", True, "view analysis results", "analysis_run")
 
 # General
-commands[_clear_command_name] = (None, False, "clear the output of one of the RT modeling steps", None)
-
-# -----------------------------------------------------------------
-
-_seds_command_name = "seds"
-_images_command_name = "images"
-_preparation_command_name = "preparation"
-_decomposition_command_name = "decomposition"
-_truncation_command_name = "truncation"
-_maps_command_name = "maps"
-_fitting_command_name = "fitting"
-_analysis_command_name = "analysis"
-_generation_command_name = "generation"
-_simulations_command_name = "simulations"
-
-# -----------------------------------------------------------------
-
-# Clear
-clear_commands = OrderedDict()
-
-# Modeling steps
-clear_commands[_seds_command_name] = ("clear_seds", False, "clear SEDs", None)
-clear_commands[_images_command_name] = ("clear_images", False, "clear images", None)
-clear_commands[_preparation_command_name] = ("clear_preparation", False, "clear preparation", None)
-clear_commands[_decomposition_command_name] = ("clear_decomposition", False, "clear decomposition", None)
-clear_commands[_truncation_command_name] = ("clear_truncation", False, "clear truncation", None)
-clear_commands[_photometry_command_name] = ("clear_photometry", False, "clear photometry", None)
-clear_commands[_maps_command_name] = ("clear_maps", False, "clear_maps", None)
-clear_commands[_fitting_command_name] = ("clear_fitting", False, "clear fitting", None)
-clear_commands[_analysis_command_name] = ("clear_analysis", False, "clear analysis", None)
-
-# Fitting output
-clear_commands[_generation_command_name] = ("clear_generation_command", True, "clear the output of all simulations of a certain generation", "fitting_run_generation")
-clear_commands[_simulations_command_name] = ("clear_simulations_command", True, "remove the simulation files for a certain generation", "fitting_run_generation_simulations")
-
-# -----------------------------------------------------------------
-
-# Clone
-clone_commands = OrderedDict()
-
-# Fitting run and analysis run
-clone_commands[_fitting_command_name] = ("clone_fitting_command", True, "clone a fitting run (without the generations)", "fitting_run")
-clone_commands[_analysis_command_name] = ("clone_analysis_command", True, "clone an analysis run (without the results)", "analysis_run")
-
-# -----------------------------------------------------------------
-
-# Set subcommands
-subcommands = OrderedDict()
-subcommands[_clear_command_name] = clear_commands
-subcommands[_clone_command_name] = clone_commands
+commands[_clear_command_name] = clear_commands # (None, False, "clear the output of one of the RT modeling steps", None)
+commands[_clone_command_name] = clone_commands
 
 # -----------------------------------------------------------------
 
@@ -235,7 +231,6 @@ class RTMod(InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "RTMOD"
 
     # -----------------------------------------------------------------

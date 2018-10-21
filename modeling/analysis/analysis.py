@@ -72,6 +72,10 @@ from ...core.units.parsing import parse_quantity as q
 from ...core.units.quantity import PhotometricQuantity
 from ...core.data.sed import ObservedSED
 from ..fitting.modelanalyser import FluxDifferencesTable
+from ...core.tools.parsing import lazy_broad_band_filter_list
+from ...magic.core.frame import Frame
+from ...magic.core.mask import Mask
+from ...magic.tools.plotting import plot_map
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -132,42 +136,6 @@ _residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
 
-# Define commands
-commands = OrderedDict()
-
-# Standard commands
-commands[_help_command_name] = ("show_help", False, "show help", None)
-commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
-commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
-
-# Show stuff
-commands[_show_command_name] = (None, None, "show analysis results", None)
-
-# Examine the model
-commands[_model_command_name] = ("examine_model", False, "examine the radiative transfer model", None)
-
-# Plot stuff
-commands[_sed_command_name] = (None, None, "plot SEDs", None)
-commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
-commands[_map_command_name] = (None, None, "plot a map", None)
-commands[_plot_command_name] = (None, None, "plot other stuff", None)
-
-# Evaluate
-commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the analysis model", None)
-
-# Analysis
-commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
-commands[_absorption_command_name] = ("analyse_absorption_command", True, "analyse the dust absorption", None)
-commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
-commands[_energy_command_name] = (None, None, "analyse the energy budget in the galaxy", None)
-commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
-commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
-commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
-commands[_fluxes_command_name] = ("analyse_fluxes_command", True, "analyse the simulation fluxes", None)
-commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
-
-# -----------------------------------------------------------------
-
 _bulge_name = "bulge"
 _disk_name = "disk"
 
@@ -179,9 +147,6 @@ _young_name = "young"
 _sfr_name = "sfr"
 _sfr_intrinsic_name = "sfr_intrinsic"
 _unevolved_name = "unevolved"
-
-#_sfr_stellar_name = "sfr_stellar"
-#_sfr_dust_name = "sfr_dust"
 
 _stellar_name = "stellar"
 _dust_name = "dust"
@@ -195,6 +160,7 @@ _absorption_name = "absorption"
 
 # Show subcommands
 show_commands = OrderedDict()
+show_commands.description = "show analysis results"
 
 # Properties
 show_commands[_properties_command_name] = ("show_properties", False, "show the model properties", None)
@@ -205,9 +171,21 @@ show_commands[_data_command_name] = ("show_data", False, "show the simulation da
 
 # -----------------------------------------------------------------
 
+map_name = "map"
+difference_name = "difference"
+distribution_name = "distribution"
+curve_name = "curve"
+
+plot_heating_commands = OrderedDict()
+plot_heating_commands.description = "make plots of the heating fraction"
+plot_heating_commands[map_name] = ("plot_heating_map_command", True, "plot map of the heating fraction", None)
+plot_heating_commands[difference_name] = ("plot_heating_difference_command", True, "plot difference between heating fraction maps", None)
+plot_heating_commands[distribution_name] = ("plot_heating_distribution_command", True, "plot distribution of heating fractions", None)
+plot_heating_commands[curve_name] = ("plot_heating_curve_command", True, "plot curve of spectral heating", None)
+
 # Plot subcommands
 plot_commands = OrderedDict()
-
+plot_commands.description = "plot other stuff"
 plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
 plot_commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the observed, modeled and residual images", None)
@@ -215,11 +193,13 @@ plot_commands[_images_command_name] = ("plot_images_command", True, "plot the si
 plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
+plot_commands[_heating_command_name] = plot_heating_commands #("plot_heating_command", True, "make plots of the heating fraction", None)
 
 # -----------------------------------------------------------------
 
 # SED subcommands
 sed_commands = OrderedDict()
+sed_commands.description = "plot SEDs"
 
 ## TOTAL
 sed_commands[_total_name] = ("plot_total_sed_command", True, "plot the SED of the total simulation", None)
@@ -230,64 +210,36 @@ sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust SED(s)
 sed_commands[_contributions_name] = ("plot_contribution_seds_command", True, "plot the contributions to the total SED(s)", None)
 sed_commands[_components_name] = ("plot_component_seds_command", True, "plot the SED(s) for different components", None)
 
-## OLD BULGE
+## COMPONENTS
 sed_commands[_old_bulge_name] = ("plot_old_bulge_sed_command", True, "plot the SED of the old stellar bulge", None)
-
-## OLD DISK
 sed_commands[_old_disk_name] = ("plot_old_disk_sed_command", True, "plot the SED of the old stellar disk", None)
-
-## OLD
 sed_commands[_old_name] = ("plot_old_sed_command", True, "plot the SED of the old stars", None)
-
-## YOUNG
 sed_commands[_young_name] = ("plot_young_sed_command", True, "plot the SED of the young stars", None)
-
-## SFR
 sed_commands[_sfr_name] = ("plot_sfr_sed_command", True, "plot the SED of the star formation regions", None)
-
-## INTRINSIC SFR
 sed_commands[_sfr_intrinsic_name] = ("plot_sfr_intrinsic_sed_command", True, "plot the intrinsic (stellar and dust) SED of the star formation regions", None)
-
-## UNEVOLVED
 sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
-
-# ABSORPTION
 sed_commands[_absorption_name] = ("plot_absorption_sed_command", True, "plot absorption SEDs", None)
 
 # -----------------------------------------------------------------
 
 # Attenuation subcommands
 attenuation_commands = OrderedDict()
-
-## TOTAL
+attenuation_commands.description = "plot attenuation curves"
 attenuation_commands[_total_name] = ("plot_total_attenuation_command", True, "plot the attenuation curve of the model", None)
-
-## CONTRIBUTIONS
 attenuation_commands[_components_name] = ("plot_component_attenuation_command", True, "plot the attenuation curves of the different components", None)
-
-## OLD BULGE
 attenuation_commands[_old_bulge_name] = ("plot_old_bulge_attenuation_command", True, "plot the attenuation curve of the old stellar bulge", None)
-
-## OLD DISK
 attenuation_commands[_old_disk_name] = ("plot_old_disk_attenuation_command", True, "plot the attenuation curve of the old stellar disk", None)
-
-## OLD
 attenuation_commands[_old_name] = ("plot_old_attenuation_command", True, "plot the attenuation curve of the old stars", None)
-
-## YOUNG
 attenuation_commands[_young_name] = ("plot_young_attenuation_command", True, "plot the attenuation curve of the young stars", None)
-
-## SFR
 attenuation_commands[_sfr_name] = ("plot_sfr_attenuation_command", True, "plot the attenuation curve of the star formation regions", None)
 # BUT WHAT IS THE *INTRINSIC* SFR ATTENUATION CURVE? (by INTERNAL DUST)
-
-## UNEVOLVED
 attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", True, "plot the attenuation curve of the unevolved stellar population (young + sfr)", None)
 
 # -----------------------------------------------------------------
 
 # Map subcommands
 map_commands = OrderedDict()
+map_commands.description = "plot a map"
 map_commands[_total_name] = ("show_total_map_command", True, "show a map of the total model", None)
 map_commands[_bulge_name] = ("show_bulge_map_command", True, "show a map of the old stellar bulge component", None)
 map_commands[_disk_name] = ("show_disk_map_command", True, "show a map of the old stellar disk component", None)
@@ -307,6 +259,7 @@ _spectral_name = "spectral"
 
 # Heating subcommands
 heating_commands = OrderedDict()
+heating_commands.description = "analyse dust heating contributions"
 
 # Cell and projected
 heating_commands[_cell_name] = ("analyse_cell_heating_command", True, "analyse the cell heating", None)
@@ -317,6 +270,7 @@ heating_commands[_spectral_name] = ("analyse_spectral_heating_command", True, "a
 
 # Energy subcommands
 energy_commands = OrderedDict()
+energy_commands.description = "analyse the energy budget in the galaxy"
 
 # Cell and projected
 energy_commands[_cell_name] = ("analyse_cell_energy_command", True, "analyse the cell energy budget", None)
@@ -324,15 +278,39 @@ energy_commands[_projected_name] = ("analyse_projected_energy_command", True, "a
 
 # -----------------------------------------------------------------
 
-# Set subcommands
-subcommands = OrderedDict()
-subcommands[_show_command_name] = show_commands
-subcommands[_plot_command_name] = plot_commands
-subcommands[_sed_command_name] = sed_commands
-subcommands[_attenuation_command_name] = attenuation_commands
-subcommands[_map_command_name] = map_commands
-subcommands[_heating_command_name] = heating_commands
-subcommands[_energy_command_name] = energy_commands
+# Define commands
+commands = OrderedDict()
+
+# Standard commands
+commands[_help_command_name] = ("show_help", False, "show help", None)
+commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
+commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
+
+# Show stuff
+commands[_show_command_name] = show_commands
+
+# Examine the model
+commands[_model_command_name] = ("examine_model", False, "examine the radiative transfer model", None)
+
+# Plot stuff
+commands[_sed_command_name] = sed_commands
+commands[_attenuation_command_name] = attenuation_commands
+commands[_map_command_name] = map_commands
+commands[_plot_command_name] = plot_commands
+
+# Evaluate
+commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the analysis model", None)
+
+# Analysis
+commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
+commands[_absorption_command_name] = ("analyse_absorption_command", True, "analyse the dust absorption", None)
+commands[_heating_command_name] = heating_commands
+commands[_energy_command_name] = energy_commands
+commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
+commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
+commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
+commands[_fluxes_command_name] = ("analyse_fluxes_command", True, "analyse the simulation fluxes", None)
+commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
 
 # -----------------------------------------------------------------
 
@@ -404,6 +382,11 @@ default_spectral_style = wavelength_style_name
 
 # -----------------------------------------------------------------
 
+cells_name = "cells"
+midplane_name = "midplane"
+
+# -----------------------------------------------------------------
+
 default_plotting_format = "pdf"
 
 # -----------------------------------------------------------------
@@ -421,7 +404,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "ANALYSIS"
 
     # -----------------------------------------------------------------
@@ -2074,24 +2056,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def heating_path(self):
-        return self.analysis_run.heating_path
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def spectral_heating_path(self):
-        return fs.join(self.analysis_run.heating_path, "spectral")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def spectral_heating_cells_path(self):
-        return fs.join(self.spectral_heating_path, "3D")
-
-    # -----------------------------------------------------------------
-
-    @property
     def absorption_path(self):
         return self.analysis_run.absorption_path
 
@@ -3732,6 +3696,418 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Save or show
         if path is not None: figure.saveto(path)
         else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_path(self):
+        return self.analysis_run.heating_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "cell")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def projected_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "projected")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def projected_heating_maps_path(self):
+        return fs.join(self.projected_heating_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "spectral")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_cells_path(self):
+        return fs.join(self.spectral_heating_path, "3D")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_maps_path(self):
+        return fs.join(self.spectral_heating_path, "maps")
+
+    # -----------------------------------------------------------------
+
+    def get_heating_map(self, projection, fltr=None):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Spectral heating
+        if fltr is not None: return self.get_spectral_heating_map(projection, fltr)
+
+        # Bolometric heating
+        else: return self.get_bolometric_heating_map(projection)
+
+    # -----------------------------------------------------------------
+
+    def get_heating_mask(self, projection, fltr=None):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Spectral heating
+        if fltr is not None: return self.get_spectral_heating_mask(projection, fltr)
+
+        # Bolometric heating
+        else: return self.get_bolometric_heating_mask(projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_absorption_filters(self):
+        return lazy_broad_band_filter_list("GALEX,SDSS")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_emission_filters(self):
+        return lazy_broad_band_filter_list("W3,W4,MIPS 24mu,Herschel")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_filters(self):
+        return self.heating_absorption_filters + self.heating_emission_filters
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_heating_map_path(self, projection, fltr):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Absorption or emission filter?
+        if fltr in self.heating_absorption_filters: abs_or_em = "absorption"
+        elif fltr in self.heating_emission_filters: abs_or_em = "emission"
+        else: raise ValueError("The '" + str(fltr) + "' filter does not have an absorption or emission heating fraction map")
+
+        # Determine path
+        if projection == cells_name: return fs.join(self.spectral_heating_cells_path, abs_or_em + "_" + str(fltr) + "_fixed.fits")
+        elif projection == midplane_name: raise NotImplementedError("Spectral heating fraction maps do not exist for the midplane")
+        elif projection == earth_name: return fs.join(self.spectral_heating_maps_path, "earth_" + abs_or_em + "_" + str(fltr) + ".fits")
+        elif projection == faceon_name: return fs.join(self.spectral_heating_maps_path, "faceon_" + abs_or_em + "_" + str(fltr) + ".fits")
+        elif projection == edgeon_name: return fs.join(self.spectral_heating_maps_path, "edgeon_" + abs_or_em + "_" + str(fltr) + ".fits")
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_heating_map(self, projection, fltr):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_spectral_heating_map_path(projection, fltr)
+
+        # Open the frame
+        frame = Frame.from_file(path)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_heating_mask(self, projection, fltr):
+
+        """
+        This function ...
+        :param projection:
+        :param fltr:
+        :return:
+        """
+
+        # Determine path
+        if projection == cells_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan" # CELLS HAVE NANS
+        elif projection == midplane_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan" # CELLS HAVE NANS
+        elif projection == earth_name: path, mask_value = self.get_bolometric_heating_map_path(earth_name), "zero" # these are better interpolated than the spectral heating maps
+        elif projection == faceon_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan"
+        #elif projection == faceon_name: path, mask_value = self.get_bolometric_heating_map_path(faceon_name), "zero" # these are better interpolated than the spectral heating maps
+        elif projection == edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(edgeon_name), "zero" # these are better interpolated than the spectral heating maps
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+        # Get mask
+        if mask_value == "nan": return Mask.nans_from_file(path)
+        elif mask_value == "zero": return Mask.zeroes_from_file(path)
+        else: raise RuntimeError("Invalid mask value: '" + mask_value + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_map_path(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get path
+        if projection == cells_name: return fs.join(self.cell_heating_path, "highres_faceon_interpolated.fits") # cells: only diffuse?
+        elif projection == midplane_name: return fs.join(self.cell_heating_path, "highres_midplane_interpolated.fits") # cells: only diffuse?
+        elif projection == earth_name: return fs.join(self.projected_heating_maps_path, "earth.fits") # there is also diffuse
+        elif projection == edgeon_name: return fs.join(self.projected_heating_maps_path, "edgeon.fits") # there is also diffuse
+        elif projection == faceon_name: return fs.join(self.projected_heating_maps_path, "faceon.fits") # there is also diffuse
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_map(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get the path
+        path = self.get_bolometric_heating_map_path(projection)
+
+        # Open the frame
+        frame = Frame.from_file(path)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_mask(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Determine path
+        if projection == cells_name: path, mask_value = self.get_bolometric_heating_map_path(cells_name), "nan"  # CELLS HAVE NANS
+        elif projection == midplane_name: path, mask_value = self.get_bolometric_heating_map_path(midplane_name), "nan"  # CELLS HAVE NANS
+        elif projection == earth_name: path, mask_value = self.get_bolometric_heating_map_path(earth_name), "zero"  # these are better interpolated than the spectral heating maps
+        elif projection == faceon_name: path, mask_value = self.get_bolometric_heating_map_path(faceon_name), "zero"  # these are better interpolated than the spectral heating maps
+        elif projection == edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(edgeon_name), "zero"  # these are better interpolated than the spectral heating maps
+        else: raise ValueError("Invalid projection: '" + projection + "'")
+
+        # Get mask
+        if mask_value == "nan": return Mask.nans_from_file(path)
+        elif mask_value == "zero": return Mask.zeroes_from_file(path)
+        else: raise RuntimeError("Invalid mask value: '" + mask_value + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_heating_projection(self):
+        return cells_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_projections(self):
+        return [cells_name, midplane_name, earth_name, edgeon_name, faceon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_plot_names(self):
+        return [map_name, difference_name, distribution_name, curve_name]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_fraction_interval(self):
+        return (0,1,)
+
+    # -----------------------------------------------------------------
+
+    # def plot_heating_command(self, command, **kwargs):
+    #
+    #     """
+    #     This function ...
+    #     :param command:
+    #     :param kwargs:
+    #     :return:
+    #     """
+    #
+    #     # Get config
+    #     config = self.get_config_from_command(command, self.plot_heating_definition, **kwargs)
+    #
+    #     # Heating map
+    #     if config.name == map_name: self.plot_heating_map(config)
+    #
+    #     # Heating map difference
+    #     elif config.name == difference_name: self.plot_heating_map_difference(config)
+    #
+    #     # Heating fraction distribution
+    #     elif config.name == distribution_name: self.plot_heating_distribution(config)
+    #
+    #     # Spectral curve
+    #     elif config.name == curve_name: self.plot_heating_curve(config)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_map_definition(self):
+
+        """
+        This unction ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Orientation
+        definition.add_positional_optional("projection", "string", "projection of heating map", self.default_heating_projection, self.heating_projections)
+
+        # Filter
+        definition.add_optional("filter", "broad_band_filter", "filter for which to plot the heating fraction (in absorption or emission)", choices=self.spectral_heating_filters)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_map_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_map_definition, **kwargs)
+
+        # Get the heating map
+        frame = self.get_heating_map(config.projection, fltr=config.filter)
+
+        # Get mask
+        mask = self.get_heating_mask(config.projection, fltr=config.filter)
+        print(frame.pixelscale)
+
+        # Apply the mask
+        frame.apply_mask_nans(mask)
+
+        # Plot
+        plot_map(frame, interval=self.heating_fraction_interval)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_difference_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_difference_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_difference_definition, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_distribution_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_distribution_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_distribution_definition, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_heating_curve_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_curve_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_heating_curve_definition, **kwargs)
 
     # -----------------------------------------------------------------
 
