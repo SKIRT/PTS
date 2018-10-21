@@ -3742,15 +3742,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         width_ratios = []
 
         # Create 2 plots
+        plot0, plot1 = figure.create_row(2, wspace=0)
         # Create grid
-        gs = gridspec.GridSpec(1, 2)  # ROWS, COLUMNS
-        gs.update(wspace=0., hspace=0.)
+        #gs = gridspec.GridSpec(1, 2)  # ROWS, COLUMNS
+        #gs.update(wspace=0., hspace=0.)
 
         # Get the heating map
         frame = self.get_heating_map("cells")
         hdu = frame.to_hdu()
         #print(frame.wcs)
-        print(frame.pixelscale)
+        #print(frame.pixelscale)
 
         # zoom from the normal galaxy truncation
         zoom = 0.7
@@ -3759,7 +3760,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get center pix
         center_pix = frame.pixel_center
 
-        plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno")
+        plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0)
+        #cmap = get_cmap("inferno")
 
         # OBSERVATION
         #fig1 = aplpy.FITSFigure(hdu, figure=figure.figure, subplot=list(gs[0].get_position(figure.figure).bounds))
@@ -3777,8 +3779,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #if is_last: fig1.axis_labels.show_x()
 
         # Plot distribution
-        distr_axes = figure.figure.add_subplot(gs[1])
-        plot_distribution(self.heating_distribution, axes=distr_axes)
+        #distr_axes = figure.figure.add_subplot(gs[1])
+        #plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
+        plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval, plot=plot1)
 
         # Save or show
         if path is not None: figure.saveto(path)

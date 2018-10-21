@@ -23,6 +23,8 @@ from matplotlib import rc
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import LinearLocator, LogLocator, FormatStrFormatter
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.colors import Normalize, LogNorm
+from matplotlib.cm import get_cmap
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -71,7 +73,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
                       xsize=5, ysize=5, return_image=False, colors=None, statistics=True, soft_xmin=False,
                       soft_xmax=False, soft_ymin=False, soft_ymax=False, mean=None, median=None, most_frequent=None,
                       stddev=None, fwhm=None, show_mean=None, show_median=None, show_most_frequent=None,
-                      show_stddev=False, show_fwhm=False, alpha=None, plot=None):
+                      show_stddev=False, show_fwhm=False, alpha=None, plot=None, cmap=None, cmap_interval=None):
 
     """
     This function ...
@@ -107,6 +109,9 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param show_stddev:
     :param show_fwhm:
     :param alpha:
+    :param plot:
+    :param cmap:
+    :param cmap_interval:
     :return:
     """
 
@@ -133,8 +138,33 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     linewidth_list = [linewidth for _ in range(distribution.nvalues)]
 
     # Plot the bar graph
-    if logscale: patch = axes.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
-    else: patch = axes.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+    if logscale:
+
+        if cmap is not None:
+
+            if cmap_interval is None: norm = LogNorm(vmin=distribution.edges_log[0], vmax=distribution.edges_log[-1])
+            else: norm = LogNorm(vmin=cmap_interval[0], vmax=cmap_interval[1])
+
+            # Get colours
+            cmap = get_cmap(cmap)
+            color = [cmap(norm(value)) for value in distribution.values]
+
+        # Plot
+        patch = axes.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+
+    else:
+
+        if cmap is not None:
+
+            if cmap_interval is None: norm = Normalize(vmin=distribution.edges[0], vmax=distribution.edges[-1])
+            else: norm = Normalize(vmin=cmap_interval[0], vmax=cmap_interval[1])
+
+            # Get colours
+            cmap = get_cmap(cmap)
+            color = [cmap(norm(value)) for value in distribution.values]
+
+        # Plot
+        patch = axes.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
 
     # Determine automatic x_min and x_max
     x_min_auto = distribution.min_edge_log if logscale else distribution.min_edge

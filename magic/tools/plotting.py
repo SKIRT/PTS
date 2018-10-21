@@ -1020,7 +1020,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1.,
              region=None, regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
-             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True, background_color=None):
+             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True, background_color=None,
+             plot=None):
 
     """
     This function ...
@@ -1055,6 +1056,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param symmetric_method:
     :param check_around_zero:
     :param background_color:
+    :param plot:
     :return:
     """
 
@@ -1081,6 +1083,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
 
     # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
         plt.figure(figsize=(xsize,ysize))
@@ -1142,7 +1145,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 # -----------------------------------------------------------------
 
 def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-             contours_color="white", path=None, background_color=None, title=None):
+             contours_color="white", path=None, background_color=None, title=None, plot=None):
 
     """
     This function ...
@@ -1157,6 +1160,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     :param path:
     :param background_color:
     :param title:
+    :param plot:
     :return:
     """
 
@@ -1166,11 +1170,11 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
         # Plot with contours
         plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
                             data_cmap=cmap, plot_data=True, nlevels=ncontours,
-                            single_colour=contours_color, path=path, background_color=background_color, title=title)
+                            single_colour=contours_color, path=path, background_color=background_color, title=title, plot=plot)
 
     # No contours
     else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
-                     background_color=background_color, title=title)
+                     background_color=background_color, title=title, plot=plot)
 
 # -----------------------------------------------------------------
 
@@ -1199,7 +1203,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
                   interval="pts", data_cmap="viridis", around_zero=False, symmetric=False, soft_min=False, soft_max=False,
                   soft_min_scaling=1., soft_max_scaling=1., interpolation="nearest", alpha=1,
                   return_image=False, return_normalization=False, aspect="equal", symmetric_method="mean",
-                  check_around_zero=True, background_color=None
+                  check_around_zero=True, background_color=None, plot=None
                   ):
 
     """
@@ -1240,6 +1244,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param symmetric_method:
     :param check_around_zero:
     :param background_color:
+    :param plot:
     :return:
     """
 
@@ -1252,6 +1257,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     nypix = data.shape[0]
 
     # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
         plt.figure(figsize=(xsize, ysize))
