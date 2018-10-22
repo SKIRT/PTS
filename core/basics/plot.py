@@ -1685,7 +1685,8 @@ class MPLPlot(Plot):
             self._plot.set_xticklabels(tick_labels)
 
         # Set cosmetic properties of the tick labels
-        plt.setp(self.xticklabels, rotation='horizontal', fontsize=fontsize)
+        if fontsize is not None: plt.setp(self.xticklabels, rotation='horizontal', fontsize=fontsize)
+        else: plt.setp(self.xticklabels, rotation='horizontal')
 
     # -----------------------------------------------------------------
 
@@ -1778,7 +1779,8 @@ class MPLPlot(Plot):
         self.yaxis.set_minor_formatter(minor_formatter)
 
         # Set fontsize
-        plt.setp(self.yticklabels, rotation='horizontal', fontsize=fontsize)
+        if fontsize is not None: plt.setp(self.yticklabels, rotation='horizontal', fontsize=fontsize)
+        else: plt.setp(self.yticklabels, rotation='horizontal')
 
     # -----------------------------------------------------------------
 

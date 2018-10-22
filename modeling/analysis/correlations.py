@@ -953,6 +953,82 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return fs.create_directory_in(self.correlations_path, ssfr_funev_name)
 
     # -----------------------------------------------------------------
+
+    def create_ssfr_funev_pixel_scatter(self, name, ssfr_frame, funev_frame):
+
+        """
+        This function ...
+        :param name:
+        :param ssfr_frame:
+        :param funev_frame:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Creating " + name + " sSFR - Funev pixel scatter ...")
+
+        # Create and return
+        return create_pixel_scatter(self.ssfr_name, self.funev_name, ssfr_frame, funev_frame, self.ssfr_description, self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_cells_aux(self):
+        return {sfr_density_name: self.valid_cell_sfr_densities_mappings_ke,
+                dust_density_name: self.valid_cell_dust_densities_mappings_ke,
+                distance_center_name: self.valid_cell_radii_mappings_ke,
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings_ke,
+                temperature_name: self.valid_cell_temperatures_mappings_ke,
+                mean_age_name: self.valid_cell_mean_ages_mappings_ke}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_cells_aux_units(self):
+        return {sfr_density_name: self.sfr_density_mappings_ke_unit,
+                dust_density_name: self.cell_dust_density_unit,
+                distance_center_name: self.length_unit,
+                temperature_name: self.temperature_unit,
+                mean_age_name: self.log_age_unit}
+
+    # -----------------------------------------------------------------
+
+    def create_ssfr_funev_cell_scatter(self, name, ssfr_data, funev_data, sfr_densities=None, sfr_density_unit=None):
+
+        """
+        This function ...
+        :param name:
+        :param ssfr_data:
+        :param funev_data:
+        :param sfr_densities:
+        :param sfr_density_unit:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating " + name + " sSFR - Funev cell scatter ...")
+
+        # Set auxilary columns
+        aux = OrderedDict()
+        if sfr_densities is not None: aux[sfr_density_name] = sfr_densities
+        aux[dust_density_name] = self.cell_dust_densities
+        aux[distance_center_name] = self.cell_radii
+        aux[bulge_disk_ratio_name] = self.cell_bd_ratios
+        aux[temperature_name] = self.cell_temperatures
+        aux[mean_age_name] = self.cell_mean_ages
+
+        # Set auxilary column units
+        aux_units = OrderedDict()
+        if sfr_densities is not None and sfr_density_unit is not None: aux_units[sfr_density_name] = sfr_density_unit
+        aux_units[dust_density_name] = self.cell_dust_density_unit
+        aux_units[distance_center_name] = self.length_unit
+        aux_units[temperature_name] = self.temperature_unit
+        aux_units[mean_age_name] = self.log_age_unit
+
+        # Create
+        return create_cell_scatter(self.ssfr_name, self.funev_name, ssfr_data, funev_data, self.ssfr_description, self.funev_description, aux=aux, aux_units=aux_units)
+
+    # -----------------------------------------------------------------
     # sSFR-Funev cell scatter data
     #   SALIM
     # -----------------------------------------------------------------
@@ -1158,46 +1234,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def has_ssfr_salim_funev_cells(self):
         if fs.is_file(self.ssfr_salim_funev_cells_path):
-            #if self.config.recalculate_aux_columns is not None:
-            #    for colname in self.config.recalculate_aux_columns:
             if not self.ssfr_salim_funev_cells_has_all_aux_columns:
-                colnames = self.ssfr_salim_funev_cells_aux_colnames
-                #if sfr_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_salim, self.sfr_salim_unit, as_column=True)
-                #if dust_mass_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_salim, self.cell_dust_mass_unit, as_column=True)
-                if sfr_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_salim, self.sfr_density_salim_unit, as_column=True)
-                if dust_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_salim, self.cell_dust_density_unit, as_column=True)
-                if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
-                if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
-                if temperature_name not in colnames: self.ssfr_salim_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_salim, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_salim, self.log_age_unit, as_column=True)
-                self.ssfr_salim_funev_cells.save() # save
+                #colnames = self.ssfr_salim_funev_cells_aux_colnames
+                #if sfr_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_salim, self.sfr_density_salim_unit, as_column=True)
+                #if dust_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_salim, self.cell_dust_density_unit, as_column=True)
+                #if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
+                #if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
+                #if temperature_name not in colnames: self.ssfr_salim_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_salim, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_salim, self.log_age_unit, as_column=True)
+                #self.ssfr_salim_funev_cells.save() # save
+                log.warning("The Salim sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                fs.remove_file(self.ssfr_salim_funev_cells_path)
+                return False
             return True
         else: return False
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_salim_cells_aux(self):
-        return {#sfr_name: self.valid_cell_sfr_values_salim,
-                #dust_mass_name: self.valid_cell_dust_mass_values_salim,
-                sfr_density_name: self.valid_cell_sfr_densities_salim,
-                dust_density_name: self.valid_cell_dust_densities_salim,
-                distance_center_name: self.valid_cell_radii_salim,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim,
-                temperature_name: self.valid_cell_temperatures_salim,
-                mean_age_name: self.valid_cell_mean_ages_salim}
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_salim_cells_aux_units(self):
-        return {#sfr_name: self.sfr_salim_unit,
-                #dust_mass_name: self.cell_dust_mass_unit,
-                sfr_density_name: self.sfr_density_salim_unit,
-                dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit,
-                temperature_name: self.temperature_unit,
-                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1213,11 +1263,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_ssfr_salim: raise IOError("The cell sSFR (Salim) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
-        # Create and return
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_salim, self.valid_cell_funev_values_salim,
-                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description,
-                                 aux=self.ssfr_salim_cells_aux, aux_units=self.ssfr_salim_cells_aux_units) # auxilary axes
+        # Create
+        return self.create_ssfr_funev_cell_scatter("Salim", self.cell_ssfr_salim, self.cell_funev, sfr_densities=self.cell_sfr_densities_salim, sfr_density_unit=self.sfr_density_salim_unit)
 
     # -----------------------------------------------------------------
     #   K&E
@@ -1298,12 +1345,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def valid_cell_ssfr_ke_mask(self):
         return np.isfinite(self.cell_ssfr_ke_values) * (self.cell_ssfr_ke_values != 0)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def valid_cell_funev_mask(self):
-        return np.isfinite(self.cell_funev_values) * (self.cell_funev_values != 0)
 
     # -----------------------------------------------------------------
 
@@ -1401,43 +1442,19 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_ssfr_ke_funev_cells(self):
         if fs.is_file(self.ssfr_ke_funev_cells_path):
             if not self.ssfr_ke_funev_cells_has_all_aux_columns:
-                colnames = self.ssfr_ke_funev_cells_aux_colnames
-                #if sfr_name not in colnames: self.ssfr_ke_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_ke, self.sfr_ke_unit, as_column=True)
-                #if dust_mass_name not in colnames: self.ssfr_ke_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_ke, self.cell_dust_mass_unit, as_column=True)
-                if sfr_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_ke, self.sfr_density_ke_unit, as_column=True)
-                if dust_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_ke, self.cell_dust_density_unit, as_column=True)
-                if distance_center_name not in colnames: self.ssfr_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_ke, self.length_unit, as_column=True)
-                if bulge_disk_ratio_name not in colnames: self.ssfr_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_ke, as_column=True)
-                if temperature_name not in colnames: self.ssfr_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_ke, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_ke, self.log_age_unit, as_column=True)
-                self.ssfr_ke_funev_cells.save() # save
+                #colnames = self.ssfr_ke_funev_cells_aux_colnames
+                #if sfr_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_ke, self.sfr_density_ke_unit, as_column=True)
+                #if dust_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_ke, self.cell_dust_density_unit, as_column=True)
+                #if distance_center_name not in colnames: self.ssfr_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_ke, self.length_unit, as_column=True)
+                #if bulge_disk_ratio_name not in colnames: self.ssfr_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_ke, as_column=True)
+                #if temperature_name not in colnames: self.ssfr_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_ke, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_ke, self.log_age_unit, as_column=True)
+                #self.ssfr_ke_funev_cells.save() # save
+                log.warning("The K&E sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                fs.remove_file(self.ssfr_ke_funev_cells_path)
+                return False
             return True
         else: return False
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_ke_cells_aux(self):
-        return {#sfr_name: self.valid_cell_sfr_values_ke,
-                #dust_mass_name: self.valid_cell_dust_mass_values_ke,
-                sfr_density_name: self.valid_cell_sfr_densities_ke,
-                dust_density_name: self.valid_cell_dust_densities_ke,
-                distance_center_name: self.valid_cell_radii_ke,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_ke,
-                temperature_name: self.valid_cell_temperatures_ke,
-                mean_age_name: self.valid_cell_mean_ages_ke}
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_ke_cells_aux_units(self):
-        return {#sfr_name: self.sfr_ke_unit,
-                #dust_mass_name: self.cell_dust_mass_unit,
-                sfr_density_name: self.sfr_density_ke_unit,
-                dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit,
-                temperature_name: self.temperature_unit,
-                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1453,11 +1470,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_ssfr_ke: raise IOError("The cell sSFR (K&E) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
-        # Create and return
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_ke, self.valid_cell_funev_values_ke,
-                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description,
-                                 aux=self.ssfr_ke_cells_aux, aux_units=self.ssfr_ke_cells_aux_units)  # auxilary axes
+        # Create
+        return self.create_ssfr_funev_cell_scatter("K&E", self.cell_ssfr_ke, self.cell_funev, sfr_densities=self.cell_sfr_densities_ke, sfr_density_unit=self.sfr_density_ke_unit)
 
     # -----------------------------------------------------------------
     #   MAPPINGS
@@ -1635,43 +1649,19 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_ssfr_mappings_funev_cells(self):
         if fs.is_file(self.ssfr_mappings_funev_cells_path):
             if not self.ssfr_mappings_funev_cells_has_all_aux_columns:
-                colnames = self.ssfr_mappings_funev_cells_aux_colnames
-                #if sfr_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_mappings, self.sfr_mappings_unit, as_column=True)
-                #if dust_mass_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_mappings, self.cell_dust_mass_unit, as_column=True)
-                if sfr_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_mappings, self.sfr_density_mappings_unit, as_column=True)
-                if dust_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings, self.cell_dust_density_unit, as_column=True)
-                if distance_center_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings, self.length_unit, as_column=True)
-                if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings, as_column=True)
-                if temperature_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings, self.log_age_unit, as_column=True)
-                self.ssfr_mappings_funev_cells.save() # save
+                #colnames = self.ssfr_mappings_funev_cells_aux_colnames
+                #if sfr_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_mappings, self.sfr_density_mappings_unit, as_column=True)
+                #if dust_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings, self.cell_dust_density_unit, as_column=True)
+                #if distance_center_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings, self.length_unit, as_column=True)
+                #if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings, as_column=True)
+                #if temperature_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings, self.log_age_unit, as_column=True)
+                #self.ssfr_mappings_funev_cells.save() # save
+                log.warning("The MAPPINGS sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                fs.remove_file(self.ssfr_mappings_funev_cells_path)
+                return False
             return True
         else: return False
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_mappings_cells_aux(self):
-        return {#sfr_name: self.valid_cell_sfr_values_mappings,
-                #dust_mass_name: self.valid_cell_dust_mass_values_mappings,
-                sfr_density_name: self.valid_cell_sfr_densities_mappings,
-                dust_density_name: self.valid_cell_dust_densities_mappings,
-                distance_center_name: self.valid_cell_radii_mappings,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings,
-                temperature_name: self.valid_cell_temperatures_mappings,
-                mean_age_name: self.valid_cell_mean_ages_mappings}
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_mappings_cells_aux_units(self):
-        return {#sfr_name: self.sfr_mappings_unit,
-                #dust_mass_name: self.cell_dust_mass_unit,
-                sfr_density_name: self.sfr_density_mappings_unit,
-                dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit,
-                temperature_name: self.temperature_unit,
-                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1687,11 +1677,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_ssfr_mappings: raise IOError("The cell sSFR (MAPPINGS) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
-        # Create and return
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings, self.valid_cell_funev_values_mappings,
-                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description,
-                                 aux=self.ssfr_mappings_cells_aux, aux_units=self.ssfr_mappings_cells_aux_units)
+        # Create
+        return self.create_ssfr_funev_cell_scatter("MAPPINGS", self.cell_ssfr_mappings, self.cell_funev, sfr_densities=self.cell_sfr_densities_mappings, sfr_density_unit=self.sfr_density_mappings_unit)
 
     # -----------------------------------------------------------------
     #   MAPPINGS + K&E
@@ -1869,43 +1856,19 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_ssfr_mappings_ke_funev_cells(self):
         if fs.is_file(self.ssfr_mappings_ke_funev_cells_path):
             if not self.ssfr_mappings_ke_funev_cells_has_all_aux_columns:
-                colnames = self.ssfr_mappings_ke_funev_cells_aux_colnames
-                #if sfr_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_mappings_ke, self.sfr_mappings_ke_unit, as_column=True)
-                #if dust_mass_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_mappings_ke, self.cell_dust_mass_unit, as_column=True)
-                if sfr_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_mappings_ke, self.sfr_density_mappings_ke_unit, as_column=True)
-                if dust_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings_ke, self.cell_dust_density_unit, as_column=True)
-                if distance_center_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings_ke, self.length_unit, as_column=True)
-                if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings_ke, as_column=True)
-                if temperature_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings_ke, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings_ke, self.log_age_unit, as_column=True)
-                self.ssfr_mappings_ke_funev_cells.save() # save
+                #colnames = self.ssfr_mappings_ke_funev_cells_aux_colnames
+                #if sfr_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_mappings_ke, self.sfr_density_mappings_ke_unit, as_column=True)
+                #if dust_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings_ke, self.cell_dust_density_unit, as_column=True)
+                #if distance_center_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings_ke, self.length_unit, as_column=True)
+                #if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings_ke, as_column=True)
+                #if temperature_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings_ke, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings_ke, self.log_age_unit, as_column=True)
+                #self.ssfr_mappings_ke_funev_cells.save() # save
+                log.warning("The MAPPINGS + K&E sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                fs.remove_file(self.ssfr_mappings_ke_funev_cells_path)
+                return False
             return True
         else: return False
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_mappings_ke_cells_aux(self):
-        return {#sfr_name: self.valid_cell_sfr_values_mappings_ke,
-                #dust_mass_name: self.valid_cell_dust_mass_values_mappings_ke,
-                sfr_density_name: self.valid_cell_sfr_densities_mappings_ke,
-                dust_density_name: self.valid_cell_dust_densities_mappings_ke,
-                distance_center_name: self.valid_cell_radii_mappings_ke,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings_ke,
-                temperature_name: self.valid_cell_temperatures_mappings_ke,
-                mean_age_name: self.valid_cell_mean_ages_mappings_ke}
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ssfr_mappings_ke_cells_aux_units(self):
-        return {#sfr_name: self.sfr_mappings_ke_unit,
-                #dust_mass_name: self.cell_dust_mass_unit,
-                sfr_density_name: self.sfr_density_mappings_ke_unit,
-                dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit,
-                temperature_name: self.temperature_unit,
-                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1921,11 +1884,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR (MAPPINGS + K&E) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
-        # Create and return
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings_ke, self.valid_cell_funev_values_mappings_ke,
-                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description,
-                                 aux=self.ssfr_mappings_ke_cells_aux, aux_units=self.ssfr_mappings_ke_cells_aux_units)
+        # Create
+        return self.create_ssfr_funev_cell_scatter("MAPPINGS + K&E", self.cell_ssfr_mappings_ke, self.cell_funev, sfr_densities=self.cell_sfr_densities_mappings_ke, sfr_density_unit=self.sfr_density_mappings_ke_unit)
 
     # -----------------------------------------------------------------
     # sSFR-Funev pixel scatter data
@@ -2041,8 +2001,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_pixel_ssfr_salim: raise IOError("The sSFR (Salim) frame is not present: run the SFR analysis first")
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
-        # Create and return
-        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_salim, self.valid_pixel_funev_values_salim, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        # Create scatter
+        return self.create_ssfr_funev_pixel_scatter("Salim", self.pixel_ssfr_salim, self.pixel_funev)
 
     # -----------------------------------------------------------------
     #   K&E
@@ -2121,9 +2081,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
-        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_ke, self.valid_pixel_funev_values_ke,
-                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+        return self.create_ssfr_funev_pixel_scatter("K&E", self.pixel_ssfr_ke, self.pixel_funev)
 
     # -----------------------------------------------------------------
     #   MAPPINGS
@@ -2232,9 +2190,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
-        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings, self.valid_pixel_funev_values_mappings,
-                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+        return self.create_ssfr_funev_pixel_scatter("MAPPINGS", self.pixel_ssfr_mappings, self.pixel_funev)
 
     # -----------------------------------------------------------------
     #   MAPPINGS + K&E
@@ -2343,7 +2299,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
-        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        return self.create_ssfr_funev_pixel_scatter("MAPPINGS + K&E", self.pixel_ssfr_mappings_ke, self.pixel_funev)
 
     # -----------------------------------------------------------------
     # FUV-H / Funev
@@ -7686,5 +7642,112 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_description, x_unit=None, y_unit=None, aux=None, aux_units=None):
+
+    """
+    This function ...
+    :param x_name:
+    :param y_name:
+    :param x_frame:
+    :param y_frame:
+    :param x_description:
+    :param y_description:
+    :param x_unit:
+    :param y_unit:
+    :param aux:
+    :param aux_units:
+    :return:
+    """
+
+    # Get units
+    if x_unit is None: x_unit = x_frame.unit
+    if y_unit is None: y_unit = y_frame.unit
+
+    # Rebin to the same pixelscale
+    x_frame, y_frame = uniformize(x_frame, y_frame, convolve=False, convert=False)
+
+    # Get values
+    x_values = x_frame.values
+    y_values = y_frame.values
+
+    # Set aux
+    if aux is not None: aux = OrderedDict((key, data.values) for key, data in aux.items())
+
+    # Create scatter
+    return create_scatter(x_name, y_name, x_values, y_values, x_description, y_description, x_unit, y_unit, aux=aux, aux_units=aux_units)
+
+# -----------------------------------------------------------------
+
+def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_description, x_unit=None, y_unit=None, aux=None, aux_units=None):
+
+    """
+    This function ....
+    :param x_name:
+    :param y_name:
+    :param x_data:
+    :param y_data:
+    :param x_description:
+    :param y_description:
+    :param x_unit:
+    :param y_unit:
+    :param aux:
+    :param aux_units:
+    :return:
+    """
+
+    # Get units
+    if x_unit is None: x_unit = x_data.unit
+    if y_unit is None: y_unit = y_data.unit
+
+    # Check dimensions
+    if len(x_data) != len(y_data): raise ValueError("x and y data must have the same size")
+
+    # Get values
+    x_values = x_data.values
+    y_values = y_data.values
+
+    # Set aux
+    if aux is not None: aux = OrderedDict((key, data.values) for key, data in aux.items())
+
+    # Create
+    return create_scatter(x_name, y_name, x_values, y_values, x_description, y_description, x_unit, y_unit, aux=aux, aux_units=aux_units)
+
+# -----------------------------------------------------------------
+
+def create_scatter(x_name, y_name, x_values, y_values, x_description=None, y_description=None, x_unit=None, y_unit=None, aux=None, aux_units=None):
+
+    """
+    Thisf unction ...
+    :param x_name:
+    :param y_name:
+    :param x_values:
+    :param y_values:
+    :param x_description:
+    :param y_description:
+    :param x_unit:
+    :param y_unit:
+    :param aux:
+    :param aux_units:
+    :return:
+    """
+
+    # Create mask of valid values
+    valid_ssfr_mask = np.isfinite(x_values) * (x_values != 0)
+    valid_funev_mask = np.isfinite(y_values) * (y_values != 0)
+    valid_mask = valid_ssfr_mask * valid_funev_mask
+
+    # Get valid values
+    valid_x = x_values[valid_mask]
+    valid_y = y_values[valid_mask]
+
+    # Get valid aux values
+    if aux is not None: aux = OrderedDict((key, values[valid_mask]) for key, values in aux.items())
+
+    # Create and return
+    return Scatter2D.from_xy(valid_x, valid_y, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit,
+                             x_description=x_description, y_description=y_description, aux=aux, aux_units=aux_units)
 
 # -----------------------------------------------------------------

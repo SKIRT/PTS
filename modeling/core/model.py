@@ -815,11 +815,6 @@ class RTModel(object):
         :return:
         """
 
-        # Previously:
-        # intrinsic_cube_paths=self.total_simulation_component_cube_paths,
-        # intrinsic_cube_faceon_paths=self.total_simulation_component_cube_paths_faceon,
-        # intrinsic_cube_edgeon_paths=self.total_simulation_component_cube_paths_edgeon,
-
         # Load and return
         return MultiComponentSimulations.from_output(total_simulation_name, self.observed_total_simulation_output, self.total_simulation_component_simulations,
                                                           intrinsic_sed_paths=self.total_simulation_component_sed_paths, distance=self.distance, earth_wcs=self.earth_wcs)
@@ -894,7 +889,6 @@ class RTModel(object):
         # Load and return
         return SingleComponentSimulations.from_output(bulge_simulation_name, self.observed_bulge_simulation_output,
                                                       intrinsic_output=sed.output, distance=self.distance,
-                                                      #map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon, map_edgeon=self.old_bulge_map_edgeon,
                                                       map_earth_path=self.old_bulge_map_earth_path, map_faceon_path=self.old_bulge_map_faceon_path, map_edgeon_path=self.old_bulge_map_edgeon_path,
                                                       earth_wcs=self.earth_wcs)
 
@@ -902,8 +896,6 @@ class RTModel(object):
 
     @lazyproperty
     def bulge_simulation(self):
-        #return self.bulge_simulations.observed
-        #return ObservedComponentSimulation.from_output_path(self.observed_bulge_output_path, bulge_simulation_name, earth_wcs=self.earth_wcs)
         return self.bulge_simulations.observed
 
     # -----------------------------------------------------------------
@@ -968,7 +960,6 @@ class RTModel(object):
         # Load and return
         return SingleComponentSimulations.from_output(disk_simulation_name, self.observed_disk_simulation_output,
                                                       intrinsic_output=sed.output, distance=self.distance,
-                                                      #map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon, map_edgeon=self.old_disk_map_edgeon,
                                                       map_earth_path=self.old_disk_map_earth_path, map_faceon_path=self.old_disk_map_faceon_path, map_edgeon_path=self.old_disk_map_edgeon_path,
                                                       earth_wcs=self.earth_wcs)
 
@@ -976,8 +967,6 @@ class RTModel(object):
 
     @property
     def disk_simulation(self):
-        #return self.disk_simulations.observed
-        #return ObservedComponentSimulation.from_output_path(self.observed_disk_output_path, disk_simulation_name, earth_wcs=self.earth_wcs)
         return self.disk_simulations.observed
 
     # -----------------------------------------------------------------
@@ -1218,11 +1207,6 @@ class RTModel(object):
         :return:
         """
 
-        # Previously:
-        #intrinsic_cube_paths = self.old_simulation_component_cube_paths,
-        #intrinsic_cube_faceon_paths = self.old_simulation_component_cube_paths_faceon,
-        #intrinsic_cube_edgeon_paths = self.old_simulation_component_cube_paths_edgeon,
-
         # Load and return
         return MultiComponentSimulations.from_output(old_simulation_name, self.observed_old_simulation_output, self.old_simulation_component_simulations,
                                                       intrinsic_sed_paths=self.old_simulation_component_sed_paths,
@@ -1232,8 +1216,6 @@ class RTModel(object):
 
     @lazyproperty
     def old_simulation(self):
-        #return self.old_simulations.observed
-        #return ObservedComponentSimulation.from_output_path(self.observed_old_output_path, old_simulation_name, earth_wcs=self.earth_wcs)
         return self.old_simulations.observed
 
     # -----------------------------------------------------------------
@@ -1298,7 +1280,6 @@ class RTModel(object):
         # Load and return
         return SingleComponentSimulations.from_output(young_simulation_name, self.observed_young_simulation_output,
                                                       intrinsic_output=sed.output, distance=self.distance,
-                                                      #map_earth=self.young_map_earth, map_faceon=self.young_map_faceon, map_edgeon=self.young_map_edgeon,
                                                       map_earth_path=self.young_map_earth_path, map_faceon_path=self.young_map_faceon_path, map_edgeon_path=self.young_map_edgeon_path,
                                                       earth_wcs=self.earth_wcs)
 
@@ -1306,8 +1287,6 @@ class RTModel(object):
 
     @lazyproperty
     def young_simulation(self):
-        #return self.young_simulations.observed
-        #return ObservedComponentSimulation.from_output_path(self.observed_young_output_path, young_simulation_name, earth_wcs=self.earth_wcs)
         return self.young_simulations.observed
 
     # -----------------------------------------------------------------
@@ -1637,11 +1616,6 @@ class RTModel(object):
         :return:
         """
 
-        # Previously:
-        #intrinsic_cube_paths = self.unevolved_simulation_component_cube_paths,
-        #intrinsic_cube_faceon_paths = self.unevolved_simulation_component_cube_paths_faceon,
-        #intrinsic_cube_edgeon_paths = self.unevolved_simulation_component_cube_paths_edgeon,
-
         # Load and return
         return MultiComponentSimulations.from_output(unevolved_simulation_name, self.observed_unevolved_simulation_output, self.unevolved_simulation_component_simulations,
                                                       intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths,
@@ -1651,8 +1625,6 @@ class RTModel(object):
 
     @lazyproperty
     def unevolved_simulation(self):
-        #return self.unevolved_simulations.observed
-        #return ObservedComponentSimulation.from_output_path(self.observed_unevolved_output_path, unevolved_simulation_name, earth_wcs=self.earth_wcs)
         return self.unevolved_simulations.observed
 
     # -----------------------------------------------------------------

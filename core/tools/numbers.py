@@ -1191,6 +1191,45 @@ def round_up_to_odd_integer(number):
 
 # -----------------------------------------------------------------
 
+def round_to_base(number, base):
+
+    """
+    This function ...
+    :param number:
+    :param base:
+    :return:
+    """
+
+    return int(base * round(float(number) / base))
+
+# -----------------------------------------------------------------
+
+def round_up_to_base(number, base):
+
+    """
+    This function ...
+    :param number:
+    :param base:
+    :return:
+    """
+
+    return int(base * ceil(float(number) / base))
+
+# -----------------------------------------------------------------
+
+def round_down_to_base(number, base):
+
+    """
+    This function ...
+    :param number:
+    :param base:
+    :return:
+    """
+
+    return int(base * floor(float(number) / base))
+
+# -----------------------------------------------------------------
+
 def round_to_int(number):
 
     """

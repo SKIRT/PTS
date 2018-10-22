@@ -266,11 +266,14 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         # Get the FWHM
         if fwhm is None: fwhm = distribution.fwhm_value
 
+    # Add legend
+    axes.legend()
+
     # Axes were not provided, but figure was created here
     if not only_axes:
 
         # Create legend
-        plt.legend()
+        #plt.legend()
 
         if x_label is None: x_label = distribution.value_name
         if y_label is None: y_label = distribution.y_name
