@@ -4065,6 +4065,9 @@ def uniformize(*frames, **kwargs):
 
     # Rebin?
     if do_rebin:
+
+        log.debug("Images will be rebinned to the highest pixelscale ...")
+
         if rebin_indices is not None:
 
             to_rebin_frames = sequences.subset(frames, rebin_indices)
@@ -4075,6 +4078,9 @@ def uniformize(*frames, **kwargs):
 
     # Convolve?
     if do_convolve:
+
+        log.debug("Images will be convolved to the highest FWHM ...")
+
         if convolve_indices is not None:
 
             to_convolve_frames = sequences.subset(frames, convolve_indices)
@@ -4085,6 +4091,9 @@ def uniformize(*frames, **kwargs):
 
     # Convert?
     if do_convert:
+
+        log.debug("Images will be converted to the same unit ...")
+
         if convert_indices is not None:
 
             to_convert_frames = sequences.subset(frames, convert_indices)

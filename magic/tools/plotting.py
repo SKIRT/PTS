@@ -1020,7 +1020,8 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1.,
              region=None, regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
-             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True, background_color=None):
+             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True, background_color=None,
+             plot=None):
 
     """
     This function ...
@@ -1055,6 +1056,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param symmetric_method:
     :param check_around_zero:
     :param background_color:
+    :param plot:
     :return:
     """
 
@@ -1081,6 +1083,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
 
     # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
         plt.figure(figsize=(xsize,ysize))
@@ -1142,7 +1145,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 # -----------------------------------------------------------------
 
 def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-             contours_color="white", path=None, background_color=None, title=None):
+             contours_color="white", path=None, background_color=None, title=None, plot=None):
 
     """
     This function ...
@@ -1157,6 +1160,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     :param path:
     :param background_color:
     :param title:
+    :param plot:
     :return:
     """
 
@@ -1166,11 +1170,11 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
         # Plot with contours
         plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
                             data_cmap=cmap, plot_data=True, nlevels=ncontours,
-                            single_colour=contours_color, path=path, background_color=background_color, title=title)
+                            single_colour=contours_color, path=path, background_color=background_color, title=title, plot=plot)
 
     # No contours
     else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
-                     background_color=background_color, title=title)
+                     background_color=background_color, title=title, plot=plot)
 
 # -----------------------------------------------------------------
 
@@ -1199,7 +1203,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
                   interval="pts", data_cmap="viridis", around_zero=False, symmetric=False, soft_min=False, soft_max=False,
                   soft_min_scaling=1., soft_max_scaling=1., interpolation="nearest", alpha=1,
                   return_image=False, return_normalization=False, aspect="equal", symmetric_method="mean",
-                  check_around_zero=True, background_color=None
+                  check_around_zero=True, background_color=None, plot=None
                   ):
 
     """
@@ -1240,6 +1244,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param symmetric_method:
     :param check_around_zero:
     :param background_color:
+    :param plot:
     :return:
     """
 
@@ -1252,6 +1257,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     nypix = data.shape[0]
 
     # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
         plt.figure(figsize=(xsize, ysize))
@@ -1637,7 +1643,7 @@ def get_multiple_xy(curves, return_labels=False, return_units=False):
 
 def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-               ynonzero=False, x_label=None, y_label=None):
+               ynonzero=False, x_label=None, y_label=None, plot=None, vlines=None, hlines=None):
 
     """
     This function ...
@@ -1656,6 +1662,9 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
     :param ynonzero:
     :param x_label:
     :param y_label:
+    :param plot:
+    :param vlines:
+    :param hlines:
     :return:
     """
 
@@ -1676,10 +1685,18 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
         if hasattr(ylimits[0], "unit"): ylimits[0] = ylimits[0].to(curve.y_unit).value
         if hasattr(ylimits[1], "unit"): ylimits[1] = ylimits[1].to(curve.y_unit).value
 
+    # Convert vertical lines if necessary
+    if vlines is not None:
+        vlines = [value.to(curve.x_unit).value if hasattr(value, "unit") else value for value in vlines]
+
+    # Convert horizontal lines if necessary
+    if hlines is not None:
+        hlines = [value.to(curve.y_unit).value if hasattr(value, "unit") else value for value in hlines]
+
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
             xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
-            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
+            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero, plot=plot, vlines=vlines, hlines=hlines)
 
 # -----------------------------------------------------------------
 
@@ -1871,7 +1888,7 @@ def plot_densities(points, title=None, path=None, xlog=False, ylog=False, xlimit
 def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, xlog=False,
             ylog=False, vlines=None, hlines=None, legend=True, xlimits=None, ylimits=None, connect=True,
             density=False, xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-            ynonzero=False):
+            ynonzero=False, axes=None, plot=None):
 
     """
     Low-level function, only scalar values (no units)
@@ -1899,6 +1916,8 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     :param ynonnegative:
     :param xnonzero:
     :param ynonzero:
+    :param axes:
+    :param plot:
     :return:
     """
 
@@ -1907,12 +1926,17 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
 
     from ...core.basics.plot import MPLFigure
 
-    # Create plot
-    figure = MPLFigure()
-    figure.transparent = transparent
-    plot = figure.create_one_plot()
-    #fig = plt.figure()
-    #ax = fig.gca()
+    # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
+    only_axes = False
+    if axes is None:
+
+        # Create plot
+        figure = MPLFigure()
+        figure.transparent = transparent
+        plot = figure.create_one_plot()
+
+    else: only_axes = True
 
     original_xlimits = xlimits
     original_ylimits = ylimits
@@ -2000,15 +2024,18 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     # Create legend
     if legend: plot.legend()
 
-    # Add title
-    if title is not None: figure.set_title(title) #plt.title(title)
+    # Axes were not provided: we are supposed to create the whole figure thingy and close it
+    if not only_axes:
 
-    # Show or save
-    if path is None: figure.show()
-    else: figure.saveto(path)
+        # Add title
+        if title is not None: figure.set_title(title) #plt.title(title)
 
-    # Close
-    plt.close()
+        # Show or save
+        if path is None: figure.show()
+        else: figure.saveto(path)
+
+        # Close
+        plt.close()
 
 # -----------------------------------------------------------------
 

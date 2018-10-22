@@ -2521,16 +2521,19 @@ class Frame(NDDataArray):
         
     # -----------------------------------------------------------------
 
-    def cutout_around(self, position, radius):
+    def cutout_around(self, position, radius, as_frame=False):
 
         """
         This function ...
         :param position:
         :param radius:
+        :param as_frame:
         :return:
         """
 
-        return Cutout.cutout(self, position, radius)
+        cutout = Cutout.cutout(self, position, radius)
+        if as_frame: return Frame(np.asarray(cutout), name=self.name, pixelscale=self.pixelscale, fwhm=self.fwhm, distance=self.distance)
+        else: return cutout
 
     # -----------------------------------------------------------------
 
@@ -5322,6 +5325,46 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace_where_equal_to(self, value, replacement):
+
+        """
+        This function ...
+        :param value:
+        :param replacement:
+        :return:
+        """
+
+        # Get the mask
+        mask = self.where(value)
+
+        # Replace
+        self.replace(mask, replacement)
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def replace_where_not_equal_to(self, value, replacement):
+
+        """
+        This function ...
+        :param value:
+        :param replacement:
+        :return:
+        """
+
+        # Get the mask
+        mask = self.where_not(value)
+
+        # Replace
+        self.replace(mask, replacement)
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
     def replace_where_greater_than(self, value, replacement):
 
         """
@@ -5417,6 +5460,42 @@ class Frame(NDDataArray):
         """
 
         return self.replace_where_greater_than(value, zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_nans_where_equal_to(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.replace_where_equal_to(value, nan_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_infs_where_equal_to(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.replace_where_equal_to(value, inf_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_zeroes_where_equal_to(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.replace_where_equal_to(value, zero_value)
 
     # -----------------------------------------------------------------
 

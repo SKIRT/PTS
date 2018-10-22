@@ -79,6 +79,7 @@ from ...magic.tools.plotting import plot_map
 from ...core.basics.curve import WavelengthCurve
 from ...core.plot.distribution import plot_distribution
 from ...magic.core.list import uniformize
+from ...core.tools import numbers
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -3606,6 +3607,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #2
         elif config.which == 2: return self.plot_paper2(path=config.path)
 
+        # Plot #3
+        elif config.which == 3: return self.plot_paper3(path=config.path)
+
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
 
@@ -3731,54 +3735,173 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        from matplotlib import gridspec
-        import aplpy
-
         # Create figure
         figsize = (20, 6,)
         figure = MPLFigure(size=figsize)
 
         # Set width ratios
-        width_ratios = []
+        width_ratios = [0.5, 0.5]
 
         # Create 2 plots
+        plot0, plot1 = figure.create_row(2, wspace=0, width_ratios=width_ratios)
         # Create grid
-        gs = gridspec.GridSpec(1, 2)  # ROWS, COLUMNS
-        gs.update(wspace=0., hspace=0.)
+        #gs = gridspec.GridSpec(1, 2)  # ROWS, COLUMNS
+        #gs.update(wspace=0., hspace=0.)
 
         # Get the heating map
         frame = self.get_heating_map("cells")
-        hdu = frame.to_hdu()
+        #hdu = frame.to_hdu()
         #print(frame.wcs)
-        print(frame.pixelscale)
+        #print(frame.pixelscale)
+        pixelscale = frame.average_physical_pixelscale
 
-        # zoom from the normal galaxy truncation
-        zoom = 0.7
-        radius = self.truncation_radius * zoom
+        # Zoom from the normal galaxy truncation
+        zoom = 1.1
+        #radius = self.truncation_radius * zoom
+        #radius_pc = (radius * self.galaxy_distance).to("pc").value
+        radius = self.physical_truncation_radius * zoom
+        radius_kpc = numbers.round_up_to_base(radius.to("kpc").value, base=5) # round up to 5 kpc
+        radius = radius_kpc * u("kpc")
+        radius_pixels = radius.to("pc").value / pixelscale.to("pc").value
+        # Round
+        radius_pixels = numbers.round_up_to_int(radius_pixels)
+        #print("RADIUS", radius, radius_pixels)
 
         # Get center pix
         center_pix = frame.pixel_center
 
-        plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno")
+        # Make cutout
+        frame = frame.cutout_around(center_pix, radius_pixels, as_frame=True)
+        #data, x_min, x_max, y_min, y_max = crop_direct(frame.data, )
+        #print(frame.shape) # must preferentially be odd so that center is still in center
+
+        # Get new pixel center
+        center_pix = frame.pixel_center
+
+        # Plot
+        plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0)
+        #cmap = get_cmap("inferno")
+
+        # Set axes
+        plot0.set_xlabel("Distance from center [kpc]")
+        plot0.set_ylabel("Distance from center [kpc]")
+
+        # Set ticks
+        pixelscale_kpc = pixelscale.to("kpc").value
+        kpc_offsets = [-15, -10, -5, 0, 5, 10, 15] # in kpc
+        labels = [str(offset) for offset in kpc_offsets]
+        #ylabels =
+        xticks = [center_pix.x + float(offset) / pixelscale_kpc for offset in kpc_offsets]
+        yticks = [center_pix.y + float(offset) / pixelscale_kpc for offset in kpc_offsets]
+        #print(xticks, labels)
+        #print(yticks, labels)
+        #plot0.set_xticks(xticks, labels)
+        #plot0.set_yticks(yticks, labels)
+        plot0._plot.set_xticks(xticks)
+        plot0._plot.set_xticklabels(kpc_offsets)
+        #print(plot0.xticklabels)
+        plot0._plot.set_yticks(yticks)
+        plot0._plot.set_yticklabels(kpc_offsets)
+        #print(plot0.yticklabels)
 
         # OBSERVATION
         #fig1 = aplpy.FITSFigure(hdu, figure=figure.figure, subplot=list(gs[0].get_position(figure.figure).bounds))
-        #setup_map_plot(fig1, colormap, vmin=vmin, vmax=vmax, label=r'' + str(title), center=center, radius=radius, scale=scale)
-        #set_ticks(fig1, is_first, is_last)
-
         #fig1.show_colorscale(cmap="inferno", vmin=0, vmax=1, smooth=None, stretch="linear")
 
-        # Enable y ticks and axis labels BECAUSE OBSERVATION IS THE FIRST COLUMN
-        #fig1.tick_labels.show_y()
-        #fig1.axis_labels.show_y()
-
-        # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
-        #if is_last: fig1.tick_labels.show_x()
-        #if is_last: fig1.axis_labels.show_x()
-
         # Plot distribution
-        distr_axes = figure.figure.add_subplot(gs[1])
-        plot_distribution(self.heating_distribution, axes=distr_axes)
+        #print(self.heating_distribution)
+        #distr_axes = figure.figure.add_subplot(gs[1])
+        #plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
+        plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval, plot=plot1, show_mean=True, show_median=True, show_most_frequent=False)
+        plot1.set_xlabel("Heating fraction by unevolved stars")
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sdss_u_filter(self):
+        return parse_filter("SDSS u")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sdss_u_wavelength(self):
+        return self.sdss_u_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sdss_g_filter(self):
+        return parse_filter("SDSS g")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sdss_g_wavelength(self):
+        return self.sdss_g_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sdss_r_filter(self):
+        return parse_filter("SDSS r")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sdss_r_wavelength(self):
+        return self.sdss_r_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    def plot_paper3(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get curve
+        curve = self.get_spectral_absorption_fraction_curve(cells_name)
+
+        # Get maps
+        fuv_map = self.get_spectral_heating_map(cells_name, self.fuv_filter)
+        nuv_map = self.get_spectral_heating_map(cells_name, self.nuv_filter)
+        u_map = self.get_spectral_heating_map(cells_name, self.sdss_u_filter)
+        g_map = self.get_spectral_heating_map(cells_name, self.sdss_g_filter)
+        r_map = self.get_spectral_heating_map(cells_name, self.sdss_r_filter)
+
+        # Get filter wavelengths
+        filter_wavelengths = [self.fuv_wavelength, self.nuv_wavelength, self.sdss_u_wavelength, self.sdss_g_wavelength, self.sdss_r_wavelength]
+
+        # Create grid
+        figsize = (25, 15,)
+        figure = MPLFigure(size=figsize)
+        nrows = 2
+        ncols = 3
+        #plot0, plot1, plot2, plot3, plot4 = figure.create_column(5, hspace=0)
+        rows = figure.create_grid(nrows, ncols)
+        first_row = rows[0]
+        second_row = rows[1]
+
+        # Plot curve
+        plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
+                   xlog=True, y_label=self.heating_fraction_name, plot=first_row[0], vlines=filter_wavelengths)
+
+
+        print(first_row)
+        print(second_row)
+
+        # Plot
+        plot_map(fuv_map, plot=first_row[1], interval=self.heating_fraction_interval)
+        plot_map(nuv_map, plot=first_row[2], interval=self.heating_fraction_interval)
+        plot_map(u_map, plot=second_row[0], interval=self.heating_fraction_interval)
+        plot_map(g_map, plot=second_row[1], interval=self.heating_fraction_interval)
+        plot_map(r_map, plot=second_row[2], interval=self.heating_fraction_interval)
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -4076,20 +4199,21 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_heating_map(self, projection, fltr=None):
+    def get_heating_map(self, projection, fltr=None, correct=True):
 
         """
         This function ...
         :param projection:
         :param fltr:
+        :param correct:
         :return:
         """
 
         # Spectral heating
-        if fltr is not None: return self.get_spectral_heating_map(projection, fltr)
+        if fltr is not None: return self.get_spectral_heating_map(projection, fltr, correct=correct)
 
         # Bolometric heating
-        else: return self.get_bolometric_heating_map(projection)
+        else: return self.get_bolometric_heating_map(projection, correct=correct)
 
     # -----------------------------------------------------------------
 
@@ -4152,12 +4276,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_spectral_heating_map(self, projection, fltr):
+    def get_spectral_heating_map(self, projection, fltr, correct=True):
 
         """
         This function ...
         :param projection:
         :param fltr:
+        :param correct:
         :return:
         """
 
@@ -4166,6 +4291,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Open the frame
         frame = Frame.from_file(path)
+
+        # Correct
+        if correct: self.correct_heating_map(frame)
 
         # Return
         return frame
@@ -4215,11 +4343,25 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_bolometric_heating_map(self, projection):
+    def correct_heating_map(self, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        #frame.replace_by_nans_where_equal_to(1)
+        frame.replace_by_nans_where_greater_than(0.95)
+
+    # -----------------------------------------------------------------
+
+    def get_bolometric_heating_map(self, projection, correct=True):
 
         """
         This function ...
         :param projection:
+        :param correct:
         :return:
         """
 
@@ -4228,6 +4370,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Open the frame
         frame = Frame.from_file(path)
+
+        # Correct
+        if correct: self.correct_heating_map(frame)
 
         # Return
         return frame

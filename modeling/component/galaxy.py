@@ -663,6 +663,12 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def physical_truncation_radius(self):
+        return self.environment.physical_truncation_radius
+
+    # -----------------------------------------------------------------
+
+    @property
     def truncation_factor(self):
         return self.environment.truncation_factor
 

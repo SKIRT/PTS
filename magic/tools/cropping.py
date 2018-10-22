@@ -29,14 +29,20 @@ def crop(data, x_center, y_center, x_radius, y_radius):
     :return:
     """
 
+    print(x_center, x_radius, x_center - x_radius, x_center + x_radius)
+    print(y_center, y_radius, y_center - y_radius, y_center + y_radius)
+
     # Determine y and x min and max
     y_min = int(round(y_center - y_radius))
     y_max = int(round(y_center + y_radius))
     x_min = int(round(x_center - x_radius))
     x_max = int(round(x_center + x_radius))
 
+    #print(x_min, x_max, x_max-x_min)
+    #print(y_min, y_max, y_max-y_min)
+
     # Return the cropped data
-    return crop_direct(data, x_min, x_max, y_min, y_max)
+    return crop_direct(data, x_min, x_max, y_min, y_max, include_min=True, include_max=True)
 
 # -----------------------------------------------------------------
 
@@ -79,7 +85,7 @@ def crop_absolute(data, x_min, x_max, y_min, y_max, fill_value=0.0):
 
 # -----------------------------------------------------------------
 
-def crop_direct(data, x_min, x_max, y_min, y_max):
+def crop_direct(data, x_min, x_max, y_min, y_max, include_min=True, include_max=False):
 
     """
     This function ...
@@ -88,8 +94,18 @@ def crop_direct(data, x_min, x_max, y_min, y_max):
     :param x_max:
     :param y_min:
     :param y_max:
+    :param include_min:
+    :param include_max:
     :return:
     """
+
+    # Include?
+    if not include_min:
+        x_min += 1
+        y_min += 1
+    if include_max:
+        x_max += 1
+        y_max += 1
 
     if y_min < 0: y_min = 0
     if x_min < 0: x_min = 0
