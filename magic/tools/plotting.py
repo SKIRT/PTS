@@ -1643,7 +1643,7 @@ def get_multiple_xy(curves, return_labels=False, return_units=False):
 
 def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-               ynonzero=False, x_label=None, y_label=None):
+               ynonzero=False, x_label=None, y_label=None, plot=None, vlines=None, hlines=None):
 
     """
     This function ...
@@ -1662,6 +1662,9 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
     :param ynonzero:
     :param x_label:
     :param y_label:
+    :param plot:
+    :param vlines:
+    :param hlines:
     :return:
     """
 
@@ -1682,10 +1685,18 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
         if hasattr(ylimits[0], "unit"): ylimits[0] = ylimits[0].to(curve.y_unit).value
         if hasattr(ylimits[1], "unit"): ylimits[1] = ylimits[1].to(curve.y_unit).value
 
+    # Convert vertical lines if necessary
+    if vlines is not None:
+        vlines = [value.to(curve.x_unit).value if hasattr(value, "unit") else value for value in vlines]
+
+    # Convert horizontal lines if necessary
+    if hlines is not None:
+        hlines = [value.to(curve.y_unit).value if hasattr(value, "unit") else value for value in hlines]
+
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
             xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
-            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
+            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero, plot=plot, vlines=vlines, hlines=hlines)
 
 # -----------------------------------------------------------------
 
@@ -1877,7 +1888,7 @@ def plot_densities(points, title=None, path=None, xlog=False, ylog=False, xlimit
 def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, xlog=False,
             ylog=False, vlines=None, hlines=None, legend=True, xlimits=None, ylimits=None, connect=True,
             density=False, xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-            ynonzero=False):
+            ynonzero=False, axes=None, plot=None):
 
     """
     Low-level function, only scalar values (no units)
@@ -1905,6 +1916,8 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     :param ynonnegative:
     :param xnonzero:
     :param ynonzero:
+    :param axes:
+    :param plot:
     :return:
     """
 
@@ -1913,12 +1926,17 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
 
     from ...core.basics.plot import MPLFigure
 
-    # Create plot
-    figure = MPLFigure()
-    figure.transparent = transparent
-    plot = figure.create_one_plot()
-    #fig = plt.figure()
-    #ax = fig.gca()
+    # Create figure if necessary, get the axes
+    if plot is not None: axes = plot.axes
+    only_axes = False
+    if axes is None:
+
+        # Create plot
+        figure = MPLFigure()
+        figure.transparent = transparent
+        plot = figure.create_one_plot()
+
+    else: only_axes = True
 
     original_xlimits = xlimits
     original_ylimits = ylimits
@@ -2006,15 +2024,18 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     # Create legend
     if legend: plot.legend()
 
-    # Add title
-    if title is not None: figure.set_title(title) #plt.title(title)
+    # Axes were not provided: we are supposed to create the whole figure thingy and close it
+    if not only_axes:
 
-    # Show or save
-    if path is None: figure.show()
-    else: figure.saveto(path)
+        # Add title
+        if title is not None: figure.set_title(title) #plt.title(title)
 
-    # Close
-    plt.close()
+        # Show or save
+        if path is None: figure.show()
+        else: figure.saveto(path)
+
+        # Close
+        plt.close()
 
 # -----------------------------------------------------------------
 

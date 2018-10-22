@@ -3606,6 +3606,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #2
         elif config.which == 2: return self.plot_paper2(path=config.path)
 
+        # Plot #3
+        elif config.which == 3: return self.plot_paper3(path=config.path)
+
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
 
@@ -3731,9 +3734,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        from matplotlib import gridspec
-        import aplpy
-
         # Create figure
         figsize = (20, 6,)
         figure = MPLFigure(size=figsize)
@@ -3753,35 +3753,110 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #print(frame.wcs)
         #print(frame.pixelscale)
 
-        # zoom from the normal galaxy truncation
+        # Zoom from the normal galaxy truncation
         zoom = 0.7
         radius = self.truncation_radius * zoom
+
 
         # Get center pix
         center_pix = frame.pixel_center
 
+        # Plot
         plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0)
         #cmap = get_cmap("inferno")
 
         # OBSERVATION
         #fig1 = aplpy.FITSFigure(hdu, figure=figure.figure, subplot=list(gs[0].get_position(figure.figure).bounds))
-        #setup_map_plot(fig1, colormap, vmin=vmin, vmax=vmax, label=r'' + str(title), center=center, radius=radius, scale=scale)
-        #set_ticks(fig1, is_first, is_last)
-
         #fig1.show_colorscale(cmap="inferno", vmin=0, vmax=1, smooth=None, stretch="linear")
-
-        # Enable y ticks and axis labels BECAUSE OBSERVATION IS THE FIRST COLUMN
-        #fig1.tick_labels.show_y()
-        #fig1.axis_labels.show_y()
-
-        # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
-        #if is_last: fig1.tick_labels.show_x()
-        #if is_last: fig1.axis_labels.show_x()
 
         # Plot distribution
         #distr_axes = figure.figure.add_subplot(gs[1])
         #plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
         plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval, plot=plot1)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sdss_u_filter(self):
+        return parse_filter("SDSS u")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sdss_u_wavelength(self):
+        return self.sdss_u_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sdss_g_filter(self):
+        return parse_filter("SDSS g")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sdss_g_wavelength(self):
+        return self.sdss_g_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sdss_r_filter(self):
+        return parse_filter("SDSS r")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sdss_r_wavelength(self):
+        return self.sdss_r_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    def plot_paper3(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get curve
+        curve = self.get_spectral_absorption_fraction_curve(cells_name)
+
+        # Get maps
+        fuv_map = self.get_spectral_heating_map(cells_name, self.fuv_filter)
+        nuv_map = self.get_spectral_heating_map(cells_name, self.nuv_filter)
+        u_map = self.get_spectral_heating_map(cells_name, self.sdss_u_filter)
+        g_map = self.get_spectral_heating_map(cells_name, self.sdss_g_filter)
+        r_map = self.get_spectral_heating_map(cells_name, self.sdss_r_filter)
+
+        # Get filter wavelengths
+        filter_wavelengths = [self.fuv_wavelength, self.nuv_wavelength, self.sdss_u_wavelength, self.sdss_g_wavelength, self.sdss_r_wavelength]
+
+        # Create grid
+        figsize = (25, 15,)
+        figure = MPLFigure(size=figsize)
+        nrows = 2
+        ncols = 3
+        #plot0, plot1, plot2, plot3, plot4 = figure.create_column(5, hspace=0)
+        rows = figure.create_grid(nrows, ncols)
+        first_row = rows[0]
+        second_row = rows[1]
+
+        # Plot curve
+        plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
+                   xlog=True, y_label=self.heating_fraction_name, plot=first_row[0], vlines=filter_wavelengths)
+
+        # Plot
+        plot_map(fuv_map, plot=first_row[1], interval=self.heating_fraction_interval)
+        plot_map(nuv_map, plot=first_row[2], interval=self.heating_fraction_interval)
+        plot_map(u_map, plot=second_row[0], interval=self.heating_fraction_interval)
+        plot_map(g_map, plot=second_row[1], interval=self.heating_fraction_interval)
+        plot_map(r_map, plot=second_row[2], interval=self.heating_fraction_interval)
 
         # Save or show
         if path is not None: figure.saveto(path)
