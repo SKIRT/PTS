@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.basics.curve import Curve
@@ -31,7 +34,7 @@ config = parse_arguments("plot_curves", definition)
 # -----------------------------------------------------------------
 
 # Load the curves
-curves = dict()
+curves = OrderedDict()
 for filepath in config.files:
     name = fs.strip_extension(fs.name(filepath))
     curves[name] = Curve.from_data_file(filepath)
