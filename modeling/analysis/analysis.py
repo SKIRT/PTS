@@ -75,7 +75,7 @@ from ..fitting.modelanalyser import FluxDifferencesTable
 from ...core.tools.parsing import lazy_broad_band_filter_list
 from ...magic.core.frame import Frame
 from ...magic.core.mask import Mask
-from ...magic.tools.plotting import plot_map
+from ...magic.tools.plotting import plot_map, plot_map_offset
 from ...core.basics.curve import WavelengthCurve
 from ...core.plot.distribution import plot_distribution
 from ...magic.core.list import uniformize
@@ -3736,77 +3736,28 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Create figure
-        figsize = (20, 6,)
+        figsize = (12, 6,)
         figure = MPLFigure(size=figsize)
 
         # Set width ratios
         width_ratios = [0.5, 0.5]
 
         # Create 2 plots
-        plot0, plot1 = figure.create_row(2, wspace=0, width_ratios=width_ratios)
-        # Create grid
-        #gs = gridspec.GridSpec(1, 2)  # ROWS, COLUMNS
-        #gs.update(wspace=0., hspace=0.)
+        #plot0, plot1 = figure.create_row(2, wspace=0, width_ratios=width_ratios)
+        plot0, plot1 = figure.create_row(2, width_ratios=width_ratios)
 
         # Get the heating map
         frame = self.get_heating_map("cells")
-        #hdu = frame.to_hdu()
-        #print(frame.wcs)
-        #print(frame.pixelscale)
-        pixelscale = frame.average_physical_pixelscale
 
         # Zoom from the normal galaxy truncation
         zoom = 1.1
-        #radius = self.truncation_radius * zoom
-        #radius_pc = (radius * self.galaxy_distance).to("pc").value
         radius = self.physical_truncation_radius * zoom
-        radius_kpc = numbers.round_up_to_base(radius.to("kpc").value, base=5) # round up to 5 kpc
-        radius = radius_kpc * u("kpc")
-        radius_pixels = radius.to("pc").value / pixelscale.to("pc").value
-        # Round
-        radius_pixels = numbers.round_up_to_int(radius_pixels)
-        #print("RADIUS", radius, radius_pixels)
 
-        # Get center pix
-        center_pix = frame.pixel_center
-
-        # Make cutout
-        frame = frame.cutout_around(center_pix, radius_pixels, as_frame=True)
-        #data, x_min, x_max, y_min, y_max = crop_direct(frame.data, )
-        #print(frame.shape) # must preferentially be odd so that center is still in center
-
-        # Get new pixel center
+        # Assume center pixel is the center of the map (galaxy)
         center_pix = frame.pixel_center
 
         # Plot
-        plot_map(frame, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0)
-        #cmap = get_cmap("inferno")
-
-        # Set axes
-        plot0.set_xlabel("Distance from center [kpc]")
-        plot0.set_ylabel("Distance from center [kpc]")
-
-        # Set ticks
-        pixelscale_kpc = pixelscale.to("kpc").value
-        kpc_offsets = [-15, -10, -5, 0, 5, 10, 15] # in kpc
-        labels = [str(offset) for offset in kpc_offsets]
-        #ylabels =
-        xticks = [center_pix.x + float(offset) / pixelscale_kpc for offset in kpc_offsets]
-        yticks = [center_pix.y + float(offset) / pixelscale_kpc for offset in kpc_offsets]
-        #print(xticks, labels)
-        #print(yticks, labels)
-        #plot0.set_xticks(xticks, labels)
-        #plot0.set_yticks(yticks, labels)
-        plot0._plot.set_xticks(xticks)
-        plot0._plot.set_xticklabels(kpc_offsets)
-        #print(plot0.xticklabels)
-        plot0._plot.set_yticks(yticks)
-        plot0._plot.set_yticklabels(kpc_offsets)
-        #print(plot0.yticklabels)
-
-        # OBSERVATION
-        #fig1 = aplpy.FITSFigure(hdu, figure=figure.figure, subplot=list(gs[0].get_position(figure.figure).bounds))
-        #fig1.show_colorscale(cmap="inferno", vmin=0, vmax=1, smooth=None, stretch="linear")
+        plot_map_offset(frame, center_pix, radius, u("5 kpc"), interval=self.heating_fraction_interval, colorbar=False, cmap="inferno", plot=plot0)
 
         # Plot distribution
         #print(self.heating_distribution)
@@ -3814,6 +3765,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
         plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval, plot=plot1, show_mean=True, show_median=True, show_most_frequent=False)
         plot1.set_xlabel("Heating fraction by unevolved stars")
+        plot1.hide_yaxis()
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -3875,33 +3827,63 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         g_map = self.get_spectral_heating_map(cells_name, self.sdss_g_filter)
         r_map = self.get_spectral_heating_map(cells_name, self.sdss_r_filter)
 
+        #plot_map(r_map, interval=self.heating_fraction_interval)
+
         # Get filter wavelengths
         filter_wavelengths = [self.fuv_wavelength, self.nuv_wavelength, self.sdss_u_wavelength, self.sdss_g_wavelength, self.sdss_r_wavelength]
 
         # Create grid
-        figsize = (25, 15,)
+        #figsize = (25, 15,)
+        figsize = (18,12,) # 3:2
         figure = MPLFigure(size=figsize)
         nrows = 2
         ncols = 3
-        #plot0, plot1, plot2, plot3, plot4 = figure.create_column(5, hspace=0)
-        rows = figure.create_grid(nrows, ncols)
+        rows = figure.create_grid(nrows, ncols, wspace=0, hspace=0)
         first_row = rows[0]
         second_row = rows[1]
+
+        first_plot = first_row[0]
+        first_plot.set_xaxis_position("top")
+        first_plot.set_yaxis_position("left")
+
+        # Test
+        for plot in first_row: plot.axes.set(adjustable='box-forced')
+        for plot in second_row: plot.axes.set(adjustable='box-forced')
 
         # Plot curve
         plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
                    xlog=True, y_label=self.heating_fraction_name, plot=first_row[0], vlines=filter_wavelengths)
 
-
-        print(first_row)
-        print(second_row)
+        # Zoom from the normal galaxy truncation
+        zoom = 1.1
+        radius = self.physical_truncation_radius * zoom
 
         # Plot
-        plot_map(fuv_map, plot=first_row[1], interval=self.heating_fraction_interval)
-        plot_map(nuv_map, plot=first_row[2], interval=self.heating_fraction_interval)
-        plot_map(u_map, plot=second_row[0], interval=self.heating_fraction_interval)
-        plot_map(g_map, plot=second_row[1], interval=self.heating_fraction_interval)
-        plot_map(r_map, plot=second_row[2], interval=self.heating_fraction_interval)
+        # Assume center pixel is the center of the map (galaxy)
+        cmap = "inferno"
+        offset_step = q("5 kpc")
+        plot_map_offset(fuv_map, fuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[1])
+        first_row[1].hide_yaxis()
+        first_row[1].set_xaxis_position("top")
+
+        plot_map_offset(nuv_map, nuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[2])
+        first_row[2].set_xaxis_position("top")
+        first_row[2].set_yaxis_position("right")
+
+        plot_map_offset(u_map, u_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[0])
+
+        plot_map_offset(g_map, g_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[1])
+        second_row[1].hide_yaxis()
+
+        plot_map_offset(r_map, r_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[2])
+        second_row[2].set_yaxis_position("right")
+
+        # ADD COLORBAR AXES
+        last_plot = second_row[2]
+        #colorbar_plot = figure.add_plot(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0)
+        cb = figure.add_colorbar(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0, "inferno", "vertical", self.heating_fraction_interval)
+
+        figure.tight_layout()
 
         # Save or show
         if path is not None: figure.saveto(path)

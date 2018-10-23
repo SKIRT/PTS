@@ -1026,7 +1026,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         aux_units[mean_age_name] = self.log_age_unit
 
         # Create
-        return create_cell_scatter(self.ssfr_name, self.funev_name, ssfr_data, funev_data, self.ssfr_description, self.funev_description, aux=aux, aux_units=aux_units)
+        return create_cell_scatter(self.ssfr_name, self.funev_name, ssfr_data, funev_data, self.ssfr_description, self.funev_description, aux=aux, aux_units=aux_units, aux_is_arrays=True)
 
     # -----------------------------------------------------------------
     # sSFR-Funev cell scatter data
@@ -7645,7 +7645,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
 # -----------------------------------------------------------------
 
-def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_description, x_unit=None, y_unit=None, aux=None, aux_units=None):
+def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_description, x_unit=None, y_unit=None,
+                         aux=None, aux_units=None, aux_is_arrays=False):
 
     """
     This function ...
@@ -7659,6 +7660,7 @@ def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_desc
     :param y_unit:
     :param aux:
     :param aux_units:
+    :param aux_is_arrays:
     :return:
     """
 
@@ -7674,14 +7676,15 @@ def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_desc
     y_values = y_frame.values
 
     # Set aux
-    if aux is not None: aux = OrderedDict((key, data.values) for key, data in aux.items())
+    if aux is not None and not aux_is_arrays: aux = OrderedDict((key, data.values) for key, data in aux.items())
 
     # Create scatter
     return create_scatter(x_name, y_name, x_values, y_values, x_description, y_description, x_unit, y_unit, aux=aux, aux_units=aux_units)
 
 # -----------------------------------------------------------------
 
-def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_description, x_unit=None, y_unit=None, aux=None, aux_units=None):
+def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_description, x_unit=None, y_unit=None,
+                        aux=None, aux_units=None, aux_is_arrays=False):
 
     """
     This function ....
@@ -7695,6 +7698,7 @@ def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_descrip
     :param y_unit:
     :param aux:
     :param aux_units:
+    :param aux_is_arrays:
     :return:
     """
 
@@ -7710,7 +7714,7 @@ def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_descrip
     y_values = y_data.values
 
     # Set aux
-    if aux is not None: aux = OrderedDict((key, data.values) for key, data in aux.items())
+    if aux is not None and not aux_is_arrays: aux = OrderedDict((key, data.values) for key, data in aux.items())
 
     # Create
     return create_scatter(x_name, y_name, x_values, y_values, x_description, y_description, x_unit, y_unit, aux=aux, aux_units=aux_units)
