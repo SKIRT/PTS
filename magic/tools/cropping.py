@@ -29,8 +29,8 @@ def crop(data, x_center, y_center, x_radius, y_radius):
     :return:
     """
 
-    print(x_center, x_radius, x_center - x_radius, x_center + x_radius)
-    print(y_center, y_radius, y_center - y_radius, y_center + y_radius)
+    #print(x_center, x_radius, x_center - x_radius, x_center + x_radius)
+    #print(y_center, y_radius, y_center - y_radius, y_center + y_radius)
 
     # Determine y and x min and max
     y_min = int(round(y_center - y_radius))

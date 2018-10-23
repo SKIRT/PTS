@@ -1178,6 +1178,80 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
 
 # -----------------------------------------------------------------
 
+def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
+                    contours_color="white", path=None, background_color=None, title=None, plot=None, axes_label="Distance from center"):
+
+    """
+    This function ...
+    :param frame:
+    :param center: CENTER IN PIXEL COORDINATES
+    :param radius: RADIUS IN LENGTH
+    :param offset_step:
+    :param interval:
+    :param scale:
+    :param colorbar:
+    :param cmap:
+    :param contours:
+    :param ncontours:
+    :param contours_color:
+    :param path:
+    :param background_color:
+    :param title:
+    :param plot:
+    :param axes_label:
+    :return:
+    """
+
+    from ...core.tools import numbers
+    from ...core.basics.range import RealRange
+
+    # Get physical pixelscale
+    pixelscale = frame.average_physical_pixelscale
+
+    # GET OFFSET STEP AND UNITS
+    offset = offset_step.value
+    offset_unit = offset_step.unit
+    offset_unit_string = str(offset_unit)
+
+    # Get physical radius, round up to
+    radius = numbers.round_up_to_base(radius.to(offset_unit).value, base=offset) * offset_unit # round up to 5 kpc
+    radius_pixels = numbers.round_up_to_int(radius.value / pixelscale.to(offset_unit).value)
+
+    # Make cutout
+    cutout = frame.cutout_around(center, radius_pixels, as_frame=True)
+    # print(cutout.shape) # must preferentially be odd so that center is still in center
+
+    # Get new pixel center
+    center_pix = cutout.pixel_center
+
+    # Plot
+    plot_map(cutout, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, contours=contours, ncontours=ncontours,
+             contours_color=contours_color, path=path, background_color=background_color, title=title, plot=plot)
+
+    # Set axes
+    plot.set_xlabel(axes_label + " [" + offset_unit_string + "]")
+    plot.set_ylabel(axes_label + " [" + offset_unit_string + "]")
+
+    # Determine ticks
+    pixelscale_in_offset_unit = pixelscale.to(offset_unit).value
+
+    # Get offsets
+    # offsets = [-15, -10, -5, 0, 5, 10, 15]  # in kpc
+    radius_range = RealRange(-radius.value, radius.value, inclusive=True)
+    offsets = radius_range.linear_step(offset, symmetric=True, center=0.)
+
+    # labels = [str(offset) for offset in kpc_offsets]
+    xticks = [center_pix.x + float(offset) / pixelscale_in_offset_unit for offset in offsets]
+    yticks = [center_pix.y + float(offset) / pixelscale_in_offset_unit for offset in offsets]
+
+    # Set ticks
+    plot._plot.set_xticks(xticks)
+    plot._plot.set_xticklabels(offsets)
+    plot._plot.set_yticks(yticks)
+    plot._plot.set_yticklabels(offsets)
+
+# -----------------------------------------------------------------
+
 def plot_frame_contours(frame, **kwargs):
 
     """
@@ -1930,12 +2004,10 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
-
         # Create plot
         figure = MPLFigure()
         figure.transparent = transparent
         plot = figure.create_one_plot()
-
     else: only_axes = True
 
     original_xlimits = xlimits
@@ -1993,8 +2065,8 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
             plot.axhline(y=hline)
 
     # Set axes limits
-    if xlimits is not None: plt.xlim(xlimits[0], xlimits[1])
-    if ylimits is not None: plt.ylim(ylimits[0], ylimits[1])
+    if xlimits is not None: axes.set_xlim(xlimits[0], xlimits[1])
+    if ylimits is not None: axes.set_ylim(ylimits[0], ylimits[1])
 
     # Set scale
     # NO-> DATA IS SCALED DURING CLEANING

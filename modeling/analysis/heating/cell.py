@@ -65,10 +65,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # 6. Writing
+        # Writing
         self.write()
 
-        # 7. Plotting
+        # Plotting
         self.plot()
 
     # -----------------------------------------------------------------

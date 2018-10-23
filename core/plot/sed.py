@@ -2993,15 +2993,11 @@ class SEDPlotter(Configurable):
 
         # Set position
         # X: only for main plot
-        if self.config.xaxis_position == "top":
-            self.main_plot.xaxis.set_ticks_position("top")
-            self.main_plot.xaxis.set_label_position("top")
+        if self.config.xaxis_position == "top": self.main_plot.set_xaxis_position("top")
 
         # Y: for main and residual plots
         if self.config.yaxis_position == "right":
-            for plot in [self.main_plot] + self.residual_plots:
-                plot.yaxis.set_ticks_position("right")
-                plot.yaxis.set_label_position("right")
+            for plot in [self.main_plot] + self.residual_plots: plot.set_yaxis_position("right")
 
         # Set grid
         #self.figure.set_grid(self.config.plot, which="both")

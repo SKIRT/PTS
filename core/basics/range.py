@@ -272,7 +272,7 @@ class Range(object):
     # -----------------------------------------------------------------
 
     def as_tuple(self):
-        return (self.min, self.max,)
+        return self.min, self.max
 
     # -----------------------------------------------------------------
 
@@ -307,6 +307,83 @@ class Range(object):
 
         if as_list: return list(values)
         else: return values
+
+    # -----------------------------------------------------------------
+
+    def linear_step(self, step, symmetric=False, center=None):
+
+        """
+        This function ...
+        :param step:
+        :param symmetric:
+        :param center:
+        :return:
+        """
+
+        values = []
+        if center is None: center = self.center
+
+        if symmetric:
+
+            below = []
+            above = []
+
+            # Add below values
+            index = 1
+            while True:
+
+                # Calculate the new value
+                new_below = center - index * step
+
+                # Stop?
+                if new_below < self.min: break
+
+                # Add the new below value
+                below.append(new_below)
+                index += 1
+
+            # Add above values
+            index = 1
+            while True:
+
+                # Calcualte the new value
+                new_above = center + index * step
+
+                # Stop?
+                if self.inclusive:
+                    if new_above > self.max: break
+                else:
+                    if new_above >= self.max: break
+
+                # Add the new above value
+                above.append(new_above)
+                index += 1
+
+            # Concatenate
+            for value in reversed(below): values.append(value)
+            values.append(center)
+            for value in above: values.append(value)
+
+        else:
+
+            index = 0
+            while True:
+
+                # Calculate the new value
+                new_value = self.min + index * step
+
+                # Stop?
+                if self.inclusive:
+                    if new_value > self.max: break
+                else:
+                    if new_value >= self.max: break
+
+                # Add the new value
+                values.append(new_value)
+                index += 1
+
+        # Return
+        return values
 
     # -----------------------------------------------------------------
 

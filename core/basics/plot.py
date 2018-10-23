@@ -1251,6 +1251,12 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bounding_box(self):
+        return self.axes.get_position()
+
+    # -----------------------------------------------------------------
+
     def plot(self, x, y, **kwargs):
 
         """
@@ -2102,6 +2108,32 @@ class MPLPlot(Plot):
     def ytick_labels(self):
         return [tick.get_text() for tick in self.yticks]
 
+    # -----------------------------------------------------------------
+
+    def set_xaxis_position(self, position):
+
+        """
+        This function ...
+        :param position:
+        :return:
+        """
+
+        self.xaxis.set_ticks_position(position)
+        self.xaxis.set_label_position(position)
+
+    # -----------------------------------------------------------------
+
+    def set_yaxis_position(self, position):
+
+        """
+        This function ...
+        :param position:
+        :return:
+        """
+
+        self.yaxis.set_ticks_position(position)
+        self.yaxis.set_label_position(position)
+
 # -----------------------------------------------------------------
 
 class MPLFigure(Figure):
@@ -2132,12 +2164,6 @@ class MPLFigure(Figure):
 
     @property
     def ax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.figure.gca()
 
     # -----------------------------------------------------------------
@@ -2151,6 +2177,53 @@ class MPLFigure(Figure):
 
         plot = MPLPlot(plot=self.ax)
         return plot
+
+    # -----------------------------------------------------------------
+
+    def add_plot(self, left, bottom, width, height):
+
+        """
+        This function ...
+        :param left:
+        :param bottom:
+        :param width:
+        :param height:
+        :return:
+        """
+
+        axes = self.figure.add_axes([left, bottom, width, height])
+        return MPLPlot(plot=axes)
+
+    # -----------------------------------------------------------------
+
+    def add_colorbar(self, left, bottom, width, height, cmap, orientation, interval, logscale=False):
+
+        """
+        This function ...
+        :param left:
+        :param bottom:
+        :param width:
+        :param height:
+        :param cmap:
+        :param orientation:
+        :param interval:
+        :param logscale
+        :return:
+        """
+
+        from matplotlib.colorbar import ColorbarBase
+        from matplotlib.colors import LogNorm, Normalize
+
+        # Create norm
+        if logscale: norm = LogNorm(vmin=interval[0], vmax=interval[1])
+        else: norm = Normalize(vmin=interval[0], vmax=interval[1])
+
+        # Create axes
+        axes = self.figure.add_axes([left, bottom, width, height])
+
+        #handle = colorbar(im1a, cax=cbar_im1a_ax)
+        cb = ColorbarBase(axes, cmap=cmap, norm=norm, orientation=orientation)
+        return cb
 
     # -----------------------------------------------------------------
 
@@ -3040,7 +3113,8 @@ class MPLFigure(Figure):
                     projections=None, first_row_not_shared_x=None, first_row_not_shared_y=None, last_row_not_shared_x=None,
                     last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
                     last_column_not_shared_x=None, last_column_not_shared_y=None, rows_shared_x=None, rows_shared_y=None,
-                    columns_shared_x=None, columns_shared_y=None, subplotspec=None, share_per_row=True, share_per_column=True):
+                    columns_shared_x=None, columns_shared_y=None, subplotspec=None, share_per_row=True, share_per_column=True,
+                    wspace=None, hspace=None):
 
         """
         This function ...
@@ -3066,16 +3140,20 @@ class MPLFigure(Figure):
         :param subplotspec:
         :param share_per_row: share only the y axes per row
         :param share_per_column: share only the x axes per column
+        :param wspace:
+        :param hspace:
         :return:
         """
 
         # Define wspace
-        if sharey: wspace = 0.0
-        else: wspace = 0.05
+        if wspace is None:
+            if sharey: wspace = 0.0
+            else: wspace = 0.05
 
         # Define hspace
-        if sharex: hspace = 0.0
-        else: hspace = 0.05
+        if hspace is None:
+            if sharex: hspace = 0.0
+            else: hspace = 0.05
 
         # Set width and height ratios
         if width_ratios is None: width_ratios = [1] * ncols
