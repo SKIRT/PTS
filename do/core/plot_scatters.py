@@ -20,7 +20,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.basics.scatter import Scatter2D
 from pts.core.basics.plot import MPLFigure
 from pts.core.tools import filesystem as fs
-from pts.magic.tools.plotting import plot_scatters, plot_densities
+from pts.magic.tools.plotting import plot_scatters, plot_densities, plot_scatters_astrofrog
 
 # -----------------------------------------------------------------
 
@@ -37,6 +37,11 @@ definition.add_optional("path", "new_path", "path for the plot file")
 # Special options
 definition.add_flag("density", "plot the density of points")
 definition.add_flag("points", "plot the points (as opposed to just the density)", True)
+definition.add_optional("density_method", "string", "density method", default="hexbin", choices=["contours", "seaborn", "kde", "hexbin"])
+
+# Labels
+definition.add_optional("xlabel", "string", "x axis label")
+definition.add_optional("ylabel", "string", "y axis label")
 
 # Parse
 config = parse_arguments("plot_scatters", definition)
@@ -62,9 +67,21 @@ if not config.points and not config.density: raise ValueError("Must plot points 
 # -----------------------------------------------------------------
 
 # Scatter points (with or without density)
-if config.points: plot_scatters(scatters, path=config.path, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, density=config.density, size=12)
+if config.points: figure, plot = plot_scatters(scatters, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, density=config.density, size=12, show=False)
 
 # Density field
-else: plot_densities(scatters, path=config.path, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog)
+else: figure, plot = plot_densities(scatters, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, method=config.density_method, show=False)
+
+# Set ticks in nice way
+plot.set_xticks()
+plot.set_yticks()
+
+# Set axes labels
+if config.xlabel is not None: plot.set_xlabel(config.xlabel)
+if config.ylabel is not None: plot.set_ylabel(config.ylabel)
+
+# Show
+if config.path is not None: figure.saveto(config.path)
+else: figure.show()
 
 # -----------------------------------------------------------------

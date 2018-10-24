@@ -52,7 +52,7 @@ from ..config.analyse_cell_energy import definition as analyse_cell_energy_defin
 from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
-from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube, plot_curve, plot_curves
+from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube, plot_curve, plot_curves, plot_scatters_astrofrog, plot_scatter_astrofrog
 from ...core.filter.filter import Filter, parse_filter
 from ...core.tools import types
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
@@ -79,7 +79,7 @@ from ...magic.tools.plotting import plot_map, plot_map_offset
 from ...core.basics.curve import WavelengthCurve
 from ...core.plot.distribution import plot_distribution
 from ...magic.core.list import uniformize
-from ...core.tools import numbers
+from ...core.basics.scatter import Scatter2D
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -417,6 +417,13 @@ default_contributions = [total_contribution, direct_contribution, scattered_cont
 absorption_name = "absorption"
 emission_name = "emission"
 differences_name = "differences"
+
+# -----------------------------------------------------------------
+
+salim_name = "salim"
+ke_name = "ke"
+mappings_name = "mappings"
+mappings_ke_name = "mappings_ke"
 
 # -----------------------------------------------------------------
 
@@ -3602,14 +3609,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_paper_definition, **kwargs)
 
-        # Plot #1
-        if config.which == 1: return self.plot_paper1(path=config.path)
+        # Plot #1: SEDs
+        if config.which == 1: self.plot_paper1(path=config.path)
 
-        # Plot #2
-        elif config.which == 2: return self.plot_paper2(path=config.path)
+        # Plot #2: HEATING
+        elif config.which == 2: self.plot_paper2(path=config.path)
 
-        # Plot #3
-        elif config.which == 3: return self.plot_paper3(path=config.path)
+        # Plot #3: SPECTRAL HEATING
+        elif config.which == 3: self.plot_paper3(path=config.path)
+
+        # Plot #4: CORRELATION BETWEEN PIXEL sSFR and FUNEV VALUES
+        elif config.which == 4: self.plot_paper4(path=config.path)
 
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
@@ -3623,6 +3633,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param path:
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the paper SEDs plot ...")
 
         # Set limits
         unit = u("Lsun", density=True)
@@ -3736,6 +3749,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the paper bolometric heating plot ...")
+
         # Create figure
         figsize = (12, 6,)
         figure = MPLFigure(size=figsize)
@@ -3818,6 +3834,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the paper spectral heating plot ...")
+
         # Get curve
         curve = self.get_spectral_absorption_fraction_curve(cells_name)
 
@@ -3885,6 +3904,163 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         cb = figure.add_colorbar(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0, "inferno", "vertical", self.heating_fraction_interval)
 
         figure.tight_layout()
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def correlations_path(self):
+        return self.analysis_run.correlations_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_correlations_path(self):
+        return fs.join(self.correlations_path, "sSFR-Funev")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def m51_ssfr_funev_path(self):
+        return fs.join(self.ssfr_funev_correlations_path, "m51.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_ssfr_funev_scatter(self):
+        return Scatter2D.from_file(self.m51_ssfr_funev_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def m31_ssfr_funev_path(self):
+        return fs.join(self.ssfr_funev_correlations_path, "m31.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_ssfr_funev_scatter(self):
+        return Scatter2D.from_file(self.m31_ssfr_funev_path)
+
+    # -----------------------------------------------------------------
+
+    def get_pixels_ssfr_funev_path(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        if method == salim_name: return fs.join(self.ssfr_funev_correlations_path, "pixels_" + salim_name + ".dat")
+        elif method == ke_name: return fs.join(self.ssfr_funev_correlations_path, "pixels_" + ke_name + ".dat")
+        elif method == mappings_name: return fs.join(self.ssfr_funev_correlations_path, "pixels_" + mappings_name + ".dat")
+        elif method == mappings_ke_name: return fs.join(self.ssfr_funev_correlations_path, "pixels_" + mappings_ke_name + ".dat")
+        else: raise ValueError("Invalid method: '" + method + "'")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_pixels_ssfr_funev_scatter(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Get path
+        path = self.get_pixels_ssfr_funev_path(method)
+
+        # Load and return
+        return Scatter2D.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_cells_ssfr_funev_path(self, method):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if method == salim_name: return fs.join(self.ssfr_funev_correlations_path, "cells_" + salim_name + ".dat")
+        elif method == ke_name: return fs.join(self.ssfr_funev_correlations_path, "cells_" + ke_name + ".dat")
+        elif method == mappings_name: return fs.join(self.ssfr_funev_correlations_path, "cells_" + mappings_name + ".dat")
+        elif method == mappings_ke_name: return fs.join(self.ssfr_funev_correlations_path, "cells_" + mappings_ke_name + ".dat")
+        else: raise ValueError("Invalid method: '" + method + "'")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_cells_ssfr_funev_scatter(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Get path
+        path = self.get_cells_ssfr_funev_path(method)
+
+        # Load and return
+        return Scatter2D.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_paper4(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the paper sSFR - Funev pixel correlation plot ...")
+
+        import mpl_scatter_density  # NOQA
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create row of plots
+        width_ratios = [0.5, 0.5]
+        plot0, plot1 = figure.create_row(2, width_ratios=width_ratios, projections=["scatter_density", "scatter_density"])
+
+        # Get pixel scatter
+        import numpy as np
+        pixels = self.get_pixels_ssfr_funev_scatter("ke")
+        #print(len(pixels))
+        valid_pixels = pixels[pixels.y_name] > 0.005
+        valid_ssfr = np.asarray(pixels[pixels.x_name])[valid_pixels]
+        valid_funev = np.asarray(pixels[pixels.y_name])[valid_pixels]
+        pixels = Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=pixels.x_unit)
+        #print(len(pixels))
+
+        # Create scatters
+        scatters1 = OrderedDict()
+        scatters1["M81 pixels"] = pixels
+        scatters1["M31 pixels"] = self.m31_ssfr_funev_scatter
+        scatters1["M51 pixels"] = self.m51_ssfr_funev_scatter
+
+        # Make the first plot
+        xlimits = [1e-13,1e-9]
+        ylimits = [0,1]
+        xlog = True
+        ylog = False
+        #plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
+        plot_scatters_astrofrog(scatters1, xlimits=xlimits, ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0)
+
+        # Make the second plot
+        #ylimits = [0.002,1] # for log
+        cells = self.get_cells_ssfr_funev_scatter("ke")
+        plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
 
         # Save or show
         if path is not None: figure.saveto(path)

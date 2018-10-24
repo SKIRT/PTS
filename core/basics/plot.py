@@ -2170,15 +2170,20 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_one_plot(self):
+    def create_one_plot(self, projection=None):
 
         """
         Thisf unction ...
+        :param projection:
         :return:
         """
 
-        plot = MPLPlot(plot=self.ax)
-        return plot
+        # Create axes
+        if projection is not None: axes = self.figure.add_subplot(111, projection=projection)
+        else: axes = self.ax
+
+        # Create
+        return MPLPlot(plot=axes)
 
     # -----------------------------------------------------------------
 
