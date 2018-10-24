@@ -1858,7 +1858,7 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 # -----------------------------------------------------------------
 
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
-                           colormaps=False, axes=None, plot=None, color=None):
+                           colormaps=False, axes=None, plot=None, color=None, dpi=None):
 
     """
     This function ...
@@ -1874,6 +1874,7 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param axes:
     :param plot:
     :param color:
+    :param dpi:
     :return:
     """
 
@@ -1882,7 +1883,8 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
 
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
-                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot, color=color)
+                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
+                             color=color, dpi=dpi)
 
 # -----------------------------------------------------------------
 
@@ -1921,7 +1923,8 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
 
 # -----------------------------------------------------------------
 
-def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None):
+def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+                            show=None, colormaps=False, axes=None, plot=None, dpi=None):
 
     """
     This function ...
@@ -1936,6 +1939,7 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
     :param colormaps:
     :param axes:
     :param plot:
+    :param dpi:
     :return:
     """
 
@@ -1944,7 +1948,7 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
 
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
-                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot)
+                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot, dpi=dpi)
 
 # -----------------------------------------------------------------
 # PLOTTING DENSITY
@@ -2545,8 +2549,37 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, rug=
 
 # -----------------------------------------------------------------
 
+def vmax_function(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    # print(1, vmin, vmax)
+    from astropy.stats import sigma_clip
+    # print(array[array!=0])
+    masked_array = sigma_clip(array[array != 0], sigma=4.0)
+    values = masked_array.compressed()
+
+    # print(values)
+    #vmin = 0.
+    # vmin = np.nanmin(values)
+    vmax = np.nanmax(values)
+    # print(2, vmin, vmax)
+
+    # print(vmin, vmax)
+    # vmin = -2
+    # vmax = vmax / 5.
+
+    # Return
+    return vmax
+
+# -----------------------------------------------------------------
+
 def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
-                      xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None, dpi=40, color=None):
+                      xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None, dpi=None, color=None):
 
     """
     This function is a scatter density plotting function, using Astrofrog's matplotlib scatter density package
@@ -2569,6 +2602,13 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :return:
     """
 
+    # Output
+    from ...core.basics.map import Map
+    output = Map()
+
+    # Set dpi
+    if dpi is None: dpi = 50
+
     from matplotlib.lines import Line2D
     from matplotlib.legend import Legend
     from matplotlib.cm import get_cmap
@@ -2586,7 +2626,13 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         #figure.transparent = transparent
         plot = figure.create_one_plot(projection="scatter_density")
         axes = plot.axes
+        output.figure = figure
+        output.plot = plot
     else: only_axes = True
+    output.axes = axes
+    output.dpi = dpi
+    output.xlog = xlog
+    output.ylog = ylog
 
     # Set scales
     if xlog: axes.set_xscale("log")
@@ -2606,9 +2652,11 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             colors = None
             if colormaps is True: colormaps = iter(sequential_colormaps)  # go from light to dark
             else: pass
+            output.colormaps = dict()
         else:
             colors = iter(pretty_colours)
             colormaps = None
+            output.colors = dict()
 
         for_legend = OrderedDict()
 
@@ -2623,14 +2671,17 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             if colormaps is not None:
 
                 # Get next colormap
-                cmap = colormaps.next()
-                cmap = get_cmap(cmap)
+                cmap_name = colormaps.next()
+                cmap = get_cmap(cmap_name)
                 base_color = cmap(0)
                 average_color = cmap(0.5)
                 full_color = cmap(1)
 
                 # Plot scatter points
-                density = axes.scatter_density(_x, _y, cmap=cmap, dpi=dpi, label=name) # size=size
+                density = axes.scatter_density(_x, _y, cmap=cmap, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
+
+                # Set color map name
+                output.colormaps[name] = cmap_name
 
             # Single colors
             elif colors is not None:
@@ -2640,7 +2691,10 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
                 base_color = average_color = full_color = color
 
                 # Plot scatter points
-                density = axes.scatter_density(_x, _y, color=color, dpi=dpi, label=name) # size=size
+                density = axes.scatter_density(_x, _y, color=color, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
+
+                # Set color name
+                output.colors[name] = color
 
             # Error
             else: raise RuntimeError("Something went wrong")
@@ -2668,29 +2722,47 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         x, y, xlimits, ylimits = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog)
 
         # Plot scatter points
-        axes.scatter_density(x, y, color=color, dpi=dpi) #size=size)
+        axes.scatter_density(x, y, color=color, dpi=dpi, density_vmin=0., density_vmax=vmax_function)
+
+        # Set color
+        output.color = color
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
 
     # Set limits
-    if xlimits is not None: axes.set_xlim(xlimits[0], xlimits[1])
-    if ylimits is not None: axes.set_ylim(ylimits[0], ylimits[1])
+    if xlimits is not None:
+        output.xlimits = xlimits
+        axes.set_xlim(xlimits[0], xlimits[1])
+    if ylimits is not None:
+        output.ylimits = ylimits
+        axes.set_ylim(ylimits[0], ylimits[1])
 
     # Set axes labels
-    if x_label is not None: axes.set_xlabel(x_label)
-    if y_label is not None: axes.set_ylabel(y_label)
+    if x_label is not None:
+        output.x_label = x_label
+        axes.set_xlabel(x_label)
+    if y_label is not None:
+        output.y_label = y_label
+        axes.set_ylabel(y_label)
 
     # Axes were not provided: we are supposed to create the whole figure thingy and close it
     if not only_axes:
 
         # Add title
-        if title is not None: figure.set_title(title)  # plt.title(title)
+        if title is not None:
+            output.title = title
+            figure.set_title(title)  # plt.title(title)
 
         # Show or save
         if show is None and path is None: show = True
         if show: figure.show()
-        if path is not None: figure.saveto(path)
+        if path is not None:
+            output.path = path
+            figure.saveto(path)
+
+    # Return
+    return output
 
 # -----------------------------------------------------------------
 
