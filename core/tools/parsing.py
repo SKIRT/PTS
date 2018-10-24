@@ -957,6 +957,25 @@ def real_or_real_pair(argument):
 
 # -----------------------------------------------------------------
 
+def real_pair_or_quantity_pair(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(real, argument.split(","))
+        return a, b
+    except:
+        try:
+            a, b = map(quantity, argument.split(","))
+            return a, b
+        except: raise ValueError("Tuple must be of format a length_unit_a, b length_unit_b")
+
+# -----------------------------------------------------------------
+
 def quantity_pair(argument):
 
     """

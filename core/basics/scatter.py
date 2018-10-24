@@ -341,72 +341,36 @@ class Scatter3D(Scatter):
 
     @property
     def x_label(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.colnames[0]
 
     # -----------------------------------------------------------------
 
     @property
     def y_label(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.colnames[1]
 
     # -----------------------------------------------------------------
 
     @property
     def z_label(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.colnames[2]
 
     # -----------------------------------------------------------------
 
     @property
     def x_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.range_of(self.x_label)
 
     # -----------------------------------------------------------------
 
     @property
     def y_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.range_of(self.y_label)
 
     # -----------------------------------------------------------------
 
     @property
     def z_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.range_of(self.z_label)
 
     # -----------------------------------------------------------------

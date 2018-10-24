@@ -3095,6 +3095,123 @@ def plot_images_aplpy(frames, filepath=None, center=None, radius=None, xy_ratio=
 
 # ------------------------------------------------------------------------------
 
+def plot_one_residual_aplpy(observation, model, residual=None, path=None, scale="log", plotsize=3., dark=False,
+                            center=None, radius=None, xy_ratio=None, first_label="Observation", second_label="Model",
+                            residual_label="Residual", filter_label=True):
+
+    """
+    This function ...
+    :param observation:
+    :param model:
+    :param residual:
+    :param path:
+    :param scale:
+    :param plotsize:
+    :param dark:
+    :param center:
+    :param radius:
+    :param xy_ratio:
+    :param first_label:
+    :param second_label:
+    :param residual_label:
+    :param filter_label:
+    :return:
+    """
+
+    # Make residual?
+    if residual is None: residual = (model - observation) / observation
+
+    # Colormaps
+    colormap = "inferno"
+    residual_colormap = "RdBu"
+
+    import matplotlib.gridspec as gridspec
+    from pts.magic.tools import plotting
+
+    # Set theme
+    set_theme(dark=dark)
+
+    nrows = 1
+    ncols = 3
+
+    xsize = plotsize
+    if xy_ratio is None: xy_ratio = 0.85
+    ysize = xsize / xy_ratio
+
+    # Set figure size
+    figxsize = xsize * ncols
+    figysize = ysize * nrows
+
+    # Create figure with appropriate size
+    #fig = plt.figure(figsize=(figxsize, figysize))
+    figure = MPLFigure(size=(figxsize,figysize))
+
+    # Create grid
+    gs1 = gridspec.GridSpec(1, 4)  # nimages ROWS, 4 COLUMNS
+    gs1.update(wspace=0., hspace=0.)
+    plot_idx = 0
+
+    # Percentual residuals
+    residual = residual * 100.
+
+    # Set title
+    if filter_label and observation.has_filter: title = str(observation.filter).replace("um", " $\mu$m")
+    else: title = first_label
+
+    # Create HDU's for Aplpy
+    observation_hdu = observation.to_hdu()
+    model_hdu = model.to_hdu()
+    residual_hdu = residual.to_hdu()
+
+    # Get interval
+    vmin, vmax = plotting.get_vmin_vmax(observation.data, logscale=scale=="log")
+
+    # OBSERVATION
+    fig1 = aplpy.FITSFigure(observation_hdu, figure=figure.figure, subplot=list(gs1[plot_idx].get_position(figure.figure).bounds))
+    setup_map_plot(fig1, colormap, vmin=vmin, vmax=vmax, label=r'' + str(title), center=center, radius=radius, scale=scale, has_wcs=observation.has_celestial_wcs)
+    set_ticks(fig1, True, True)
+
+    # Enable y ticks and axis labels BECAUSE OBSERVATION IS THE FIRST COLUMN
+    fig1.tick_labels.show_y()
+    fig1.axis_labels.show_y()
+
+    # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+    fig1.tick_labels.show_x()
+    fig1.axis_labels.show_x()
+
+    # Increment
+    plot_idx += 1
+
+    # MODEL
+    fig2 = aplpy.FITSFigure(model_hdu, figure=figure.figure, subplot=list(gs1[plot_idx].get_position(figure.figure).bounds))
+    setup_map_plot(fig2, colormap, vmin=vmin, vmax=vmax, label=second_label, center=center, radius=radius, scale=scale, has_wcs=model.has_celestial_wcs)
+    set_ticks(fig2, True, True)
+
+    # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+    fig2.tick_labels.show_x()
+    fig2.axis_labels.show_x()
+
+    # Increment
+    plot_idx += 1
+
+    # RESIDUAL
+    fig3 = aplpy.FITSFigure(residual_hdu, figure=figure.figure, subplot=list(gs1[plot_idx].get_position(figure.figure).bounds))
+    setup_map_plot(fig3, residual_colormap, vmin=-100, vmax=100, label=residual_label + ' (\%)', center=center, radius=radius, has_wcs=residual.has_celestial_wcs)
+    set_ticks(fig3, True, True)
+
+    # SHOW THE X TICK LABELS AND AXIS LABELS ONLY IF LAST ROW
+    fig3.tick_labels.show_x()
+    fig3.axis_labels.show_x()
+
+    # Show or save
+    if path is None: figure.show()
+    else: figure.saveto(path)
+
+    # Reset theme
+    reset_theme()
+
+# ------------------------------------------------------------------------------
+
 def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=None, radius=None, xy_ratio=None,
                          dark=False, scale="log", plotsize=3., distance=None, mask_simulated=False):
 

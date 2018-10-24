@@ -1857,29 +1857,31 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def set_xlabel(self, *args, **kwargs):
+    def set_xlabel(self, label, **kwargs):
 
         """
-        Thisf ucntion ...
-        :param args:
+        This fucntion ...
+        :param label:
         :param kwargs:
         :return:
         """
 
-        self._plot.set_xlabel(*args, **kwargs)
+        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
+        self._plot.set_xlabel(label, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def set_ylabel(self, *args, **kwargs):
+    def set_ylabel(self, label, **kwargs):
 
         """
         This function ...
-        :param args:
+        :param label:
         :param kwargs:
         :return:
         """
 
-        self._plot.set_ylabel(*args, **kwargs)
+        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
+        self._plot.set_ylabel(label, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2168,15 +2170,20 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_one_plot(self):
+    def create_one_plot(self, projection=None):
 
         """
         Thisf unction ...
+        :param projection:
         :return:
         """
 
-        plot = MPLPlot(plot=self.ax)
-        return plot
+        # Create axes
+        if projection is not None: axes = self.figure.add_subplot(111, projection=projection)
+        else: axes = self.ax
+
+        # Create
+        return MPLPlot(plot=axes)
 
     # -----------------------------------------------------------------
 

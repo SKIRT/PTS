@@ -570,24 +570,12 @@ class CoordinateSystem(wcs.WCS):
 
     @property
     def axis_units(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [self.axis1_unit, self.axis2_unit]
 
     # -----------------------------------------------------------------
 
     @property
     def is_sky(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.is_celestial
 
     # -----------------------------------------------------------------
@@ -646,12 +634,6 @@ class CoordinateSystem(wcs.WCS):
 
     @property
     def average_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.pixelscale.average
 
     # -----------------------------------------------------------------
@@ -672,36 +654,18 @@ class CoordinateSystem(wcs.WCS):
 
     @property
     def npixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.naxis1 * self.naxis2
 
     # -----------------------------------------------------------------
 
     @property
     def area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.pixelarea * self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def center_sky(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         # Return the coordinate of the center in sky coordinates
         return SkyCoordinate.from_pixel(self.reference_pixel, self)
 
@@ -709,24 +673,12 @@ class CoordinateSystem(wcs.WCS):
 
     @property
     def is_distorted(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return utils.is_proj_plane_distorted(self)
 
     # -----------------------------------------------------------------
 
     @property
     def is_flipped(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.pixel_scale_matrix[0,0] >= 0) == (self.pixel_scale_matrix[1,1] >= 0)
 
     # -----------------------------------------------------------------

@@ -290,6 +290,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_celestial_wcs(self):
+        return self.has_wcs and self.wcs.is_celestial
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_physical_wcs(self):
+        return self.has_wcs and self.wcs.is_physical
+
+    # -----------------------------------------------------------------
+
     @NDDataArray.unit.setter
     def unit(self, unit):
 
