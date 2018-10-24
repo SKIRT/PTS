@@ -399,6 +399,7 @@ dust_contributions = [all_name, diffuse_name, internal_name]
 # -----------------------------------------------------------------
 
 cells_name = "cells"
+cells_edgeon_name = "cells_edgeon"
 midplane_name = "midplane"
 
 # -----------------------------------------------------------------
@@ -2638,7 +2639,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         observations = self.get_observed_images(filters)
         models = self.get_simulated_images(filters)
         residuals = self.get_residual_images(filters)
-        distributions = self.get_residual_distributions(filters)
+        #distributions = self.get_residual_distributions(filters)
 
         # Get center and radius
         center = self.galaxy_center
@@ -4250,6 +4251,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Determine path
         if projection == cells_name: return fs.join(self.spectral_heating_cells_path, abs_or_em + "_" + str(fltr) + "_fixed.fits")
+        elif projection == cells_edgeon_name: raise NotImplementedError("Spectral heating maps do not exist from cells and projected edge-on")
         elif projection == midplane_name: raise NotImplementedError("Spectral heating fraction maps do not exist for the midplane")
         elif projection == earth_name: return fs.join(self.spectral_heating_maps_path, "earth_" + abs_or_em + "_" + str(fltr) + ".fits")
         elif projection == faceon_name: return fs.join(self.spectral_heating_maps_path, "faceon_" + abs_or_em + "_" + str(fltr) + ".fits")
@@ -4293,11 +4295,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Determine path
         if projection == cells_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan" # CELLS HAVE NANS
+        elif projection == cells_edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(cells_edgeon_name), "nan"
         elif projection == midplane_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan" # CELLS HAVE NANS
         elif projection == earth_name: path, mask_value = self.get_bolometric_heating_map_path(earth_name), "zero" # these are better interpolated than the spectral heating maps
         elif projection == faceon_name: path, mask_value = self.get_spectral_heating_map_path(cells_name, fltr), "nan"
-        #elif projection == faceon_name: path, mask_value = self.get_bolometric_heating_map_path(faceon_name), "zero" # these are better interpolated than the spectral heating maps
-        elif projection == edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(edgeon_name), "zero" # these are better interpolated than the spectral heating maps
+        elif projection == edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(cells_edgeon_name), "nan"
         else: raise ValueError("Invalid projection: '" + projection + "'")
 
         # Get mask
@@ -4317,6 +4319,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get path
         if projection == cells_name: return fs.join(self.cell_heating_path, "highres_faceon_interpolated.fits") # cells: only diffuse?
+        elif projection == cells_edgeon_name: return fs.join(self.cell_heating_path, "highres_edgeon_interpolated.fits") # cells: only diffuse?
         elif projection == midplane_name: return fs.join(self.cell_heating_path, "highres_midplane_interpolated.fits") # cells: only diffuse?
         elif projection == earth_name: return fs.join(self.projected_heating_maps_path, "earth.fits") # there is also diffuse
         elif projection == edgeon_name: return fs.join(self.projected_heating_maps_path, "edgeon.fits") # there is also diffuse
@@ -4371,6 +4374,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Determine path
         if projection == cells_name: path, mask_value = self.get_bolometric_heating_map_path(cells_name), "nan"  # CELLS HAVE NANS
+        elif projection == cells_edgeon_name: path, mask_value = self.get_bolometric_heating_map_path(cells_edgeon_name), "nan" # CELLS HAVE NANS
         elif projection == midplane_name: path, mask_value = self.get_bolometric_heating_map_path(midplane_name), "nan"  # CELLS HAVE NANS
         elif projection == earth_name: path, mask_value = self.get_bolometric_heating_map_path(earth_name), "zero"  # these are better interpolated than the spectral heating maps
         elif projection == faceon_name: path, mask_value = self.get_bolometric_heating_map_path(faceon_name), "zero"  # these are better interpolated than the spectral heating maps
@@ -4392,7 +4396,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def heating_projections(self):
-        return [cells_name, midplane_name, earth_name, edgeon_name, faceon_name]
+        return [cells_name, cells_edgeon_name, midplane_name, earth_name, edgeon_name, faceon_name]
 
     # -----------------------------------------------------------------
 
@@ -4425,6 +4429,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Filter
         definition.add_optional("filter", "broad_band_filter", "filter for which to plot the heating fraction (in absorption or emission)", choices=self.spectral_heating_filters)
 
+        # Save to?
+        definition.add_optional("path", "new_path", "save plot file")
+
         # Return the definition
         return definition
 
@@ -4452,7 +4459,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         frame.apply_mask_nans(mask)
 
         # Plot
-        plot_map(frame, interval=self.heating_fraction_interval)
+        plot_map(frame, interval=self.heating_fraction_interval, path=config.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_heating_difference_projection(self):
+        return faceon_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_difference_projections(self):
+        return [midplane_name, faceon_name, edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -4468,10 +4487,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition = ConfigurationDefinition(write_config=False)
 
         # Orientation
-        definition.add_positional_optional("projection", "string", "projection of heating map", self.default_heating_projection, self.heating_projections)
+        definition.add_positional_optional("projection", "string", "projection of heating map", self.default_heating_difference_projection, self.heating_difference_projections)
 
         # Filter
         definition.add_optional("filter", "broad_band_filter", "filter for which to plot the heating fraction (in absorption or emission)", choices=self.spectral_heating_filters)
+
+        # Save to?
+        definition.add_optional("path", "new_path", "save plot file")
 
         # Return the definition
         return definition
@@ -4487,8 +4509,52 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Import
+        from pts.magic.plot.imagegrid import plot_one_residual_aplpy
+
         # Get config
         config = self.get_config_from_command(command, self.plot_heating_difference_definition, **kwargs)
+
+        # Midplane
+        if config.projection == midplane_name:
+
+            first = self.get_heating_map(cells_name, fltr=config.filter)
+            second = self.get_heating_map(midplane_name, fltr=config.filter)
+            first_label = "Cells (face-on)"
+            second_label = "Cells (midplane)"
+
+        # Faceon
+        elif config.projection == faceon_name:
+
+            first = self.get_heating_map(cells_name, fltr=config.filter)
+            second = self.get_heating_map(faceon_name, fltr=config.filter)
+            first_label = "Cells (face-on)"
+            second_label = "Projected (face-on)"
+
+        # Edgeon
+        elif config.projection == edgeon_name:
+
+            first = self.get_heating_map(cells_edgeon_name, fltr=config.filter)
+            second = self.get_heating_map(edgeon_name, fltr=config.filter)
+            first_label = "Cells (edge-on)"
+            second_label = "Projected (edge-on)"
+
+        # Invalid
+        else: raise ValueError("Invalid projection: '" + config.projection + "'")
+
+        # Get images
+        #observations = self.get_observed_images(filters)
+        #models = self.get_simulated_images(filters)
+        #residuals = self.get_residual_images(filters)
+
+        # Get center and radius
+        #center = self.galaxy_center
+        #radius = self.truncation_radius * zoom
+        #xy_ratio = (self.truncation_box_axial_ratio * scale_xy_ratio) ** scale_xy_exponent
+        center = radius = None
+
+        # Plot
+        plot_one_residual_aplpy(first, second, center=center, radius=radius, path=config.path, first_label=first_label, second_label=second_label)
 
     # -----------------------------------------------------------------
 

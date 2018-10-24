@@ -2093,7 +2093,7 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
         else: figure.saveto(path)
 
         # Close
-        plt.close()
+        #plt.close()
 
 # -----------------------------------------------------------------
 
@@ -2434,7 +2434,7 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, rug=
         else: figure.saveto(path)
 
         # Close
-        plt.close()
+        #plt.close()
 
 # -----------------------------------------------------------------
 
