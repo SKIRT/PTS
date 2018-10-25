@@ -40,33 +40,25 @@ class Vector(object):
 
     @property
     def norm(self):
-
-        """
-        This function ...
-        """
-
         return math.sqrt(self.x**2 + self.y**2)
 
     # -----------------------------------------------------------------
 
     @property
     def angle(self):
-
-        """
-        This function ...
-        """
-
         return math.atan2(self.x, self.y)
 
     # -----------------------------------------------------------------
 
+    @property
     def polar(self):
-
-        """
-        This function returns the polar coordinates (radius, angle) of this vector
-        """
-
         return self.norm, self.angle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cartesian(self):
+        return self.x, self.y
 
     # -----------------------------------------------------------------
 
@@ -445,11 +437,11 @@ class Pixel(Vector):
         ny, nx = data.shape
 
         # Get center
-        x = (nx - 1.) / 2.
-        y = (ny - 1.) / 2.
+        x = int(math.round((nx - 1.) / 2.))
+        y = int(math.round((ny - 1.) / 2.))
 
         # Create
-        return
+        return cls(x, y)
 
 # -----------------------------------------------------------------
 

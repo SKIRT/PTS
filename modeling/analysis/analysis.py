@@ -15,11 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 from collections import OrderedDict
+from matplotlib.patches import Circle
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
 from .component import AnalysisRunComponent
-from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real, prompt_variable
+from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real, prompt_variable, open_box
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
 from ...core.tools import formatting as fmt
@@ -84,6 +85,10 @@ from ...magic.core.list import uniformize
 from ...core.basics.scatter import Scatter2D
 from ...core.basics.range import RealRange
 from ...core.basics.map import Map
+from ...magic.region.circle import PhysicalCircleRegion
+from ...magic.basics.coordinate import PhysicalCoordinate
+from ..core.data import Data3D
+from ...core.tools import numbers
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -176,6 +181,12 @@ show_commands[_properties_command_name] = ("show_properties", False, "show the m
 # Simulation output and data
 show_commands[_output_command_name] = ("show_output", False, "show the simulation output", None)
 show_commands[_data_command_name] = ("show_data", False, "show the simulation data available for the model", None)
+
+# Absorption
+show_commands[_absorption_command_name] = ("show_absorption_command", True, "show the absorption properties", None)
+
+# Heating
+show_commands[_heating_command_name] = ("show_heating_command", True, "show the heating properties", None)
 
 # -----------------------------------------------------------------
 
@@ -924,6 +935,97 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         print("")
         self.unevolved_data.show(line_prefix="   ", check_valid=False, dense=True)
         print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_absorption_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("component", "string", "component", total, choices=components)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def get_absorption_properties_path(self, component):
+        return fs.join(self.absorption_path, component + ".txt")
+
+    # -----------------------------------------------------------------
+
+    def get_absorption_properties(self, component):
+        return open_box(self.get_absorption_properties_path(component))
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        from .absorption.absorption import show_properties
+
+        # Get config
+        config = self.get_config_from_command(command, self.show_absorption_definition, **kwargs)
+
+        # Get absorption properties
+        props = self.get_absorption_properties(config.component)
+
+        # Show
+        print("")
+        show_properties(props)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_heating_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_heating_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.show_heating_definition, **kwargs)
+
+        # Get heating fractions
+        fractions = self.valid_cell_heating_fractions
+        weights = self.valid_cell_weights
+
+        # Calculate average
+        fraction = numbers.weighed_arithmetic_mean_numpy(fractions, weights=weights)
+        print(fraction*100)
 
     # -----------------------------------------------------------------
 
@@ -3754,6 +3856,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def physical_center(self):
+        return PhysicalCoordinate(q("0 pc"), q("0 pc"))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def inner_region_max_radius(self):
+        return q("4 kpc")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def inner_region(self):
+        return PhysicalCircleRegion(self.physical_center, self.inner_region_max_radius)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def outer_region_min_radius(self):
+        return q("6.5 kpc")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def outer_region(self):
+        return PhysicalCircleRegion(self.physical_center, self.outer_region_min_radius)
+
+    # -----------------------------------------------------------------
+
     def plot_paper2(self, path=None):
 
         """
@@ -3785,9 +3917,20 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Assume center pixel is the center of the map (galaxy)
         center_pix = frame.pixel_center
+        #print(center_pix)
 
         # Plot
-        plot_map_offset(frame, center_pix, radius, u("5 kpc"), interval=self.heating_fraction_interval, colorbar=False, cmap="inferno", plot=plot0)
+        new_center_pix = plot_map_offset(frame, center_pix, radius, q("5 kpc"), interval=self.heating_fraction_interval, colorbar=False, cmap="inferno", plot=plot0)
+
+        # Create inner and outer region
+        inner_radius = (self.inner_region_max_radius / frame.average_physical_pixelscale).to("").value # in pixels
+        outer_radius = (self.outer_region_min_radius / frame.average_physical_pixelscale).to("").value # in pixels
+        inner_circle = Circle(new_center_pix.cartesian, inner_radius, fill=False, edgecolor="white")
+        outer_circle = Circle(new_center_pix.cartesian, outer_radius, fill=False, edgecolor="white")
+
+        # Add circles
+        plot0.add_patch(inner_circle)
+        plot0.add_patch(outer_circle)
 
         # Plot distribution
         #print(self.heating_distribution)
@@ -4252,7 +4395,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         figure = MPLFigure(size=figsize)
 
         # Create plots
-        plot0, plot1, plot2 = figure.create_row(3, projections=[None, "scatter_density", "scatter_density"])
+        #projections = [None, "scatter_density", "scatter_density"]
+        projections = ["scatter_density", "scatter_density", "scatter_density"]
+        plot0, plot1, plot2 = figure.create_row(3, projections=projections)
+
+        # Plot all correlation
+        output_all = self.plot_ssfr_funev_impl(cells, plot0, self.ssfr_funev_distance_settings)
 
         # Plot bulge correlation
         output_bulge = self.plot_ssfr_funev_impl(cells, plot1, self.ssfr_funev_bulge_settings)
@@ -4530,6 +4678,33 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_funev_distance_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = Map()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 0.5]
+
+        # Auxilary axis
+        settings.aux_colname = "Distance from center"
+
+        # Logscales?
+        settings.funev_log = True
+        settings.aux_log = False
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
     def ssfr_funev_disk_settings(self):
 
         """
@@ -4652,7 +4827,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Use preset settings
         if config.preset is not None:
 
-            if config.preset == "disk": settings = self.ssfr_funev_disk_settings
+            if config.preset == "distance": settings = self.ssfr_funev_distance_settings
+            elif config.preset == "disk": settings = self.ssfr_funev_disk_settings
             elif config.preset == "bulge": settings = self.ssfr_funev_bulge_settings
             else: raise ValueError("Invalid preset: '" + config.preset + "'")
 
@@ -4694,7 +4870,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get mask
-        if len(settings.conditions) > 0:
+        if settings.conditions is not None and len(settings.conditions) > 0:
             mask = np.ones_like(scatter.x_array, dtype=bool)
             for colname in settings.conditions:
                 if settings.conditions[colname].lower is not None: mask *= scatter.get_array(colname) > settings.conditions[colname].lower
@@ -4782,6 +4958,60 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @lazyproperty
     def heating_distribution_diffuse(self):
         return Distribution.from_file(self.heating_distribution_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_heating_fractions_path(self):
+        return fs.join(self.cell_heating_path, "total_fractions.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_heating_fractions_data(self):
+        return Data3D.from_file(self.cell_heating_fractions_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_heating_fractions(self):
+        return self.cell_heating_fractions_data.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_heating_fractions_unphysical(self):
+        return self.cell_heating_fractions_data.where_greater_than(1.)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_heating_fractions_invalid(self):
+        return self.cell_heating_fractions_data.invalid + self.cell_heating_fractions_unphysical
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_heating_fractions_valid(self):
+        return np.logical_not(self.cell_heating_fractions_invalid)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_heating_fractions(self):
+        return self.cell_heating_fractions[self.cell_heating_fractions_valid]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_weights(self):
+        return self.cell_mass_fractions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_weights(self):
+        return self.cell_weights[self.cell_heating_fractions_valid]
 
     # -----------------------------------------------------------------
 

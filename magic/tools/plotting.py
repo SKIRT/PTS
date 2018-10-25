@@ -1250,6 +1250,9 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
     plot._plot.set_yticks(yticks)
     plot._plot.set_yticklabels(offsets)
 
+    # Return the new pixel center
+    return center_pix
+
 # -----------------------------------------------------------------
 
 def plot_frame_contours(frame, **kwargs):
@@ -2642,6 +2645,8 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :return:
     """
 
+    import mpl_scatter_density  # NOQA
+
     # Output
     from ...core.basics.map import Map
     output = Map()
@@ -2659,7 +2664,6 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
-        import mpl_scatter_density  # NOQA
         from ...core.basics.plot import MPLFigure
         # Create plot
         figure = MPLFigure()
@@ -2791,7 +2795,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             # Add colorbar
             if not only_axes:
                 if aux_name is None: aux_name = "Auxilary axis"
-                figure.figure.colorbar(density, label=aux_name)
+                figure.figure.colorbar(scatter, label=aux_name)
 
         # No auxilary axis: plot in color
         else:
