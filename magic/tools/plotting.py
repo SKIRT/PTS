@@ -1859,7 +1859,7 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
                            colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
-                           aux_name=None, aux_unit=None):
+                           aux_name=None, aux_unit=None, aux_log=False, valid_points=None):
 
     """
     This function ...
@@ -1880,6 +1880,8 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param aux:
     :param aux_name:
     :param aux_unit:
+    :param aux_log:
+    :param valid_points:
     :return:
     """
 
@@ -1893,10 +1895,16 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
         aux_unit = scatter.get_unit(aux_colname)
         if aux_name is None: aux_name = aux_colname
 
+    # Filter?
+    if valid_points is not None:
+        x = x[valid_points]
+        y = y[valid_points]
+        if aux is not None: aux = aux[valid_points]
+
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
                              xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
-                             color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit)
+                             color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log)
 
 # -----------------------------------------------------------------
 
@@ -2605,7 +2613,7 @@ def vmax_function(array):
 
 def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
                       xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None, dpi=None, color=None,
-                      cmap=None, aux=None, aux_name=None, aux_unit=None):
+                      cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, density_log=False):
 
     """
     This function is a scatter density plotting function, using Astrofrog's matplotlib scatter density package
@@ -2629,6 +2637,8 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :param aux:
     :param aux_name:
     :param aux_unit:
+    :param aux_log:
+    :param density_log:
     :return:
     """
 
@@ -2690,6 +2700,9 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
 
         for_legend = OrderedDict()
 
+        # Initialize dict
+        output.scatters = dict()
+
         # Loop over the curves
         for name in x:
 
@@ -2708,7 +2721,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
                 full_color = cmap(1)
 
                 # Plot scatter points
-                density = axes.scatter_density(_x, _y, cmap=cmap, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
+                scatter = axes.scatter_density(_x, _y, cmap=cmap, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
 
                 # Set color map name
                 output.colormaps[name] = cmap_name
@@ -2721,7 +2734,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
                 base_color = average_color = full_color = color
 
                 # Plot scatter points
-                density = axes.scatter_density(_x, _y, color=color, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
+                scatter = axes.scatter_density(_x, _y, color=color, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
 
                 # Set color name
                 output.colors[name] = color
@@ -2734,6 +2747,9 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
 
             # Add legend patch
             for_legend[name] = patch
+
+            # Add scatter
+            output.scatters[name] = scatter
 
         # Create and add legend for the different datasets
         legend = Legend(axes, for_legend.values(), for_legend.keys(), loc="upper left")
@@ -2758,19 +2774,36 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             # Plot with colormap
             if cmap is None: cmap = "inferno"
             aux = aux[valid]
-            axes.scatter_density(x, y, dpi=dpi, density_vmin=0., density_vmax=vmax_function, c=aux, cmap=cmap)
+
+            # Set norm
+            if aux_log:
+                from astropy.visualization import LogStretch
+                from astropy.visualization.mpl_normalize import ImageNormalize
+                norm = ImageNormalize(vmin=np.nanmin(aux), vmax=np.nanmax(aux), stretch=LogStretch())
+            else: norm = None
+
+            # Plot
+            scatter = axes.scatter_density(x, y, dpi=dpi, density_vmin=0., density_vmax=vmax_function, c=aux, cmap=cmap, norm=norm)
 
             # Set colormap
             output.cmap = cmap
+
+            # Add colorbar
+            if not only_axes:
+                if aux_name is None: aux_name = "Auxilary axis"
+                figure.figure.colorbar(density, label=aux_name)
 
         # No auxilary axis: plot in color
         else:
 
             if color is None: color = "blue"
-            axes.scatter_density(x, y, color=color, dpi=dpi, density_vmin=0., density_vmax=vmax_function)
+            scatter = axes.scatter_density(x, y, color=color, dpi=dpi, density_vmin=0., density_vmax=vmax_function)
 
             # Set color
             output.color = color
+
+        # Set scatter
+        output.scatter = scatter
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
