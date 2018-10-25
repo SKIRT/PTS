@@ -19,6 +19,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
 from .component import AnalysisRunComponent
+from ...core.basics.configuration import prompt_string
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
 from ...core.tools import formatting as fmt
@@ -3623,6 +3624,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #4: CORRELATION BETWEEN PIXEL sSFR and FUNEV VALUES
         elif config.which == 4: self.plot_paper4(path=config.path)
 
+        # Plot #5 CORRELATION BETWEEN CELL sSFR and FUNEV VALUES
+        elif config.which == 5: self.plot_paper5(path=config.path)
+
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
 
@@ -4213,6 +4217,45 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
         plot1.plot(ssfr_points, funev_m81_clipped, label="M81 pixels", color=darker_m81_color)
         plot1.plot(ssfr_points, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_paper5(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the paper sSFR - Funev pixel correlation plot ...")
+
+        import mpl_scatter_density  # NOQA
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Get the scatter
+        cells = self.get_cells_ssfr_funev_scatter("ke")
+        aux_colname = prompt_string("aux_colname", "name of the auxilary column to plot", choices=cells.aux_names)
+
+        # Make the plot
+        xlimits = [1e-18,1e-9]
+        ylimits = [0.002,1] # for log
+        output = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=True, plot=plot, color="red", aux_colname=aux_colname)
+
+        # Set nice ticks
+        plot.set_xticks()
+        plot.set_yticks()
 
         # Save or show
         if path is not None: figure.saveto(path)

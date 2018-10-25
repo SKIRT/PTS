@@ -3869,7 +3869,7 @@ def get_column(filepath, index, dtype, method="numpy"):
 
         import pandas as pd
         df = pd.read_csv(filepath, sep=" ", comment="#", header=None, usecols=[index], dtype=dtype)
-        column = df[0].values
+        column = df[index].values
 
     # Invalid
     else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")

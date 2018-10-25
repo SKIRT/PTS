@@ -1858,7 +1858,8 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 # -----------------------------------------------------------------
 
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
-                           colormaps=False, axes=None, plot=None, color=None, dpi=None):
+                           colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
+                           aux_name=None, aux_unit=None):
 
     """
     This function ...
@@ -1875,16 +1876,27 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param plot:
     :param color:
     :param dpi:
+    :param aux_colname:
+    :param aux:
+    :param aux_name:
+    :param aux_unit:
     :return:
     """
 
     # Get x, y and labels
     x, y, x_label, y_label = get_xy(scatter, return_labels=True)
 
+    # Get aux values
+    if aux_colname is not None:
+        if aux is not None: raise ValueError("Cannot pass both auxilary column name and auxilary values")
+        aux = scatter.get_array(aux_colname)
+        aux_unit = scatter.get_unit(aux_colname)
+        if aux_name is None: aux_name = aux_colname
+
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
                              xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
-                             color=color, dpi=dpi)
+                             color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit)
 
 # -----------------------------------------------------------------
 
@@ -1924,7 +1936,8 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
 # -----------------------------------------------------------------
 
 def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
-                            show=None, colormaps=False, axes=None, plot=None, dpi=None):
+                            show=None, colormaps=False, axes=None, plot=None, dpi=None, aux_colname=None, aux=None,
+                            aux_name=None, aux_unit=None):
 
     """
     This function ...
@@ -1940,15 +1953,27 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
     :param axes:
     :param plot:
     :param dpi:
+    :param aux_colname:
+    :param aux:
+    :param aux_name:
+    :param aux_unit:
     :return:
     """
 
     # Get data
     x, y, x_label, y_label = get_multiple_xy(scatters, return_labels=True)
 
+    # Get aux values
+    if aux_colname is not None:
+        if aux is not None: raise ValueError("Cannot pass both auxilary column name and auxilary values")
+        aux = scatter.get_array(aux_colname)
+        aux_unit = scatter.get_unit(aux_colname)
+        if aux_name is None: aux_name = aux_colname
+
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
-                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot, dpi=dpi)
+                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
+                             dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit)
 
 # -----------------------------------------------------------------
 # PLOTTING DENSITY
@@ -2579,7 +2604,8 @@ def vmax_function(array):
 # -----------------------------------------------------------------
 
 def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
-                      xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None, dpi=None, color=None):
+                      xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None, dpi=None, color=None,
+                      cmap=None, aux=None, aux_name=None, aux_unit=None):
 
     """
     This function is a scatter density plotting function, using Astrofrog's matplotlib scatter density package
@@ -2599,6 +2625,10 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :param plot:
     :param dpi:
     :param color:
+    :param cmap:
+    :param aux:
+    :param aux_name:
+    :param aux_unit:
     :return:
     """
 
@@ -2712,20 +2742,35 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     # Single data set
     elif types.is_sequence_or_array(x):
 
-        if color is None: color = "blue"
-
         # Checks
         if not types.is_sequence_or_array(y): raise ValueError("The type of x and y data must be equal")
         if not sequences.equal_sizes(x, y): raise ValueError("The number of x and y points must agree")
 
         # Clean xy data
-        x, y, xlimits, ylimits = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog)
+        x, y, xlimits, ylimits, valid = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog, return_valid=True)
+
+        # Set valid mask
+        output.valid = valid
 
         # Plot scatter points
-        axes.scatter_density(x, y, color=color, dpi=dpi, density_vmin=0., density_vmax=vmax_function)
+        if aux is not None:
 
-        # Set color
-        output.color = color
+            # Plot with colormap
+            if cmap is None: cmap = "inferno"
+            aux = aux[valid]
+            axes.scatter_density(x, y, dpi=dpi, density_vmin=0., density_vmax=vmax_function, c=aux, cmap=cmap)
+
+            # Set colormap
+            output.cmap = cmap
+
+        # No auxilary axis: plot in color
+        else:
+
+            if color is None: color = "blue"
+            axes.scatter_density(x, y, color=color, dpi=dpi, density_vmin=0., density_vmax=vmax_function)
+
+            # Set color
+            output.color = color
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
@@ -3651,7 +3696,7 @@ def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=No
 
 def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpositive=False, ypositive=False,
                   xnonnegative=False, ynonnegative=False, xnonzero=False, ynonzero=False, adjust_limits=False,
-                  apply_log=False):
+                  apply_log=False, return_valid=False):
 
     """
     This function ...
@@ -3669,6 +3714,7 @@ def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpos
     :param ynonzero:
     :param adjust_limits:
     :param apply_log:
+    :param return_valid:
     :return:
     """
 
@@ -3722,7 +3768,8 @@ def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpos
         ylimits = (np.min(y), np.max(y),)
 
     # Return cleaned data
-    return x, y, xlimits, ylimits
+    if return_valid: return x, y, xlimits, ylimits, valid
+    else: return x, y, xlimits, ylimits
 
 # -----------------------------------------------------------------
 
