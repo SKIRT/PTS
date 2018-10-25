@@ -759,8 +759,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Generate the distribution
         # Weights are dust mass fraction
-        print(self.valid_diffuse_fraction_values.shape)
-        print(self.valid_diffuse_cell_weights.shape)
+        #print(self.valid_diffuse_fraction_values.shape)
+        #print(self.valid_diffuse_cell_weights.shape)
         return Distribution.from_values(self.distribution_diffuse_name, self.valid_diffuse_fraction_values, nbins=self.config.nbins, weights=self.valid_diffuse_cell_weights)
 
     # -----------------------------------------------------------------

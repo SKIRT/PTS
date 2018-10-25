@@ -198,6 +198,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def get_meta(self, key):
+
+        """
+        This function ...
+        :param key:
+        :return:
+        """
+
+        return self.metadata[key]
+
+    # -----------------------------------------------------------------
+
     @property
     def shape(self):
         return PixelShape.from_tuple(super(Frame, self).shape)
@@ -2543,8 +2555,20 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Create cutout
         cutout = Cutout.cutout(self, position, radius)
-        if as_frame: return Frame(np.asarray(cutout), name=self.name, pixelscale=self.pixelscale, fwhm=self.fwhm, distance=self.distance)
+
+        # Return as frame
+        if as_frame:
+
+            frame = Frame(np.asarray(cutout), name=self.name, pixelscale=self.pixelscale, fwhm=self.fwhm, distance=self.distance)
+            frame.set_meta("xmin", cutout.x_min)
+            frame.set_meta("xmax", cutout.x_max)
+            frame.set_meta("ymin", cutout.y_min)
+            frame.set_meta("ymax", cutout.y_max)
+            return frame
+
+        # Return cutout
         else: return cutout
 
     # -----------------------------------------------------------------
