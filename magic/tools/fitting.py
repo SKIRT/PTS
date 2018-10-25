@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import warnings
 import numpy as np
-from scipy import ndimage
+from scipy import stats
 
 # Import astronomical modules
 from astropy.modeling import models, fitting
@@ -28,54 +28,59 @@ from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 
-# THIS FUNCTION IS NOT USED ANYMORE, BUT CONTAINS UPSAMPLING CODE POTENTIALLY USEFUL LATER (see also analysis.stars.make_star_model)
-def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_center=None, radius=None, x_shift=0.0, y_shift=0.0, pixel_deviation=0.5, upsample_factor=1.0):
+def linear_regression(x, y):
 
     """
-    This function fits a 2D model to ...
-    :param data:
-    :param mask:
-    :param background:
-    :param model:
-    :param x_center:
-    :param y_center:
-    :param radius:
-    :param x_shift:
-    :param y_shift:
-    :param pixel_deviation:
-    :param upsample_factor:
+    This function ...
+    :param x:
+    :param y:
     :return:
     """
 
-    # If the box around the star has to be upsampled for fitting
-    if upsample_factor > 1.0:
+    # Fit
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
-        data = ndimage.interpolation.zoom(data, zoom=upsample_factor)
-        mask = ndimage.interpolation.zoom(mask, zoom=upsample_factor)
-        background = ndimage.interpolation.zoom(background, zoom=upsample_factor)
+    # Return
+    return slope, intercept
 
-        x_center *= upsample_factor
-        y_center *= upsample_factor
-        radius *= upsample_factor
-        pixel_deviation *= upsample_factor
+# -----------------------------------------------------------------
 
-    # Subtract the background from the box
-    data_without_background = data - background
+def get_linear_fitted_values(x, y, new_x, xlog=False, ylog=False, return_parameters=False):
 
-    # Don't keep the center fixed; this did not work
-    fixed_center = False
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param new_x:
+    :param xlog:
+    :param ylog:
+    :param return_parameters:
+    :return:
+    """
 
-    # Define the fitting functions
-    fitting_functions = {'Gaussian': fit_2D_Gaussian, 'Airy': fit_2D_Airy, 'Moffat': fit_2D_Moffat, 'MexicanHat': fit_2D_MexicanHat}
+    # Convert?
+    if xlog: x = np.log10(x)
+    if ylog: y = np.log10(y)
 
-    # Do the fitting, obtain a model function
-    model_function = fitting_functions[model](data_without_background, center=(x_center, y_center),
-                                              fixed_center=fixed_center, deviation_center=pixel_deviation,
-                                              radius=radius, x_shift=x_shift, y_shift=y_shift,
-                                              zoom_factor=upsample_factor, mask=mask)
+    # Keep only finite values
+    valid = np.isfinite(x) * np.isfinite(y)
+    x = x[valid]
+    y = y[valid]
 
-    # Return the model
-    return model_function
+    # Perform fit
+    slope, intercept = linear_regression(x, y)
+    #print("parameters", slope, intercept)
+
+    # Calculate new values
+    if xlog: new_x = np.log10(new_x)
+    new = slope * new_x + intercept
+
+    # Convert?
+    if ylog: new = 10**new
+
+    # Return
+    if return_parameters: return new, slope, intercept
+    else: return new
 
 # -----------------------------------------------------------------
 

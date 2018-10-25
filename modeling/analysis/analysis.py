@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -80,6 +81,7 @@ from ...core.basics.curve import WavelengthCurve
 from ...core.plot.distribution import plot_distribution
 from ...magic.core.list import uniformize
 from ...core.basics.scatter import Scatter2D
+from ...core.basics.range import RealRange
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -3922,6 +3924,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         return fs.join(self.correlations_path, "sSFR-Funev")
 
     # -----------------------------------------------------------------
+    # M51 correlation
+    # -----------------------------------------------------------------
 
     @property
     def m51_ssfr_funev_path(self):
@@ -3935,6 +3939,50 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def m51_ssfr_values(self):
+        return self.m51_ssfr_funev_scatter.x_array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_funev_values(self):
+        return self.m51_ssfr_funev_scatter.y_array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_valid_pixels(self):
+        return ~np.isnan(self.m51_ssfr_values) * ~np.isnan(self.m51_funev_values)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_valid_ssfr_values(self):
+        return self.m51_ssfr_values[self.m51_valid_pixels]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_valid_log_ssfr_values(self):
+        return np.log10(self.m51_valid_ssfr_values)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_valid_funev_values(self):
+        return self.m51_funev_values[self.m51_valid_pixels]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_valid_log_funev_values(self):
+        return np.log10(self.m51_valid_funev_values)
+
+    # -----------------------------------------------------------------
+    # M31 correlation
+    # -----------------------------------------------------------------
+
     @property
     def m31_ssfr_funev_path(self):
         return fs.join(self.ssfr_funev_correlations_path, "m31.dat")
@@ -3945,6 +3993,50 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     def m31_ssfr_funev_scatter(self):
         return Scatter2D.from_file(self.m31_ssfr_funev_path)
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_ssfr_values(self):
+        return self.m31_ssfr_funev_scatter.x_array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_funev_values(self):
+        return self.m31_ssfr_funev_scatter.y_array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_valid_pixels(self):
+        return ~np.isnan(self.m31_ssfr_values) * ~np.isnan(self.m31_funev_values)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_valid_ssfr_values(self):
+        return self.m31_ssfr_values[self.m31_valid_pixels]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_valid_log_ssfr_values(self):
+        return np.log10(self.m31_valid_ssfr_values)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_valid_funev_values(self):
+        return self.m31_funev_values[self.m31_valid_pixels]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m31_valid_log_funev_values(self):
+        return np.log10(self.m31_valid_funev_values)
+
+    # -----------------------------------------------------------------
+    # This galaxy correlation
     # -----------------------------------------------------------------
 
     def get_pixels_ssfr_funev_path(self, method):
@@ -4035,19 +4127,22 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get pixel scatter
         import numpy as np
-        pixels = self.get_pixels_ssfr_funev_scatter("ke")
+        pixels_original = self.get_pixels_ssfr_funev_scatter("ke")
         #print(len(pixels))
-        valid_pixels = pixels[pixels.y_name] > 0.005
-        valid_ssfr = np.asarray(pixels[pixels.x_name])[valid_pixels]
-        valid_funev = np.asarray(pixels[pixels.y_name])[valid_pixels]
-        pixels = Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=pixels.x_unit)
+        valid_pixels = pixels_original[pixels_original.y_name] > 0.005
+        valid_ssfr = np.asarray(pixels_original[pixels_original.x_name])[valid_pixels]
+        valid_funev = np.asarray(pixels_original[pixels_original.y_name])[valid_pixels]
+        pixels = Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=pixels_original.x_unit)
         #print(len(pixels))
 
         # Create scatters
+        m81_pixels_label = "M81 pixels"
+        m51_label = "M51 pixels"
+        m31_label = "M31 pixels"
         scatters1 = OrderedDict()
-        scatters1["M81 pixels"] = pixels
-        scatters1["M31 pixels"] = self.m31_ssfr_funev_scatter
-        scatters1["M51 pixels"] = self.m51_ssfr_funev_scatter
+        scatters1[m81_pixels_label] = pixels
+        scatters1[m31_label] = self.m31_ssfr_funev_scatter
+        scatters1[m51_label] = self.m51_ssfr_funev_scatter
 
         # Make the first plot
         xlimits = [1e-13,1e-9]
@@ -4055,12 +4150,69 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         xlog = True
         ylog = False
         #plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
-        plot_scatters_astrofrog(scatters1, xlimits=xlimits, ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0)
+        output0 = plot_scatters_astrofrog(scatters1, xlimits=xlimits, ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0)
+
+        # Plot line
+        npoints = 100
+        ssfr_points = RealRange(*xlimits).log(npoints)
+        log_ssfr_points = np.log10(ssfr_points)
+
+        # Ilse
+        #logfunev = 0.42 * logssfr + 4.14      # M51 PAPER -> but doesn't quite fit when plotting her points
+        log_funev_m51_ilse = 0.42 * log_ssfr_points + 4.14
+        funev_m51_ilse = 10**log_funev_m51_ilse
+
+        # FIT LINE
+        from ...magic.tools.fitting import linear_regression, get_linear_fitted_values
+
+        # M51
+        funev_m51 = get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, ssfr_points, xlog=True, ylog=True)
+
+        # M31
+        funev_m31 = get_linear_fitted_values(self.m31_valid_ssfr_values, self.m31_valid_funev_values, ssfr_points, xlog=True, ylog=True)
+
+        # M81
+
+        # original
+        funev_m81 = get_linear_fitted_values(pixels_original.x_array, pixels_original.y_array, ssfr_points, xlog=True, ylog=True)
+
+        # clipped
+        funev_m81_clipped = get_linear_fitted_values(pixels.x_array, pixels.y_array, ssfr_points, xlog=True, ylog=True)
+
+        # cells
+        cells = self.get_cells_ssfr_funev_scatter("ke")
+        funev_m81_cells = get_linear_fitted_values(cells.x_array, cells.y_array, ssfr_points, xlog=True, ylog=True)
+
+        from matplotlib.colors import to_hex, to_rgb
+        m51_color = to_rgb(output0.colors[m51_label])
+        m31_color = to_rgb(output0.colors[m31_label])
+        m81_color = to_rgb(output0.colors[m81_pixels_label])
+        #print(m51_color, m31_color, m81_color)
+        darker_m51_color = tuple(np.array(m51_color)*0.7)
+        darker_m31_color = tuple(np.array(m31_color)*0.7)
+        darker_m81_color = tuple(np.array(m81_color)*0.7)
+
+        # Plot fits
+        #plot0.plot(ssfr_points, funev_m51_ilse, label="M51 (Ilse)")
+        plot0.plot(ssfr_points, funev_m51, label="M51", color=darker_m51_color)
+        plot0.plot(ssfr_points, funev_m31, label="M31", color=darker_m31_color)
+        #plot0.plot(ssfr_points, funev_m81, label="M81")
+        #plot0.plot(ssfr_points, funev_m81_clipped, label="M81 clipped")
+        plot0.plot(ssfr_points, funev_m81_clipped, label="M81", color=darker_m81_color)
+        plot0.plot(ssfr_points, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
+
+        # Add legend for fits
+        plot0.legend(loc="lower right")
 
         # Make the second plot
         #ylimits = [0.002,1] # for log
         cells = self.get_cells_ssfr_funev_scatter("ke")
-        plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
+        output1 = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
+
+        # Plot fits
+        #plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
+        plot1.plot(ssfr_points, funev_m81_clipped, label="M81 pixels", color=darker_m81_color)
+        plot1.plot(ssfr_points, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
 
         # Save or show
         if path is not None: figure.saveto(path)

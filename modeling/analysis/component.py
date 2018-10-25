@@ -22,6 +22,7 @@ from ...core.tools.utils import lazyproperty
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ...core.tools import sequences
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -416,7 +417,10 @@ class AnalysisRunComponent(AnalysisComponent):
 
     @property
     def total_contribution_absorption_filepath(self):
-        return self.total_contribution_data.absorption_path
+        #return self.total_contribution_data.absorption_path
+        if self.total_contribution_data.has_absorption: return self.total_contribution_data.absorption_path
+        elif self.total_contribution_data.has_isrf: return self.total_contribution_data.isrf_path
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
@@ -429,21 +433,42 @@ class AnalysisRunComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_contribution_absorption_column_names(self):
+        return fs.get_column_names(self.total_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_column_units(self):
+        return fs.get_column_units(self.total_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def total_contribution_absorption_column_name(self):
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.colnames)
+        #return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.colnames)
+        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_column_index(self):
+        return self.total_contribution_absorption_column_names.index(self.total_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_contribution_absorption_unit(self):
-        return self.total_contribution_absorption_data.column_unit(self.total_contribution_absorption_column_name)
+        #return self.total_contribution_absorption_data.column_unit(self.total_contribution_absorption_column_name)
+        return u(self.total_contribution_absorption_column_units[self.total_contribution_absorption_column_index])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_contribution_absorption_luminosities(self):
-        return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
+        #return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
+        return fs.get_column(self.total_contribution_absorption_filepath, self.total_contribution_absorption_column_index, float, method="pandas")
 
     # -----------------------------------------------------------------
 
