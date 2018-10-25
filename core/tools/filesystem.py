@@ -2443,13 +2443,14 @@ def get_header_labels(filepath):
 
 # -----------------------------------------------------------------
 
-def get_column_names(filepath, lower=False, return_units=False):
+def get_column_names(filepath, lower=False, return_units=False, capitalize=False):
 
     """
     This function ...
     :param filepath:
     :param lower:
     :param return_units:
+    :param capitalize:
     :return:
     """
 
@@ -2514,6 +2515,9 @@ def get_column_names(filepath, lower=False, return_units=False):
 
     # Make lowercase
     if lower: column_names = [name.lower() for name in column_names]
+
+    # Capitalize first letter?
+    if capitalize: column_names = [name.capitalize() for name in column_names]
 
     # Return
     if return_units: return column_names, column_units
