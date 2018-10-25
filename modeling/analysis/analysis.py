@@ -19,7 +19,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
 from .component import AnalysisRunComponent
-from ...core.basics.configuration import prompt_string
+from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
 from ...core.tools import formatting as fmt
@@ -4247,11 +4247,26 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get the scatter
         cells = self.get_cells_ssfr_funev_scatter("ke")
         aux_colname = prompt_string("aux_colname", "name of the auxilary column to plot", choices=cells.aux_names)
+        aux_log = prompt_yn("aux_log", "use log scale for the auxilary axis")
+        aux_lower_limit = prompt_real("aux_lower", "lower limit of the auxilary data to create subset", required=False)
+        aux_upper_limit = prompt_real("aux_upper", "upper limit of the auxilary data to create subset", required=False)
+
+        # Get mask
+        if aux_lower_limit is not None and aux_upper_limit is not None: mask = aux_lower_limit < cells.get_array(aux_colname) < aux_upper_limit
+        elif aux_lower_limit is not None: mask = aux_lower_limit < cells.get_array(aux_colname)
+        elif aux_upper_limit is not None: mask = cells.get_array(aux_colname) < aux_upper_limit
+        else: mask = None
 
         # Make the plot
         xlimits = [1e-18,1e-9]
-        ylimits = [0.002,1] # for log
-        output = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=True, plot=plot, color="red", aux_colname=aux_colname)
+        #ylimits = [0.002,1] # for log
+        ylimits = [0.2,1]
+        output = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=True, plot=plot, color="red", aux_colname=aux_colname, aux_log=aux_log, valid_points=mask)
+
+        # Create colorbar
+        aux_unit = cells.get_unit(aux_colname)
+        aux_label = aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else aux_colname
+        figure.figure.colorbar(output.scatter, label=aux_label)
 
         # Set nice ticks
         plot.set_xticks()
