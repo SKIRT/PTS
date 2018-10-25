@@ -21,6 +21,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.utils import lazyproperty
 from ....core.simulation.logfile import LogFile
 from ....core.tools import sequences
+from ....core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -143,7 +144,10 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @property
     def old_contribution_absorption_filepath(self):
-        return self.old_contribution_data.absorption_path
+        #return self.old_contribution_data.absorption_path
+        if self.old_contribution_data.has_absorption: return self.old_contribution_data.absorption_path
+        elif self.old_contribution_data.has_isrf: return self.old_contribution_data.isrf_path
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
@@ -156,21 +160,42 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_contribution_absorption_column_names(self):
+        return fs.get_column_names(self.old_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_absorption_column_units(self):
+        return fs.get_column_units(self.old_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_contribution_absorption_column_name(self):
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_data.colnames)
+        #return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_data.colnames)
+        return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_absorption_column_index(self):
+        return self.old_contribution_absorption_column_names.index(self.old_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_contribution_absorption_unit(self):
-        return self.old_contribution_absorption_data.column_unit(self.old_contribution_absorption_column_name)
+        #return self.old_contribution_absorption_data.column_unit(self.old_contribution_absorption_column_name)
+        return u(self.old_contribution_absorption_column_units[self.old_contribution_absorption_column_index])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_contribution_absorption_luminosities(self):
-        return np.asarray(self.old_contribution_absorption_data[self.old_contribution_absorption_column_name])
+        #return np.asarray(self.old_contribution_absorption_data[self.old_contribution_absorption_column_name])
+        return fs.get_column(self.old_contribution_absorption_filepath, self.old_contribution_absorption_column_index, float, method="pandas")
 
     # -----------------------------------------------------------------
     #   SPECTRAL ABSORPTION & EMISSION
@@ -245,7 +270,10 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @property
     def young_contribution_absorption_filepath(self):
-        return self.young_contribution_data.absorption_path
+        #return self.young_contribution_data.absorption_path
+        if self.young_contribution_data.has_absorption: return self.young_contribution_data.absorption_path
+        elif self.young_contribution_data.has_isrf: return self.young_contribution_data.isrf_path
+        else: raise IOError("No absorption path")
 
     # -----------------------------------------------------------------
 
@@ -258,21 +286,42 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def young_contribution_absorption_column_names(self):
+        return fs.get_column_names(self.young_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_absorption_column_units(self):
+        return fs.get_column_units(self.young_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def young_contribution_absorption_column_name(self):
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_data.colnames)
+        #return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_data.colnames)
+        return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_absorption_column_index(self):
+        return self.young_contribution_absorption_column_names.index(self.young_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_contribution_absorption_unit(self):
-        return self.young_contribution_absorption_data.column_unit(self.young_contribution_absorption_column_name)
+        #return self.young_contribution_absorption_data.column_unit(self.young_contribution_absorption_column_name)
+        return u(self.young_contribution_absorption_column_units[self.young_contribution_absorption_column_index])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_contribution_absorption_luminosities(self):
-        return np.asarray(self.young_contribution_absorption_data[self.young_contribution_absorption_column_name])
+        #return np.asarray(self.young_contribution_absorption_data[self.young_contribution_absorption_column_name])
+        return fs.get_column(self.young_contribution_absorption_filepath, self.young_contribution_absorption_column_index, float, method="pandas")
 
     # -----------------------------------------------------------------
     #   SPECTRAL ABSORPTION & EMISSION
@@ -347,7 +396,10 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @property
     def ionizing_contribution_absorption_filepath(self):
-        return self.ionizing_contribution_data.absorption_path
+        #return self.ionizing_contribution_data.absorption_path
+        if self.ionizing_contribution_data.has_absorption: return self.ionizing_contribution_data.absorption_path
+        elif self.ionizing_contribution_data.has_isrf: return self.ionizing_contribution_data.isrf_path
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
@@ -360,21 +412,42 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def ionizing_contribution_absorption_column_names(self):
+        return fs.get_column_names(self.ionizing_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_absorption_column_units(self):
+        return fs.get_column_units(self.ionizing_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ionizing_contribution_absorption_column_name(self):
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_data.colnames)
+        #return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_data.colnames)
+        return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_absorption_column_index(self):
+        return self.ionizing_contribution_absorption_column_names.index(self.ionizing_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_contribution_absorption_unit(self):
-        return self.ionizing_contribution_absorption_data.column_unit(self.ionizing_contribution_absorption_column_name)
+        #return self.ionizing_contribution_absorption_data.column_unit(self.ionizing_contribution_absorption_column_name)
+        return u(self.ionizing_contribution_absorption_column_units[self.ionizing_contribution_absorption_column_index])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_contribution_absorption_luminosities(self):
-        return np.asarray(self.ionizing_contribution_absorption_data[self.ionizing_contribution_absorption_column_name])
+        #return np.asarray(self.ionizing_contribution_absorption_data[self.ionizing_contribution_absorption_column_name])
+        return fs.get_column(self.ionizing_contribution_absorption_filepath, self.ionizing_contribution_absorption_column_index, float, method="pandas")
 
     # -----------------------------------------------------------------
     #   SPECTRAL ABSORPTION & EMISSION
@@ -449,7 +522,10 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @property
     def unevolved_contribution_absorption_filepath(self):
-        return self.unevolved_contribution_data.absorption_path
+        #return self.unevolved_contribution_data.absorption_path
+        if self.unevolved_contribution_data.has_absorption: return self.unevolved_contribution_data.absorption_path
+        elif self.unevolved_contribution_data.has_isrf: return self.unevolved_contribution_data.isrf_path
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
@@ -462,21 +538,42 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def unevolved_contribution_absorption_column_names(self):
+        return fs.get_column_names(self.unevolved_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_absorption_column_units(self):
+        return fs.get_column_units(self.unevolved_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_contribution_absorption_column_name(self):
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_data.colnames)
+        #return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_data.colnames)
+        return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_absorption_column_index(self):
+        return self.unevolved_contribution_absorption_column_names.index(self.unevolved_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_contribution_absorption_unit(self):
-        return self.unevolved_contribution_absorption_data.column_unit(self.unevolved_contribution_absorption_column_name)
+        #return self.unevolved_contribution_absorption_data.column_unit(self.unevolved_contribution_absorption_column_name)
+        return u(self.unevolved_contribution_absorption_column_units[self.unevolved_contribution_absorption_column_index])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_contribution_absorption_luminosities(self):
-        return np.asarray(self.unevolved_contribution_absorption_data[self.unevolved_contribution_absorption_column_name])
+        #return np.asarray(self.unevolved_contribution_absorption_data[self.unevolved_contribution_absorption_column_name])
+        return fs.get_column(self.unevolved_contribution_absorption_filepath, self.unevolved_contribution_absorption_column_index, float, method="pandas")
 
     # -----------------------------------------------------------------
     #   SPECTRAL ABSORPTION & EMISSION

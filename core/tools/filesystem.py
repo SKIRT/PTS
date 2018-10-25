@@ -2521,6 +2521,36 @@ def get_column_names(filepath, lower=False, return_units=False):
 
 # -----------------------------------------------------------------
 
+def get_column_units(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    names, units = get_column_names(filepath, return_units=True)
+    return units
+
+# -----------------------------------------------------------------
+
+def get_column_index(filepath, name, return_none=False):
+
+    """
+    This function ...
+    :param filepath:
+    :param name:
+    :param return_none:
+    :return:
+    """
+
+    try: return get_column_names(filepath).index(name)
+    except ValueError:
+        if return_none: return None
+        else: raise ValueError("No column '" + name + "' in the file")
+
+# -----------------------------------------------------------------
+
 def _get_column_names_from_line(line, return_units=False):
 
     """
