@@ -19,7 +19,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
 from .component import AnalysisRunComponent
-from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real
+from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real, prompt_variable
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
 from ...core.tools import formatting as fmt
@@ -83,6 +83,7 @@ from ...core.plot.distribution import plot_distribution
 from ...magic.core.list import uniformize
 from ...core.basics.scatter import Scatter2D
 from ...core.basics.range import RealRange
+from ...core.basics.map import Map
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -182,6 +183,7 @@ map_name = "map"
 difference_name = "difference"
 distribution_name = "distribution"
 curve_name = "curve"
+ssfr_funev_name = "ssfr_funev"
 
 plot_heating_commands = OrderedDict()
 plot_heating_commands.description = "make plots of the heating fraction"
@@ -193,6 +195,10 @@ plot_heating_commands[curve_name] = ("plot_heating_curve_command", True, "plot c
 plot_absorption_commands = OrderedDict()
 plot_absorption_commands.description = "make plots of the absorbed energy"
 plot_absorption_commands[map_name] = ("plot_absorption_map_command", True, "plot map of the absorbed energy", None)
+
+plot_correlations_commands = OrderedDict()
+plot_correlations_commands.description = "make plots of the correlations"
+plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot map of the sSFR to Funev scatter")
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -206,6 +212,7 @@ plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simu
 plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
 plot_commands[_heating_command_name] = plot_heating_commands
 plot_commands[_absorption_command_name] = plot_absorption_commands
+plot_commands[_correlations_command_name] = plot_correlations_commands
 
 # -----------------------------------------------------------------
 
@@ -4235,42 +4242,28 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Inform the user
         log.info("Creating the paper sSFR - Funev pixel correlation plot ...")
 
-        import mpl_scatter_density  # NOQA
-
-        # Create the figure
-        figsize = (12, 6,)
-        figure = MPLFigure(size=figsize)
-
-        # Create plot
-        plot = figure.create_one_plot(projection="scatter_density")
+        import mpl_scatter_density # NOQA
 
         # Get the scatter
         cells = self.get_cells_ssfr_funev_scatter("ke")
-        aux_colname = prompt_string("aux_colname", "name of the auxilary column to plot", choices=cells.aux_names)
-        aux_log = prompt_yn("aux_log", "use log scale for the auxilary axis")
-        aux_lower_limit = prompt_real("aux_lower", "lower limit of the auxilary data to create subset", required=False)
-        aux_upper_limit = prompt_real("aux_upper", "upper limit of the auxilary data to create subset", required=False)
 
-        # Get mask
-        if aux_lower_limit is not None and aux_upper_limit is not None: mask = aux_lower_limit < cells.get_array(aux_colname) < aux_upper_limit
-        elif aux_lower_limit is not None: mask = aux_lower_limit < cells.get_array(aux_colname)
-        elif aux_upper_limit is not None: mask = cells.get_array(aux_colname) < aux_upper_limit
-        else: mask = None
+        # Create the figure
+        figsize = (30, 6,)
+        figure = MPLFigure(size=figsize)
 
-        # Make the plot
-        xlimits = [1e-18,1e-9]
-        #ylimits = [0.002,1] # for log
-        ylimits = [0.2,1]
-        output = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=True, plot=plot, color="red", aux_colname=aux_colname, aux_log=aux_log, valid_points=mask)
+        # Create plots
+        plot0, plot1, plot2 = figure.create_row(3, projections=[None, "scatter_density", "scatter_density"])
+
+        # Plot bulge correlation
+        output_bulge = self.plot_ssfr_funev_impl(cells, plot1, self.ssfr_funev_bulge_settings)
+
+        # Plot disk correlation
+        output_disk = self.plot_ssfr_funev_impl(cells, plot2, self.ssfr_funev_disk_settings)
 
         # Create colorbar
-        aux_unit = cells.get_unit(aux_colname)
-        aux_label = aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else aux_colname
-        figure.figure.colorbar(output.scatter, label=aux_label)
-
-        # Set nice ticks
-        plot.set_xticks()
-        plot.set_yticks()
+        #aux_unit = scatter.get_unit(settings.aux_colname)
+        #aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
+        #figure.figure.colorbar(output.scatter, label=aux_label)
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -4493,6 +4486,230 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
             # Plot
             plot_map(frame, scale="log", cmap="inferno")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_ssfr_method(self):
+        return ke_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_methods(self):
+        return [salim_name, ke_name, mappings_name, mappings_ke_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_preset_names(self):
+        return ["bulge", "disk"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_ssfr_funev_definition(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # sSFR method
+        definition.add_positional_optional("ssfr_method", "string", "method for the sSFR estimation", self.default_ssfr_method, choices=self.ssfr_methods)
+
+        # Use preset?
+        definition.add_optional("preset", "string", "use a plotting preset", choices=self.ssfr_funev_preset_names)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_disk_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = Map()
+
+        # Axes limits
+        settings.xlimits = [1e-14, 1e-9]
+        settings.ylimits = [0.2, 1]
+
+        # Distance auxilary axis
+        settings.aux_colname = "Dust density"
+
+        # Set conditions
+        distance_conditions = Map()
+        distance_conditions.lower = 6500
+        settings.conditions = {"Distance from center": distance_conditions}
+
+        # Logscales?
+        settings.funev_log = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_bulge_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = Map()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 0.5]
+
+        # vSFR auxilary axis
+        settings.aux_colname = "vSFR"
+
+        # Set conditions
+        distance_conditions = Map()
+        distance_conditions.upper = 4000
+        settings.conditions = {"Distance from center": distance_conditions}
+
+        # Logscales?
+        settings.funev_log = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_aux_colnames(self):
+        return ["Dust density", "vSFR", "Bulge disk ratio", "Distance from center", "Dust temperature", "Mean stellar age"]
+
+    # -----------------------------------------------------------------
+
+    def create_ssfr_funev_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = Map()
+
+        # Log?
+        settings.funev_log = prompt_yn("funev_log", "use log scale for the Funev axis", default=True)
+        default_ssfr_limits = (1e-18, 1e-9,)
+        default_funev_limits = (0.0015, 1,) if settings.funev_log else (0, 1,)
+
+        # Axes limits
+        settings.xlimits = prompt_variable("xlimits", "real_pair", "x plotting interval", default=default_ssfr_limits)
+        settings.ylimits = prompt_variable("ylimits", "real_pair", "y plotting interval", default=default_funev_limits)
+
+        # Auxilary axis
+        settings.aux_colname = prompt_string("aux_colname", "name of the auxilary column to plot", choices=self.ssfr_funev_aux_colnames)
+        settings.aux_log = prompt_yn("aux_log", "use log scale for the auxilary axis")
+        aux_lower_limit = prompt_real("aux_lower", "lower limit of the auxilary data to create subset", required=False)
+        aux_upper_limit = prompt_real("aux_upper", "upper limit of the auxilary data to create subset", required=False)
+
+        # Set conditions
+        aux_conditions = Map()
+        aux_conditions.lower = aux_lower_limit
+        aux_conditions.upper = aux_upper_limit
+        settings.conditions = {settings.aux_colname: aux_conditions}
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_funev_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_ssfr_funev_definition, **kwargs)
+
+        # Use preset settings
+        if config.preset is not None:
+
+            if config.preset == "disk": settings = self.ssfr_funev_disk_settings
+            elif config.preset == "bulge": settings = self.ssfr_funev_bulge_settings
+            else: raise ValueError("Invalid preset: '" + config.preset + "'")
+
+        # Create new settings
+        else: settings = self.create_ssfr_funev_settings()
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(config.ssfr_method)
+
+        # Plot
+        output = self.plot_ssfr_funev_impl(scatter, plot, settings)
+
+        # Create colorbar
+        aux_unit = scatter.get_unit(settings.aux_colname)
+        aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
+        figure.figure.colorbar(output.scatter, label=aux_label)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_funev_impl(self, scatter, plot, settings):
+
+        """
+        This function ...
+        :param scatter:
+        :param plot:
+        :param settings:
+        :return:
+        """
+
+        # Get mask
+        if len(settings.conditions) > 0:
+            mask = np.ones_like(scatter.x_array, dtype=bool)
+            for colname in settings.conditions:
+                if settings.conditions[colname].lower is not None: mask *= scatter.get_array(colname) > settings.conditions[colname].lower
+                if settings.conditions[colname].upper is not None: mask *= scatter.get_array(colname) < settings.conditions[colname].upper
+        else: mask = None
+
+        # Make the plot
+        output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits, xlog=True, ylog=settings.funev_log, plot=plot, color="red", aux_colname=settings.aux_colname, aux_log=settings.aux_log, valid_points=mask)
+
+        # Set nice ticks
+        plot.set_xticks()
+        plot.set_yticks()
+
+        # Return the plotting output
+        return output
 
     # -----------------------------------------------------------------
 
