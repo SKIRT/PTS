@@ -161,7 +161,7 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @lazyproperty
     def old_contribution_absorption_column_names(self):
-        return fs.get_column_names(self.old_contribution_absorption_filepath)
+        return fs.get_column_names(self.old_contribution_absorption_filepath, capitalize=True)
 
     # -----------------------------------------------------------------
 
@@ -287,7 +287,7 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @lazyproperty
     def young_contribution_absorption_column_names(self):
-        return fs.get_column_names(self.young_contribution_absorption_filepath)
+        return fs.get_column_names(self.young_contribution_absorption_filepath, capitalize=True)
 
     # -----------------------------------------------------------------
 
@@ -413,7 +413,7 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @lazyproperty
     def ionizing_contribution_absorption_column_names(self):
-        return fs.get_column_names(self.ionizing_contribution_absorption_filepath)
+        return fs.get_column_names(self.ionizing_contribution_absorption_filepath, capitalize=True)
 
     # -----------------------------------------------------------------
 
@@ -539,7 +539,7 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
 
     @lazyproperty
     def unevolved_contribution_absorption_column_names(self):
-        return fs.get_column_names(self.unevolved_contribution_absorption_filepath)
+        return fs.get_column_names(self.unevolved_contribution_absorption_filepath, capitalize=True)
 
     # -----------------------------------------------------------------
 

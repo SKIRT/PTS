@@ -3615,11 +3615,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_mappings_tir_sfr_cells(self):
         if fs.is_file(self.mappings_tir_sfr_cells_path):
             if not self.mappings_tir_sfr_cells_has_all_aux_columns:
-                colnames = self.mappings_tir_sfr_cells_aux_colnames
-                if temperature_name not in colnames: self.mappings_tir_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.mappings_tir_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
-                if funev_name not in colnames: self.mappings_tir_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
-                self.mappings_tir_sfr_cells.save() # save
+                #colnames = self.mappings_tir_sfr_cells_aux_colnames
+                #if temperature_name not in colnames: self.mappings_tir_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.mappings_tir_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                #if funev_name not in colnames: self.mappings_tir_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                #self.mappings_tir_sfr_cells.save() # save
+                fs.remove_file(self.mappings_tir_sfr_cells_path)
+                return False
             return True
         else: return False
 
@@ -3640,6 +3642,56 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def create_sfr_sfr_cell_scatter(self, sfr0_data, sfr1_data, sfr0_name, sfr1_name, sfr0_description=None, sfr1_description=None):
+
+        """
+        This function ...
+        :param sfr0_data:
+        :param sfr1_data:
+        :param sfr0_name:
+        :param sfr1_name:
+        :param sfr0_description:
+        :param sfr1_description:
+        :return:
+        """
+
+        # Get sfr densities 0
+        sfr_density0 = sfr0_data.values / self.cell_volumes
+        sfr_density0_unit = sfr0_data.unit / self.volume_unit
+
+        # Get sfr densities 1
+        sfr_density1 = sfr1_data.values / self.cell_volumes
+        sfr_density1_unit = sfr1_data.unit / self.volume_unit
+
+        # Create and return
+        return create_cell_scatter(sfr0_name, sfr1_name, sfr_density0, sfr_density1, sfr0_description, sfr1_description,
+                                   x_unit=sfr_density0_unit, y_unit=sfr_density1_unit, aux=self.sfr_sfr_cells_aux,
+                                   aux_units=self.sfr_sfr_cells_aux_units, is_arrays=True, aux_is_arrays=True)
+
+    # -----------------------------------------------------------------
+
+    def create_sfr_sfr_pixel_scatter(self, sfr0_frame, sfr1_frame, sfr0_name, sfr1_name, sfr0_description=None, sfr1_description=None):
+
+        """
+        This function ...
+        :param sfr0_frame:
+        :param sfr1_frame:
+        :param sfr0_name:
+        :param sfr1_name:
+        :param sfr0_description:
+        :param sfr1_description:
+        :return:
+        """
+
+        # Get frames per unit of pixelarea
+        sfr0_frame = sfr0_frame / sfr0_frame.pixelarea
+        sfr1_frame = sfr1_frame / sfr1_frame.pixelarea
+
+        # Create and return
+        return create_pixel_scatter(sfr0_name, sfr1_name, sfr0_frame, sfr1_frame, sfr0_description, sfr1_description, same_units=True, convolve=True)
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Scatter2D, "mappings_tir_sfr_cells_path", True, write=False)
     def mappings_tir_sfr_cells(self):
 
@@ -3648,17 +3700,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        valid_mappings_sfr_values = self.cell_sfr_densities_mappings
-        valid_tir_sfr_values = self.cell_sfr_densities_tir
-
-        # Return
-        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_tir_sfr_values,
-                                 x_name=self.mappings_sfr_density_name, y_name=self.tir_sfr_density_name, x_unit=self.sfr_density_mappings_unit,
-                                 y_unit=self.sfr_density_tir_unit, x_description=self.mappings_sfr_density_description,
-                                 y_description=self.tir_sfr_density_description, aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
+        # Create scatter
+        return self.create_sfr_sfr_cell_scatter(self.cell_sfr_mappings, self.cell_sfr_tir, self.mappings_sfr_density_name, self.tir_sfr_density_name, self.mappings_sfr_density_description, self.tir_sfr_density_description)
 
     # -----------------------------------------------------------------
 
@@ -3682,24 +3725,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        mappings_sfr = self.pixel_sfr_mappings / self.pixel_sfr_mappings_pixelarea
-        tir_sfr = self.pixel_sfr_tir / self.pixel_sfr_tir_pixelarea
-
-        # Uniformize
-        mappings, tir = uniformize(mappings_sfr, tir_sfr)
-
-        # Get values
-        mappings_values = mappings.values
-        tir_values = tir.values
-        sfr_unit = mappings.unit
-
-        # Return
-        return Scatter2D.from_xy(mappings_values, tir_values,
-                                 x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=sfr_unit, y_unit=sfr_unit,
-                                 x_description=self.mappings_sfr_density_description, y_description=self.tir_sfr_density_description)
+        # Create scatter
+        return self.create_sfr_sfr_pixel_scatter(self.pixel_sfr_mappings, self.pixel_sfr_tir, self.mappings_sfr_density_name, self.tir_sfr_density_name, self.mappings_sfr_density_description, self.tir_sfr_density_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS K&E SFR - TIR SFR
@@ -3757,11 +3784,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_mappings_ke_tir_sfr_cells(self):
         if fs.is_file(self.mappings_ke_tir_sfr_cells_path):
             if not self.mappings_ke_tir_sfr_cells_has_all_aux_columns:
-                colnames = self.mappings_ke_tir_sfr_cells_aux_colnames
-                if temperature_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
-                if funev_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
-                self.mappings_tir_sfr_cells.save() # save
+                #colnames = self.mappings_ke_tir_sfr_cells_aux_colnames
+                #if temperature_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                #if funev_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                #self.mappings_tir_sfr_cells.save() # save
+                fs.remove_file(self.mappings_ke_tir_sfr_cells_path)
+                return False
             return True
         else: return False
 
@@ -3775,18 +3804,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        valid_mappings_ke_sfr_values = self.cell_sfr_densities_mappings_ke
-        valid_tir_sfr_values = self.cell_sfr_densities_tir
-
-        # Return
-        return Scatter2D.from_xy(valid_mappings_ke_sfr_values, valid_tir_sfr_values,
-                                 x_name=self.mappings_ke_sfr_density_name, y_name=self.tir_sfr_density_name,
-                                 x_unit=self.sfr_density_mappings_ke_unit,
-                                 y_unit=self.sfr_density_tir_unit,
-                                 x_description=self.mappings_ke_sfr_density_description,
-                                 y_description=self.tir_sfr_density_description,
-                                 aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
+        # Create the scatter
+        return self.create_sfr_sfr_cell_scatter(self.cell_sfr_mappings_ke, self.cell_sfr_tir, self.mappings_ke_sfr_density_name, self.tir_sfr_density_name, self.mappings_ke_sfr_density_description, self.tir_sfr_density_description)
 
     # -----------------------------------------------------------------
 
@@ -3810,24 +3829,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        mappings_ke_sfr = self.pixel_sfr_mappings_ke / self.pixel_sfr_mappings_ke_pixelarea
-        tir_sfr = self.pixel_sfr_tir / self.pixel_sfr_tir_pixelarea
-
-        # Uniformize
-        mappings_ke, tir = uniformize(mappings_ke_sfr, tir_sfr)
-
-        # Get values
-        mappings_ke_values = mappings_ke.values
-        tir_values = tir.values
-        sfr_unit = mappings_ke.unit
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke_values, tir_values,
-                                 x_name=self.mappings_ke_sfr_name, y_name=self.tir_sfr_name, x_unit=sfr_unit, y_unit=sfr_unit,
-                                 x_description=self.mappings_ke_sfr_density_description, y_description=self.tir_sfr_density_description)
+        # Create scatter
+        return self.create_sfr_sfr_pixel_scatter(self.pixel_sfr_mappings_ke, self.pixel_sfr_tir, self.mappings_ke_sfr_density_name, self.tir_sfr_density_name, self.mappings_ke_sfr_density_description, self.tir_sfr_density_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS SFR - 24 um SFR
@@ -3897,11 +3900,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_mappings_24um_sfr_cells(self):
         if fs.is_file(self.mappings_24um_sfr_cells_path):
             if not self.mappings_24um_sfr_cells_has_all_aux_columns:
-                colnames = self.mappings_24um_sfr_cells_aux_colnames
-                if temperature_name not in colnames: self.mappings_24um_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.mappings_24um_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
-                if funev_name not in colnames: self.mappings_24um_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
-                self.mappings_24um_sfr_cells.save() # save
+                #colnames = self.mappings_24um_sfr_cells_aux_colnames
+                #if temperature_name not in colnames: self.mappings_24um_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.mappings_24um_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                #if funev_name not in colnames: self.mappings_24um_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                #self.mappings_24um_sfr_cells.save() # save
+                fs.remove_file(self.mappings_24um_sfr_cells_path)
+                return False
             return True
         else: return False
 
@@ -3915,19 +3920,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        valid_mappings_sfr_values = self.cell_sfr_densities_mappings
-        valid_24um_sfr_values = self.cell_sfr_densities_24um
-
-        # Return
-        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_24um_sfr_values,
-                                 x_name=self.mappings_sfr_density_name, y_name=self.mips24_sfr_density_name,
-                                 x_unit=self.sfr_density_mappings_unit,
-                                 y_unit=self.sfr_density_24um_unit, x_description=self.mappings_sfr_density_description,
-                                 y_description=self.mips24_sfr_density_description,
-                                 aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
+        # Create scatter
+        return self.create_sfr_sfr_cell_scatter(self.cell_sfr_mappings, self.cell_sfr_24um, self.mappings_sfr_density_name, self.mips24_sfr_density_name, self.mappings_sfr_density_description, self.mips24_sfr_density_description)
 
     # -----------------------------------------------------------------
 
@@ -3951,25 +3945,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        mappings_sfr = self.pixel_sfr_mappings / self.pixel_sfr_mappings_pixelarea
-        mips24_sfr = self.pixel_sfr_24um / self.pixel_sfr_24um_pixelarea
-
-        # Uniformize
-        mappings, mips24 = uniformize(mappings_sfr, mips24_sfr)
-
-        # Get values
-        mappings_values = mappings.values
-        mips24_values = mips24.values
-        sfr_unit = mappings.unit
-
-        # Return
-        return Scatter2D.from_xy(mappings_values, mips24_values,
-                                 x_name=self.mappings_sfr_name, y_name=self.mips24_sfr_name, x_unit=sfr_unit,
-                                 y_unit=sfr_unit, x_description=self.mappings_sfr_density_description,
-                                 y_description=self.mips24_sfr_density_description)
+        # Create scatter
+        return self.create_sfr_sfr_pixel_scatter(self.pixel_sfr_mappings, self.pixel_sfr_24um, self.mappings_sfr_density_name, self.mips24_sfr_density_name, self.mappings_sfr_density_description, self.mips24_sfr_density_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS K&E SFR - 24um SFR
@@ -4003,11 +3980,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     def has_mappings_ke_24um_sfr_cells(self):
         if fs.is_file(self.mappings_ke_24um_sfr_cells_path):
             if not self.mappings_ke_24um_sfr_cells_has_all_aux_columns:
-                colnames = self.mappings_ke_24um_sfr_cells_aux_colnames
-                if temperature_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
-                if funev_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
-                self.mappings_ke_24um_sfr_cells.save() # save
+                #colnames = self.mappings_ke_24um_sfr_cells_aux_colnames
+                #if temperature_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                #if mean_age_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                #if funev_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                #self.mappings_ke_24um_sfr_cells.save() # save
+                fs.remove_file(self.mappings_ke_24um_sfr_cells_path)
+                return False
             return True
         else: return False
 
@@ -4021,19 +4000,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        valid_mappings_ke_sfr_values = self.cell_sfr_densities_mappings_ke
-        valid_24um_sfr_values = self.cell_sfr_densities_24um
-
-        # Return
-        return Scatter2D.from_xy(valid_mappings_ke_sfr_values, valid_24um_sfr_values,
-                                 x_name=self.mappings_ke_sfr_density_name, y_name=self.mips24_sfr_density_name,
-                                 x_unit=self.sfr_density_mappings_ke_unit,
-                                 y_unit=self.sfr_density_24um_unit, x_description=self.mappings_ke_sfr_density_description,
-                                 y_description=self.mips24_sfr_density_description,
-                                 aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
+        # Create scatter
+        return self.create_sfr_sfr_cell_scatter(self.cell_sfr_mappings_ke, self.cell_sfr_24um, self.mappings_ke_sfr_density_name, self.mips24_sfr_density_name, self.mappings_ke_sfr_density_description, self.mips24_sfr_density_description)
 
     # -----------------------------------------------------------------
 
@@ -4057,25 +4025,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Checks
-
-        # Get values
-        mappings_ke_sfr = self.pixel_sfr_mappings_ke / self.pixel_sfr_mappings_ke_pixelarea
-        mips24_sfr = self.pixel_sfr_24um / self.pixel_sfr_24um_pixelarea
-
-        # Uniformize
-        mappings_ke, mips24 = uniformize(mappings_ke_sfr, mips24_sfr)
-
-        # Get values
-        mappings_ke_values = mappings_ke.values
-        mips24_values = mips24.values
-        sfr_unit = mappings_ke.unit
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke_values, mips24_values,
-                                 x_name=self.mappings_ke_sfr_name, y_name=self.mips24_sfr_name, x_unit=sfr_unit,
-                                 y_unit=sfr_unit, x_description=self.mappings_ke_sfr_density_description,
-                                 y_description=self.mips24_sfr_density_description)
+        # Create scatter
+        return self.create_sfr_sfr_pixel_scatter(self.pixel_sfr_mappings_ke, self.pixel_sfr_24um, self.mappings_ke_sfr_density_name, self.mips24_sfr_density_name, self.mappings_ke_sfr_density_description, self.mips24_sfr_density_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS sSFR - FUV-H sSFR
@@ -5185,7 +5136,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_fuv_h_funev_pixels(self):
+    def do_write_fuv_r_funev_pixels(self):
         return not self.has_fuv_r_funev_pixels
 
     # -----------------------------------------------------------------
@@ -5201,7 +5152,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if self.do_write_fuv_r_funev_cells: self.write_fuv_r_funev_cells()
 
         # Pixels
-        if self.do_write_fuv_h_funev_pixels: self.write_fuv_r_funev_pixels()
+        if self.do_write_fuv_r_funev_pixels: self.write_fuv_r_funev_pixels()
 
     # -----------------------------------------------------------------
 
@@ -7646,7 +7597,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 # -----------------------------------------------------------------
 
 def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_description, x_unit=None, y_unit=None,
-                         aux=None, aux_units=None, aux_is_arrays=False):
+                         aux=None, aux_units=None, aux_is_arrays=False, same_units=False, convolve=False):
 
     """
     This function ...
@@ -7661,6 +7612,8 @@ def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_desc
     :param aux:
     :param aux_units:
     :param aux_is_arrays:
+    :param same_units:
+    :param convolve:
     :return:
     """
 
@@ -7669,7 +7622,7 @@ def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_desc
     if y_unit is None: y_unit = y_frame.unit
 
     # Rebin to the same pixelscale
-    x_frame, y_frame = uniformize(x_frame, y_frame, convolve=False, convert=False)
+    x_frame, y_frame = uniformize(x_frame, y_frame, convolve=convolve, convert=same_units)
 
     # Get values
     x_values = x_frame.values
@@ -7684,7 +7637,7 @@ def create_pixel_scatter(x_name, y_name, x_frame, y_frame, x_description, y_desc
 # -----------------------------------------------------------------
 
 def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_description, x_unit=None, y_unit=None,
-                        aux=None, aux_units=None, aux_is_arrays=False):
+                        aux=None, aux_units=None, is_arrays=False, aux_is_arrays=False):
 
     """
     This function ....
@@ -7698,20 +7651,25 @@ def create_cell_scatter(x_name, y_name, x_data, y_data, x_description, y_descrip
     :param y_unit:
     :param aux:
     :param aux_units:
+    :param is_arrays:
     :param aux_is_arrays:
     :return:
     """
 
     # Get units
-    if x_unit is None: x_unit = x_data.unit
-    if y_unit is None: y_unit = y_data.unit
+    if x_unit is None and not is_arrays: x_unit = x_data.unit
+    if y_unit is None and not is_arrays: y_unit = y_data.unit
 
     # Check dimensions
     if len(x_data) != len(y_data): raise ValueError("x and y data must have the same size")
 
     # Get values
-    x_values = x_data.values
-    y_values = y_data.values
+    if is_arrays:
+        x_values = x_data
+        y_values = y_data
+    else:
+        x_values = x_data.values
+        y_values = y_data.values
 
     # Set aux
     if aux is not None and not aux_is_arrays: aux = OrderedDict((key, data.values) for key, data in aux.items())

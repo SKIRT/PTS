@@ -434,7 +434,7 @@ class AnalysisRunComponent(AnalysisComponent):
 
     @lazyproperty
     def total_contribution_absorption_column_names(self):
-        return fs.get_column_names(self.total_contribution_absorption_filepath)
+        return fs.get_column_names(self.total_contribution_absorption_filepath, capitalize=True)
 
     # -----------------------------------------------------------------
 
