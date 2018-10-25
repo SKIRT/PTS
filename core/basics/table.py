@@ -1767,6 +1767,16 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def get_array(self, colname):
+        return np.asarray(self[colname])
+
+    # -----------------------------------------------------------------
+
+    def get_unit(self, colname):
+        return self[colname].unit
+
+    # -----------------------------------------------------------------
+
     def get_column_array(self, colname, unit=None, masked=True):
 
         """
@@ -1776,14 +1786,6 @@ class SmartTable(Table):
         :param masked:
         :return:
         """
-
-        # SLOW!
-        #values = []
-        #for index in range(self.nrows):
-        #    value = self.get_value(colname, index, add_unit=False, unit=unit)
-        #    if value is None: value = float("nan")
-        #    values.append(value)
-        #return np.array(values)
 
         # Column unit
         if self.has_column_unit(colname):
