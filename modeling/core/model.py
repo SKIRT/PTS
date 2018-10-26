@@ -66,6 +66,7 @@ old_suffix = " [OLD]"
 young_suffix = " [YOUNG]"
 sfr_suffix = " [SFR]"
 unevolved_suffix = " [UNEVOLVED]"
+extra_suffix = " [EXTRA]"
 dust_suffix = " [DUST]"
 
 # -----------------------------------------------------------------
@@ -175,6 +176,16 @@ unevolved_bol_attenuation_name = "Unevolved stellar bolometric attenuation" #
 obs_unevolved_total_lum_name = "Unevolved stellar bolometric total luminosity" # stellar + dust ; should be the same as x (intrinsic lum)
 obs_unevolved_dust_lum_name = "Unevolved stellar bolometric dust luminosity" #
 
+## Extra component
+obs_extra_spec_lum_name = "Observed extra stellar specific luminosity" #
+intr_extra_spec_lum_name = "Intrinsic extra stellar specific luminosity" # part of (free) parameter set
+obs_extra_bol_lum_name = "Observed extra stellar bolometric luminosity" #
+intr_extra_bol_lum_name = "Intrinsic extra stellar bolometric luminosity" #
+extra_spec_attenuation_name = "Extra stellar specific attenuation" #
+extra_bol_attenuation_name = "Extra stellar bolometric attenuation" #
+obs_extra_total_lum_name = "Extra stellar bolometric total luminosity" # stellar + dust ; should be the same as x (intrinsic lum)
+obs_extra_dust_lum_name = "Extra stellar bolometric dust luminosity" #
+
 ## Dust
 total_dust_mass_name = "Total dust mass" # 6 with SFR dust mass
 diffuse_dust_mass_name = "Diffuse dust mass"
@@ -195,6 +206,7 @@ old_simulation_name = "old"
 young_simulation_name = "young"
 sfr_simulation_name = "sfr"
 unevolved_simulation_name = "unevolved"
+extra_simulation_name = "extra"
 dust_simulation_name = "dust"
 
 bulge_component_name = "Evolved stellar bulge"
@@ -202,6 +214,7 @@ disk_component_name = "Evolved stellar disk"
 young_component_name = "Young stars"
 ionizing_component_name = "Ionizing stars"
 transparent_ionizing_component_name = "Ionizing stars (transparent)"
+extra_component_name = "Extra component"
 dust_component_name = "Dust"
 
 bulge_component_description = "old bulge stellar component"
@@ -209,6 +222,7 @@ disk_component_description = "old disk stellar component"
 young_component_description = "young stellar component"
 ionizing_component_description = "ionizing stellar component"
 transparent_ionizing_component_description = "ionizing stellar component (transparent)"
+extra_component_description = "extra stellar/agn component"
 dust_component_description = "dust component"
 
 evolved_component_name = "Evolved stars"
@@ -263,8 +277,8 @@ class RTModel(object):
                  free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
                  observed_bulge_output_path=None, observed_disk_output_path=None, observed_old_output_path=None,
                  observed_young_output_path=None, observed_sfr_output_path=None, observed_unevolved_output_path=None,
-                 parameters=None, center=None, galaxy_name=None, hubble_stage=None, redshift=None, earth_wcs=None,
-                 truncation_ellipse=None):
+                 observed_extra_output_path=None, parameters=None, center=None, galaxy_name=None, hubble_stage=None,
+                 redshift=None, earth_wcs=None, truncation_ellipse=None):
 
         """
         The constructor ...
@@ -331,6 +345,7 @@ class RTModel(object):
         self.observed_young_output_path = observed_young_output_path
         self.observed_sfr_output_path = observed_sfr_output_path
         self.observed_unevolved_output_path = observed_unevolved_output_path
+        self.observed_extra_output_path = observed_extra_output_path
 
         # Set parameters
         if parameters is not None: self.set_parameters(**parameters)
@@ -344,6 +359,12 @@ class RTModel(object):
 
         # Set the earth coordinate system
         self.earth_wcs = earth_wcs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_component(self):
+        return self.observed_extra_output_path is not None
 
     # -----------------------------------------------------------------
 
@@ -469,6 +490,12 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def intrinsic_sed_path_extra(self):
+        return self.extra_sed_filepath
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_simulation_component_sed_paths(self):
 
@@ -485,6 +512,7 @@ class RTModel(object):
         seds[disk_component_name] = self.intrinsic_sed_path_old_disk
         seds[young_component_name] = self.intrinsic_sed_path_young
         seds[ionizing_component_name] = self.intrinsic_sed_path_sfr
+        if self.has_extra_component: seds[extra_component_name] = self.intrinsic_sed_path_extra
 
         # Return the seds
         return seds
@@ -519,7 +547,11 @@ class RTModel(object):
 
     @lazyproperty
     def total_simulation_component_cubes(self):
-        return OrderedDict(self.total_simulation_evolved_component_cubes.items() + self.total_simulation_unevolved_component_cubes.items())
+        cubes =  OrderedDict(self.total_simulation_evolved_component_cubes.items() + self.total_simulation_unevolved_component_cubes.items())
+        if self.has_extra_component:
+            if not self.extra_simulations.has_intrinsic_cube: warnings.warn("No intrinsic cube for the extra component")
+            else: cubes[extra_component_name] = self.extra_intrinsic_stellar_luminosity_cube_earth
+        return cubes
 
     # -----------------------------------------------------------------
 
@@ -549,7 +581,11 @@ class RTModel(object):
 
     @lazyproperty
     def total_simulation_component_cubes_faceon(self):
-        return OrderedDict(self.total_simulation_evolved_component_cubes_faceon.items() + self.total_simulation_unevolved_component_cubes_faceon.items())
+        cubes = OrderedDict(self.total_simulation_evolved_component_cubes_faceon.items() + self.total_simulation_unevolved_component_cubes_faceon.items())
+        if self.has_extra_component:
+            if not self.extra_simulations.has_intrinsic_cube_faceon: warnings.warn("No intrinsic faceon cube for the extra component")
+            else: cubes[extra_component_name] = self.extra_intrinsic_stellar_luminosity_cube_faceon
+        return cubes
 
     # -----------------------------------------------------------------
 
@@ -579,7 +615,11 @@ class RTModel(object):
 
     @lazyproperty
     def total_simulation_component_cubes_edgeon(self):
-        return OrderedDict(self.total_simulation_evolved_component_cubes_edgeon.items() + self.total_simulation_unevolved_component_cubes_edgeon.items())
+        cubes = OrderedDict(self.total_simulation_evolved_component_cubes_edgeon.items() + self.total_simulation_unevolved_component_cubes_edgeon.items())
+        if self.has_extra_component:
+            if not self.extra_simulations.has_intrinsic_cube_edgeon: warnings.warn("No intrinsic edgeon cube for the extra component")
+            else: cubes[extra_component_name] = self.extra_intrinsic_stellar_luminosity_cube_edgeon
+        return cubes
 
     # -----------------------------------------------------------------
 
@@ -749,7 +789,9 @@ class RTModel(object):
 
     @lazyproperty
     def total_simulation_component_simulations(self):
-        return OrderedDict(self.total_simulation_evolved_component_simulations.items() + self.total_simulation_unevolved_component_simulations.items())
+        simulations = OrderedDict(self.total_simulation_evolved_component_simulations.items() + self.total_simulation_unevolved_component_simulations.items())
+        if self.has_extra_component: simulations[extra_component_name] = self.extra_simulations
+        return simulations
 
     # -----------------------------------------------------------------
     # TOTAL SIMULATIONS
@@ -803,6 +845,7 @@ class RTModel(object):
         simulations[young_simulation_name] = self.young_simulations
         simulations[sfr_simulation_name] = self.sfr_simulations
         simulations[unevolved_simulation_name] = self.unevolved_simulations
+        if self.has_extra_component: simulations[extra_simulation_name] = self.extra_simulations
         return simulations
 
     # -----------------------------------------------------------------
@@ -823,8 +866,6 @@ class RTModel(object):
 
     @lazyproperty
     def total_simulation(self):
-        #return self.total_simulations.observed # SLOWER? more loading of files
-        #return ObservedComponentSimulation.from_output_path(self.observed_total_output_path, total_simulation_name, earth_wcs=self.earth_wcs)
         return self.total_simulations.observed
 
     # -----------------------------------------------------------------
@@ -1370,6 +1411,77 @@ class RTModel(object):
         return self.sfr_simulation.data
 
     # -----------------------------------------------------------------
+    # EXTRA SIMULATIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_extra_simulation_path(self):
+        return fs.directory_of(self.observed_extra_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_simulation_output_filepath(self):
+        return fs.join(self.observed_extra_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_simulation_output_file(self):
+        return fs.is_file(self.observed_extra_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_extra_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_extra_output_path)
+        output.saveto(self.observed_extra_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_extra_simulation_output(self):
+        if not self.has_observed_extra_simulation_output_file: return self.create_observed_extra_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_extra_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # To run the simulation
+        sed = self.extra_component_sed
+
+        # Load and return
+        return SingleComponentSimulations.from_output(extra_simulation_name, self.observed_extra_simulation_output,
+                                                      intrinsic_output=sed.output, distance=self.distance,
+                                                      map_earth_path=self.extra_map_earth_path, map_faceon_path=self.extra_map_faceon_path, map_edgeon_path=self.extra_map_edgeon_path,
+                                                      earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_simulation(self):
+        return self.extra_simulations.observed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_simulation_output(self):
+        return self.extra_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_simulation_data(self):
+        return self.extra_simulation.data
+
+    # -----------------------------------------------------------------
     # UNEVOLVED SIMULATION INTRINSIC SEDs
     # -----------------------------------------------------------------
 
@@ -1682,6 +1794,12 @@ class RTModel(object):
     @property
     def has_observed_unevolved_output(self):
         return self.observed_unevolved_output_path is not None and fs.is_directory(self.observed_unevolved_output_path) and not fs.is_empty(self.observed_unevolved_output_path)
+
+    @property
+    def has_observed_extra_output(self):
+        return self.observed_extra_output_path is not None and fs.is_directory(self.observed_extra_output_path) and not fs.is_empty(self.observed_extra_output_path)
+
+        # -----------------------------------------------------------------
 
     # -----------------------------------------------------------------
     # FILTERS & WAVELENGTHS
@@ -2956,6 +3074,160 @@ class RTModel(object):
     def has_observed_young_dust_sed_edgeon(self):
         return self.young_simulations.has_edgeon_observed_dust_sed
 
+
+    # -----------------------------------------------------------------
+    # EXTRA SIMULATIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_fuv_luminosity_extra(self):
+        # don't interpolate, wavelength grid is expected to contain the FUV wavelength
+        return self.extra_simulations.observed_photometry_at(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_fuv_luminosity_extra(self):
+        return self.extra_simulations.has_observed_photometry
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_curve_extra(self):
+        return self.extra_simulations.attenuation_curve
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_bolometric_luminosity_extra(self):
+        return self.extra_simulations.intrinsic_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_bolometric_luminosity_extra(self):
+        return self.extra_simulations.has_observed_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_bolometric_luminosity_extra(self):
+        return self.extra_simulations.intrinsic_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_bolometric_luminosity_extra(self):
+        return self.extra_simulations.has_intrinsic_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_dust_luminosity_extra(self):
+        return self.extra_simulations.observed_dust_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_dust_luminosity_extra(self):
+        return self.extra_simulations.has_observed_dust_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bolometric_attenuation_extra(self):
+        return self.extra_simulations.bolometric_attenuation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bolometric_attenuation_extra(self):
+        return self.extra_simulations.has_bolometric_attenuation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_sed(self):
+        return self.extra_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_sed(self):
+        return self.extra_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_extra_sed(self):
+        return self.extra_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_extra_sed(self):
+        return self.extra_simulations.intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_stellar_sed(self):
+        return self.extra_simulations.observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_stellar_sed(self):
+        return self.extra_simulations.has_observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_dust_sed(self):
+        return self.observed_extra_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_dust_sed(self):
+        return self.has_observed_extra_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_dust_sed_earth(self):
+        return self.extra_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_dust_sed_earth(self):
+        return self.extra_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_dust_sed_faceon(self):
+        return self.extra_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_dust_sed_faceon(self):
+        return self.extra_simulations.has_faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_extra_dust_sed_edgeon(self):
+        return self.extra_simulations.edgeon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_extra_dust_sed_edgeon(self):
+        return self.extra_simulations.has_edgeon_observed_dust_sed
+
     # -----------------------------------------------------------------
     # SFR
     # -----------------------------------------------------------------
@@ -3502,6 +3774,12 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def extra_path(self):
+        return self.definition.stellar_paths["extra"]
+
+    # -----------------------------------------------------------------
+
+    @property
     def dust_path(self):
         return self.definition.dust_component_path
 
@@ -3540,6 +3818,18 @@ class RTModel(object):
     @lazyproperty
     def young_projections_path(self):
         return fs.create_directory_in(self.young_path, projections_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_sed_path(self):
+        return fs.create_directory_in(self.extra_path, sed_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_projections_path(self):
+        return fs.create_directory_in(self.extra_path, projections_dirname)
 
     # -----------------------------------------------------------------
 
@@ -3599,6 +3889,12 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def extra_sed_ski_path(self):
+        return fs.join(self.extra_sed_path, extra_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
     @property
     def has_old_disk_sed_skifile(self):
         return fs.is_file(self.old_disk_sed_ski_path)
@@ -3614,6 +3910,12 @@ class RTModel(object):
     @property
     def has_sfr_sed_skifile(self):
         return fs.is_file(self.sfr_sed_ski_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_sed_skifile(self):
+        return fs.is_file(self.extra_sed_ski_path)
 
     # -----------------------------------------------------------------
     # COMPONENT MODELS
@@ -3723,6 +4025,20 @@ class RTModel(object):
         component.parameters.compactness = self.mappings_transparent_parameters["compactness"]
         component.parameters.neutral_luminosity = self.mappings_transparent_parameters["neutral_luminosity"]
         return component
+
+    # -----------------------------------------------------------------
+    #   EXTRA STELLAR COMPONENT
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_component(self):
+        return self.definition.load_stellar_component("extra")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_model(self):
+        return self.extra_component.model
 
     # -----------------------------------------------------------------
     #   DUST DISK
@@ -5511,6 +5827,272 @@ class RTModel(object):
     @property
     def has_unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.unevolved_simulations.has_edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+    # EXTRA CUBES
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_bolometric_luminosity_cube_earth(self):
+        return self.extra_simulations.observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_bolometric_luminosity_cube_faceon(self):
+        return self.extra_simulations.faceon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_bolometric_luminosity_cube_egeon(self):
+        return self.extra_simulations.edgeon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.faceon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.edgeon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_observed_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_observed_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.has_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_observed_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_observed_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.has_faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_observed_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_observed_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.has_edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.faceon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.has_full_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_sed(self):
+        return self.extra_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_sed(self):
+        return self.has_extra_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_sed_earth(self):
+        return self.extra_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_sed_earth(self):
+        return self.extra_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_sed_faceon(self):
+        return self.extra_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_sed_faceon(self):
+        return self.extra_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_direct_stellar_sed_edgeon(self):
+        return self.extra_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_direct_stellar_sed_edgeon(self):
+        return self.extra_simulations.has_direct_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_dust_luminosity_cube_earth(self):
+        return self.extra_simulations.observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_dust_luminosity_cube_earth(self):
+        return self.extra_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_dust_luminosity_cube_faceon(self):
+        return self.extra_simulations.faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_dust_luminosity_cube_faceon(self):
+        return self.extra_simulations.has_faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_dust_luminosity_cube_edgeon(self):
+        return self.extra_simulations.edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_dust_luminosity_cube_edgeon(self):
+        return self.extra_simulations.has_edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorbed_diffuse_stellar_sed_earth(self):
+        return self.extra_simulations.observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorbed_diffuse_stellar_sed_earth(self):
+        return self.extra_simulations.has_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.extra_simulations.has_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.extra_simulations.faceon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.extra_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.extra_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.extra_simulations.edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.extra_simulations.has_edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.extra_simulations.has_edgeon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
     # TOTAL MAPS
@@ -9141,6 +9723,14 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def extra_input_filepaths(self):
+        paths = OrderedDict()
+        paths[wavelengths_filename] = self.wavelength_grid_path
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_bulge_input_filepaths(self):
         paths = OrderedDict()
         paths[wavelengths_filename] = self.wavelength_grid_path
@@ -9625,6 +10215,145 @@ class RTModel(object):
         return self.has_sfr_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_earth_projection_path(self):
+        return fs.create_directory_in(self.extra_projections_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_faceon_projection_path(self):
+        return fs.create_directory_in(self.extra_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_edgeon_projection_path(self):
+        return fs.create_directory_in(self.extra_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_earth_projection_output_filepath(self):
+        return fs.join(self.extra_earth_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_earth_projection_output_file(self):
+        return fs.is_file(self.observed_total_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_faceon_projection_output_filepath(self):
+        return fs.join(self.extra_faceon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_faceon_projection_output_file(self):
+        return fs.is_file(self.extra_faceon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_edgeon_projection_output_filepath(self):
+        return fs.join(self.extra_edgeon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_edgeon_projection_output_file(self):
+        return fs.join(self.extra_edgeon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ComponentProjections(bulge_simulation_name, self.extra_model, path=self.extra_projections_path,
+                                    description=bulge_component_description,
+                                    projection=self.old_disk_projections.projection_earth,
+                                    projection_faceon=self.old_disk_projections.projection_faceon,
+                                    projection_edgeon=self.old_disk_projections.projection_edgeon, center=self.center,
+                                    earth_wcs=self.old_disk_map_wcs, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map(self):
+        return self.extra_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map_earth(self):
+        return self.extra_projections.earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map_earth_path(self):
+        return self.extra_projections.earth_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map_faceon(self):
+        return self.extra_projections.faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map_faceon_path(self):
+        return self.extra_projections.faceon_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map_edgeon(self):
+        return self.extra_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_map_edgeon_path(self):
+        return self.extra_projections.edgeon_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_map(self):
+        return self.has_extra_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_map_earth(self):
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_map_faceon(self):
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_map_edgeon(self):
+        return True
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_faceon_projection_path(self):
@@ -9853,6 +10582,33 @@ class RTModel(object):
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def extra_component_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+        return ComponentSED(extra_component_name, self.extra_component, description="extra stellar component",
+                            path=self.extra_sed_path, input_filepaths=self.extra_input_filepaths,
+                            distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
+                            wavelengths_filename=wavelengths_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_sed(self):
+        return self.extra_component_sed.sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_sed_filepath(self):
+        return self.extra_component_sed.sed_filepath
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
     @property
     def dust_sed(self):
         return self.total_simulations.observed_dust_sed
@@ -9915,14 +10671,12 @@ class RTModel(object):
 
     @lazyproperty
     def absorbed_diffuse_stellar_luminosity(self):
-        #return self.total_absorbed_diffuse_stellar_luminosity_map.sum(add_unit=True, per_area="error")
         return self.total_absorbed_diffuse_stellar_sed_earth.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_absorbed_diffuse_stellar_luminosity(self):
-        #return self.has_total_absorbed_diffuse_stellar_luminosity_map
         return self.has_total_absorbed_diffuse_stellar_sed_earth
 
     # -----------------------------------------------------------------

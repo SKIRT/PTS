@@ -74,6 +74,7 @@ old = "old"
 young = "young"
 ionizing = "ionizing"
 unevolved = "unevolved"
+extra = "extra"
 
 # All contributions
 contributions = [total, bulge, disk, old, young, ionizing, unevolved]
@@ -387,6 +388,14 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def extra_output_path(self):
+        path = self.output_path_for_contribution(extra, create=False)
+        if not fs.is_directory(path): return None
+        else: return path
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_logfile_path(self):
         return self.logfile_path_for_contribution(total)
 
@@ -650,15 +659,17 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
-    def simulation_path_for_contribution(self, contribution):
+    def simulation_path_for_contribution(self, contribution, create=True):
 
         """
         This function ...
         :param contribution:
+        :param create:
         :return:
         """
 
-        return fs.create_directory_in(self.contributions_path, contribution)
+        if create: return fs.create_directory_in(self.contributions_path, contribution)
+        else: return fs.join(self.contributions_path, contribution)
 
     # -----------------------------------------------------------------
 
@@ -674,7 +685,7 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
-    def output_path_for_contribution(self, contribution):
+    def output_path_for_contribution(self, contribution, create=True):
 
         """
         This function ...
@@ -682,7 +693,8 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.create_directory_in(self.simulation_path_for_contribution(contribution), "out")
+        if create: return fs.create_directory_in(self.simulation_path_for_contribution(contribution, create=create), "out")
+        else: return fs.join(self.simulation_path_for_contribution(contribution, create=create), "out")
 
     # -----------------------------------------------------------------
 
@@ -2260,7 +2272,8 @@ class AnalysisRun(AnalysisRunBase):
                        observed_total_output_path=self.total_output_path, observed_bulge_output_path=self.bulge_output_path,
                        observed_disk_output_path=self.disk_output_path, observed_old_output_path=self.old_output_path,
                        observed_young_output_path=self.young_output_path, observed_sfr_output_path=self.ionizing_output_path,
-                       observed_unevolved_output_path=self.unevolved_output_path, center=self.galaxy_center,
+                       observed_unevolved_output_path=self.unevolved_output_path,
+                       observed_extra_output_path=self.extra_output_path, center=self.galaxy_center,
                        galaxy_name=self.galaxy_name, hubble_stage=self.hubble_stage, earth_wcs=self.reference_wcs,
                        truncation_ellipse=self.truncation_ellipse)
 
