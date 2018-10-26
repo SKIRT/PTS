@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from scipy.stats import pearsonr
 from collections import OrderedDict
 from matplotlib.patches import Circle
 
@@ -194,7 +195,9 @@ map_name = "map"
 difference_name = "difference"
 distribution_name = "distribution"
 curve_name = "curve"
+
 ssfr_funev_name = "ssfr_funev"
+vsfr_funev_name = "vsfr_funev"
 
 plot_heating_commands = OrderedDict()
 plot_heating_commands.description = "make plots of the heating fraction"
@@ -209,7 +212,8 @@ plot_absorption_commands[map_name] = ("plot_absorption_map_command", True, "plot
 
 plot_correlations_commands = OrderedDict()
 plot_correlations_commands.description = "make plots of the correlations"
-plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot map of the sSFR to Funev scatter", None)
+plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot the sSFR to Funev scatter", None)
+plot_correlations_commands[vsfr_funev_name] = ("plot_vsfr_funev_command", True, "plot the vSFR to Funev scatter", None)
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -445,6 +449,42 @@ salim_name = "salim"
 ke_name = "ke"
 mappings_name = "mappings"
 mappings_ke_name = "mappings_ke"
+
+# -----------------------------------------------------------------
+
+class CorrelationPlotSettings(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # Column names
+        self.x_colname = None
+        self.y_colname = None
+
+        # Axes limits
+        self.xlimits = None
+        self.ylimits = None
+
+        # Axes scales
+        self.xlog = False
+        self.ylog = False
+
+        # Conditions for getting subsets
+        self.conditions = None
+
+        # Plotting color
+        self.color = "red"
+
+        # Auxilary axis
+        self.aux_colname = None
+        self.aux_log = False
 
 # -----------------------------------------------------------------
 
@@ -4412,7 +4452,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         cells = self.get_cells_ssfr_funev_scatter("ke")
 
         # Create the figure
-        figsize = (30, 6,)
+        figsize = (35, 6,)
         figure = MPLFigure(size=figsize)
 
         # Create plots
@@ -4658,21 +4698,71 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False):
+
+        """
+        This function ...
+        :param scatter:
+        :param plot:
+        :param settings:
+        :param show_coefficient:
+        :return:
+        """
+
+        # Get mask
+        if settings.conditions is not None and len(settings.conditions) > 0:
+            mask = np.ones_like(scatter.x_array, dtype=bool)
+            for colname in settings.conditions:
+                if settings.conditions[colname].lower is not None: mask *= scatter.get_array(colname) > settings.conditions[colname].lower
+                if settings.conditions[colname].upper is not None: mask *= scatter.get_array(colname) < settings.conditions[colname].upper
+        else: mask = None
+
+        # Make the plot
+        output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
+                                        xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
+                                        aux_colname=settings.aux_colname, aux_log=settings.aux_log, valid_points=mask,
+                                        x_colname=settings.x_colname, y_colname=settings.y_colname)
+
+        # Set nice ticks
+        plot.set_xticks()
+        plot.set_yticks()
+        
+        # Show the correlation coefficient
+        if show_coefficient:
+
+            # Get correlation coefficient
+            if settings.xlog: x = np.log10(output.x)
+            else: x = output.x
+            if settings.ylog: y = np.log10(output.y)
+            else: y = output.y
+            coeff, p_value = pearsonr(x, y)
+
+            # Show
+            print("")
+            print("Correlation coefficient (Pearson): " + str(coeff))
+            print("Correlation p-value: " + str(p_value))
+            print("")
+
+        # Return the plotting output
+        return output
+
+    # -----------------------------------------------------------------
+
     @property
-    def default_ssfr_method(self):
+    def default_sfr_method(self):
         return ke_name
 
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_methods(self):
+    def sfr_methods(self):
         return [salim_name, ke_name, mappings_name, mappings_ke_name]
 
     # -----------------------------------------------------------------
 
     @property
     def ssfr_funev_preset_names(self):
-        return ["bulge", "disk"]
+        return ["standard", "distance", "bulge", "disk"]
 
     # -----------------------------------------------------------------
 
@@ -4687,14 +4777,43 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
 
-        # sSFR method
-        definition.add_positional_optional("ssfr_method", "string", "method for the sSFR estimation", self.default_ssfr_method, choices=self.ssfr_methods)
+        # SFR method
+        definition.add_positional_optional("sfr_method", "string", "method for the SFR estimation", self.default_sfr_method, choices=self.sfr_methods)
 
         # Use preset?
         definition.add_optional("preset", "string", "use a plotting preset", choices=self.ssfr_funev_preset_names)
 
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
         # Return
         return definition
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_standard_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0, 1]
+
+        # No auxilary axis
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = False
+
+        # Return
+        return settings
 
     # -----------------------------------------------------------------
 
@@ -4707,17 +4826,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Initialize
-        settings = Map()
+        settings = CorrelationPlotSettings()
 
         # Axes limits
         settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0.0015, 0.5]
+        settings.ylimits = [0.0015, 1]
 
         # Auxilary axis
         settings.aux_colname = "Distance from center"
 
         # Logscales?
-        settings.funev_log = True
+        settings.xlog = True
+        settings.ylog = True
         settings.aux_log = False
 
         # Return
@@ -4734,7 +4854,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Initialize
-        settings = Map()
+        settings = CorrelationPlotSettings()
 
         # Axes limits
         settings.xlimits = [1e-14, 1e-9]
@@ -4749,7 +4869,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.conditions = {"Distance from center": distance_conditions}
 
         # Logscales?
-        settings.funev_log = True
+        settings.xlog = True
+        settings.ylog = True
         settings.aux_log = True
 
         # Return
@@ -4766,7 +4887,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Initialize
-        settings = Map()
+        settings = CorrelationPlotSettings()
 
         # Axes limits
         settings.xlimits = [1e-18, 1e-9]
@@ -4781,7 +4902,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.conditions = {"Distance from center": distance_conditions}
 
         # Logscales?
-        settings.funev_log = True
+        settings.xlog = True
+        settings.ylog = True
         settings.aux_log = True
 
         # Return
@@ -4791,7 +4913,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def ssfr_funev_aux_colnames(self):
-        return ["Dust density", "vSFR", "Bulge disk ratio", "Distance from center", "Dust temperature", "Mean stellar age"]
+        return ["Dust density", "vSFR", "Bulge disk ratio", "Distance from center", "Radius", "Dust scale heights", "Dust temperature", "Mean stellar age"]
 
     # -----------------------------------------------------------------
 
@@ -4803,12 +4925,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Initialize
-        settings = Map()
+        settings = CorrelationPlotSettings()
 
         # Log?
-        settings.funev_log = prompt_yn("funev_log", "use log scale for the Funev axis", default=True)
+        settings.xlog = True
+        settings.ylog = prompt_yn("funev_log", "use log scale for the Funev axis", default=True)
         default_ssfr_limits = (1e-18, 1e-9,)
-        default_funev_limits = (0.0015, 1,) if settings.funev_log else (0, 1,)
+        default_funev_limits = (0.0015, 1,) if settings.ylog else (0, 1,)
 
         # Axes limits
         settings.xlimits = prompt_variable("xlimits", "real_pair", "x plotting interval", default=default_ssfr_limits)
@@ -4848,7 +4971,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Use preset settings
         if config.preset is not None:
 
-            if config.preset == "distance": settings = self.ssfr_funev_distance_settings
+            if config.preset == "standard": settings = self.ssfr_funev_standard_settings
+            elif config.preset == "distance": settings = self.ssfr_funev_distance_settings
             elif config.preset == "disk": settings = self.ssfr_funev_disk_settings
             elif config.preset == "bulge": settings = self.ssfr_funev_bulge_settings
             else: raise ValueError("Invalid preset: '" + config.preset + "'")
@@ -4864,15 +4988,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot = figure.create_one_plot(projection="scatter_density")
 
         # Load the data
-        scatter = self.get_cells_ssfr_funev_scatter(config.ssfr_method)
+        scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_ssfr_funev_impl(scatter, plot, settings)
+        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True)
 
-        # Create colorbar
-        aux_unit = scatter.get_unit(settings.aux_colname)
-        aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
-        figure.figure.colorbar(output.scatter, label=aux_label)
+        # Create colorbar, if auxilary axis
+        if settings.aux_colname is not None:
+            aux_unit = scatter.get_unit(settings.aux_colname)
+            aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
+            figure.figure.colorbar(output.scatter, label=aux_label)
 
         # Save or show
         if config.path is not None: figure.saveto(config.path)
@@ -4880,33 +5005,73 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_ssfr_funev_impl(self, scatter, plot, settings):
+    @lazyproperty
+    def plot_vsfr_funev_definition(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # SFR method
+        definition.add_positional_optional("sfr_method", "string", "method for the SFR estimation", self.default_sfr_method, choices=self.sfr_methods)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_vsfr_funev_command(self, command, **kwargs):
 
         """
         This function ...
-        :param scatter:
-        :param plot:
-        :param settings:
-        :return:
+        :param command: 
+        :param kwargs: 
+        :return: 
         """
 
-        # Get mask
-        if settings.conditions is not None and len(settings.conditions) > 0:
-            mask = np.ones_like(scatter.x_array, dtype=bool)
-            for colname in settings.conditions:
-                if settings.conditions[colname].lower is not None: mask *= scatter.get_array(colname) > settings.conditions[colname].lower
-                if settings.conditions[colname].upper is not None: mask *= scatter.get_array(colname) < settings.conditions[colname].upper
-        else: mask = None
+        import mpl_scatter_density  # NOQA
 
-        # Make the plot
-        output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits, xlog=True, ylog=settings.funev_log, plot=plot, color="red", aux_colname=settings.aux_colname, aux_log=settings.aux_log, valid_points=mask)
+        # Get config
+        config = self.get_config_from_command(command, self.plot_vsfr_funev_definition, **kwargs)
 
-        # Set nice ticks
-        plot.set_xticks()
-        plot.set_yticks()
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
 
-        # Return the plotting output
-        return output
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+        settings.xlog = True
+        #settings.ylog = True
+        settings.color = "blue"
+        settings.x_colname = "vSFR"
+        settings.xlimits = (1e-15,1e-10)
+        #settings.ylimits = (0.0015, 1,)
+        settings.ylimits = (0,1,)
+
+        # Plot
+        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True)
+
+        # Create colorbar
+        #aux_unit = scatter.get_unit(settings.aux_colname)
+        #aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
+        #figure.figure.colorbar(output.scatter, label=aux_label)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
 
     # -----------------------------------------------------------------
 
