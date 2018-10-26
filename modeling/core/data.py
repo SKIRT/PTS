@@ -1017,6 +1017,11 @@ class Data3D(Data3DBase):
 
     # -----------------------------------------------------------------
 
+    def where_radius_between(self, lower, upper):
+        return self.where_radius_greater_than(lower) * self.where_radius_smaller_than(upper)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def absolute_values(self):
         return np.abs(self.values)

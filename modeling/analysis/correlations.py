@@ -57,6 +57,8 @@ mean_age_ssfr_name = "Mean age-sSFR"
 sfr_density_name = "vSFR"
 dust_density_name = "Dust density"
 distance_center_name = "Distance from center"
+radius_name = "Radius"
+dust_heights_name = "Dust scale heights"
 bulge_disk_ratio_name = "Bulge disk ratio"
 temperature_name = "Dust temperature"
 mean_age_name = "Mean stellar age"
@@ -66,8 +68,10 @@ sfr_density_ke_name = "vSFR (K&E)"
 sfr_density_mappings_name = "vSFR (MAPPINGS)"
 sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K&E)"
 
+# -----------------------------------------------------------------
+
 # Auxilary column names for sSFR-Funev scatter data
-aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name, temperature_name, mean_age_name]
+ssfr_funev_aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, radius_name, dust_heights_name, bulge_disk_ratio_name, temperature_name, mean_age_name]
 
 # Auxilary column names for SFR-SFR scatter
 sfr_sfr_cells_aux_colnames = [temperature_name, mean_age_name, funev_name]
@@ -201,6 +205,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def cell_radii(self):
         return np.sqrt(self.cell_x_coordinates**2 + self.cell_y_coordinates**2 + self.cell_z_coordinates**2)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_polar_radii(self):
+        return np.sqrt(self.cell_x_coordinates**2 + self.cell_y_coordinates**2)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_dust_heights(self):
+        return self.cell_z_coordinates / self.model.dust_scaleheight.to(self.length_unit).value
 
     # -----------------------------------------------------------------
 
@@ -1013,6 +1029,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if sfr_densities is not None: aux[sfr_density_name] = sfr_densities
         aux[dust_density_name] = self.cell_dust_densities
         aux[distance_center_name] = self.cell_radii
+        aux[radius_name] = self.cell_polar_radii
+        aux[dust_heights_name] = self.cell_dust_heights
         aux[bulge_disk_ratio_name] = self.cell_bd_ratios
         aux[temperature_name] = self.cell_temperatures
         aux[mean_age_name] = self.cell_mean_ages
@@ -1022,6 +1040,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if sfr_densities is not None and sfr_density_unit is not None: aux_units[sfr_density_name] = sfr_density_unit
         aux_units[dust_density_name] = self.cell_dust_density_unit
         aux_units[distance_center_name] = self.length_unit
+        aux_units[radius_name] = self.length_unit
         aux_units[temperature_name] = self.temperature_unit
         aux_units[mean_age_name] = self.log_age_unit
 
@@ -1227,7 +1246,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_salim_funev_cells_has_all_aux_columns(self):
-        return sequences.contains_all(self.ssfr_salim_funev_cells_aux_colnames, aux_colnames)
+        return sequences.contains_all(self.ssfr_salim_funev_cells_aux_colnames, ssfr_funev_aux_colnames)
 
     # -----------------------------------------------------------------
 
@@ -1243,7 +1262,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #if temperature_name not in colnames: self.ssfr_salim_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_salim, self.temperature_unit, as_column=True)
                 #if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_salim, self.log_age_unit, as_column=True)
                 #self.ssfr_salim_funev_cells.save() # save
-                log.warning("The Salim sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                log.warning("The Salim sSFR - Funev cell scatter file does not contain all auxilary columns: removing and recalculating ...")
                 fs.remove_file(self.ssfr_salim_funev_cells_path)
                 return False
             return True
@@ -1434,7 +1453,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_ke_funev_cells_has_all_aux_columns(self):
-        return sequences.contains_all(self.ssfr_ke_funev_cells_aux_colnames, aux_colnames)
+        return sequences.contains_all(self.ssfr_ke_funev_cells_aux_colnames, ssfr_funev_aux_colnames)
 
     # -----------------------------------------------------------------
 
@@ -1641,7 +1660,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_mappings_funev_cells_has_all_aux_columns(self):
-        return sequences.contains_all(self.ssfr_mappings_funev_cells_aux_colnames, aux_colnames)
+        return sequences.contains_all(self.ssfr_mappings_funev_cells_aux_colnames, ssfr_funev_aux_colnames)
 
     # -----------------------------------------------------------------
 
@@ -1848,7 +1867,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_mappings_ke_funev_cells_has_all_aux_columns(self):
-        return sequences.contains_all(self.ssfr_mappings_ke_funev_cells_aux_colnames, aux_colnames)
+        return sequences.contains_all(self.ssfr_mappings_ke_funev_cells_aux_colnames, ssfr_funev_aux_colnames)
 
     # -----------------------------------------------------------------
 
