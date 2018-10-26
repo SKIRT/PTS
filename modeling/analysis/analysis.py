@@ -1023,6 +1023,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fractions = self.valid_cell_heating_fractions
         weights = self.valid_cell_weights
 
+        mask = fractions.where_radius_smaller_than()
+
         # Calculate average
         fraction = numbers.weighed_arithmetic_mean_numpy(fractions, weights=weights)
         print(fraction*100)

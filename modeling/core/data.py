@@ -178,6 +178,90 @@ class Data3DBase(object):
 
         pass
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nx(self):
+        return len(self.x)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ny(self):
+        return len(self.y)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nz(self):
+        return len(self.z)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncoordinates(self):
+        return self.nx
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_description(self):
+        return self.description is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_length_unit(self):
+        return self.length_unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unit(self):
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radii(self):
+        return np.sqrt(self.x ** 2 + self.y ** 2)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_unit(self):
+        return self.length_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_unit(self):
+        return self.length_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def z_unit(self):
+        return self.length_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radius_unit(self):
+        return self.length_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distance(self):
+        return self.distance is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_solid_angle(self):
+        return self.solid_angle is not None
+
 # -----------------------------------------------------------------
 
 class Data3D(Data3DBase):
@@ -366,48 +450,6 @@ class Data3D(Data3DBase):
     # -----------------------------------------------------------------
 
     @property
-    def has_description(self):
-        return self.description is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_length_unit(self):
-        return self.length_unit is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_unit(self):
-        return self.unit is not None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def radii(self):
-        return np.sqrt(self.x ** 2 + self.y ** 2)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def nx(self):
-        return len(self.x)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ny(self):
-        return len(self.y)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def nz(self):
-        return len(self.z)
-
-    # -----------------------------------------------------------------
-
-    @property
     def nvalues(self):
         return len(self.values)
 
@@ -527,20 +569,8 @@ class Data3D(Data3DBase):
     # -----------------------------------------------------------------
 
     @property
-    def has_distance(self):
-        return self.distance is not None
-
-    # -----------------------------------------------------------------
-
-    @property
     def has_wavelength(self):
         return self.wavelength is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_solid_angle(self):
-        return self.solid_angle is not None
 
     # -----------------------------------------------------------------
 
@@ -974,6 +1004,16 @@ class Data3D(Data3DBase):
 
     def where_greater_than_or_equal(self, value):
         return np.greater_equal(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    def where_radius_smaller_than(self, value):
+        return np.less(self.radii, value.to(self.radius_unit).value)
+
+    # -----------------------------------------------------------------
+
+    def where_radius_greater_than(self, value):
+        return np.greater(self.radii, value.to(self.radius_unit).value)
 
     # -----------------------------------------------------------------
 
@@ -1426,71 +1466,11 @@ class SpectralData3D(Data3DBase):
     # -----------------------------------------------------------------
 
     @property
-    def has_description(self):
-        return self.description is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_length_unit(self):
-        return self.length_unit is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_unit(self):
-        return self.unit is not None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def radii(self):
-        return np.sqrt(self.x ** 2 + self.y ** 2)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_distance(self):
-        return self.distance is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_solid_angle(self):
-        return self.solid_angle is not None
-
-    # -----------------------------------------------------------------
-
-    @property
     def conversion_info(self):
         info = dict()
         if self.has_distance: info["distance"] = self.distance
         if self.has_solid_angle: info["solid_angle"] = self.solid_angle
         return info
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def nx(self):
-        return len(self.x)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ny(self):
-        return len(self.y)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def nz(self):
-        return len(self.z)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ncoordinates(self):
-        return self.nx
 
     # -----------------------------------------------------------------
 
