@@ -3958,6 +3958,43 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # MAPPINGS sSFR - FUV-H sSFR
     # -----------------------------------------------------------------
 
+    def create_ssfr_colour_cell_scatter(self, ssfr_data, colour_data, ssfr_name, colour_name, ssfr_description, colour_description):
+
+        """
+        This function ...
+        :param ssfr_data:
+        :param colour_data:
+        :param ssfr_name:
+        :param colour_name:
+        :param ssfr_description:
+        :param colour_description:
+        :return:
+        """
+
+        # Create and return
+        return create_cell_scatter(ssfr_name, colour_name, ssfr_data, colour_data, ssfr_description, colour_description,
+                                   x_unit=self.ssfr_unit, y_unit=self.magnitude_unit)
+
+    # -----------------------------------------------------------------
+
+    def create_ssfr_colour_pixel_scatter(self, ssfr_frame, colour_frame, ssfr_name, colour_name, ssfr_description, colour_description):
+
+        """
+        This function ...
+        :param ssfr_frame:
+        :param colour_frame:
+        :param ssfr_name:
+        :param colour_name:
+        :param ssfr_description:
+        :param colour_description:
+        :return:
+        """
+
+        # Create and return
+        return create_pixel_scatter(ssfr_name, colour_name, ssfr_frame, colour_frame, ssfr_description, colour_description, x_unit=self.ssfr_unit, y_unit=self.magnitude_unit, same_units=False, convolve=True)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def ssfr_ssfr_path(self):
         return fs.create_directory_in(self.correlations_path, "sSFR-sSFR")
@@ -4038,16 +4075,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ssfr_values = self.cell_ssfr_mappings_values
-        fuv_h_ssfr_values = self.cell_ssfr_fuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ssfr_values, fuv_h_ssfr_values,
-                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.fuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings, self.cell_ssfr_fuv_h, self.mappings_ssfr_name, self.fuv_h_ssfr_name, self.mappings_ssfr_description, self.fuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4095,16 +4124,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ssfr_values = self.pixel_ssfr_mappings_values
-        fuv_h_ssfr_values = self.pixel_ssfr_fuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ssfr_values, fuv_h_ssfr_values,
-                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.fuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings, self.pixel_ssfr_fuv_h, self.mappings_ssfr_name, self.fuv_h_ssfr_name, self.mappings_ssfr_description, self.fuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4164,16 +4185,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ssfr_values = self.cell_ssfr_mappings_values
-        fuv_r_ssfr_values = self.cell_ssfr_fuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ssfr_values, fuv_r_ssfr_values,
-                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.fuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings, self.cell_ssfr_fuv_r, self.mappings_ssfr_name, self.fuv_r_ssfr_name, self.mappings_ssfr_description, self.fuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4221,20 +4234,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ssfr_values = self.pixel_ssfr_mappings_values
-        fuv_r_ssfr_values = self.pixel_ssfr_fuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ssfr_values, fuv_r_ssfr_values,
-                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.fuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings, self.pixel_ssfr_fuv_r, self.mappings_ssfr_name, self.fuv_r_ssfr_name, self.mappings_ssfr_description, self.fuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS K&E - FUV-H/R
-    #
+    # -----------------------------------------------------------------
 
     @property
     def mappings_ke_ssfr_name(self):
@@ -4268,16 +4273,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ke_ssfr_values = self.cell_ssfr_mappings_ke_values
-        fuv_h_ssfr_values = self.cell_ssfr_fuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_h_ssfr_values,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.fuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings_ke, self.cell_ssfr_fuv_h, self.mappings_ke_ssfr_name, self.fuv_h_ssfr_name, self.mappings_ke_ssfr_description, self.fuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4301,16 +4298,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ke_ssfr_values = self.pixel_ssfr_mappings_ke_values
-        fuv_h_ssfr_values = self.pixel_ssfr_fuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_h_ssfr_values,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.fuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings_ke, self.pixel_ssfr_fuv_h, self.mappings_ke_ssfr_name, self.fuv_h_ssfr_name, self.mappings_ke_ssfr_description, self.fuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4334,16 +4323,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ke_ssfr_values = self.cell_ssfr_mappings_ke_values
-        fuv_r_ssfr_values = self.cell_ssfr_fuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_r_ssfr_values,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.fuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings_ke, self.cell_ssfr_fuv_r, self.mappings_ke_ssfr_name, self.fuv_r_ssfr_name, self.mappings_ke_ssfr_description, self.fuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4367,16 +4348,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ke_ssfr_values = self.pixel_ssfr_mappings_ke_values
-        fuv_r_ssfr_values = self.pixel_ssfr_fuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_r_ssfr_values,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.fuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings_ke, self.pixel_ssfr_fuv_r, self.mappings_ke_ssfr_name, self.fuv_r_ssfr_name, self.mappings_ke_ssfr_description, self.fuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS - NUV-H/R
@@ -4402,16 +4375,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings = self.cell_ssfr_mappings_values
-        nuv_h = self.cell_ssfr_nuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings, nuv_h,
-                                 x_name=self.mappings_ssfr_name, y_name=self.nuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.nuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings, self.cell_ssfr_nuv_h, self.mappings_ssfr_name, self.nuv_h_ssfr_name, self.mappings_ssfr_description, self.nuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4435,16 +4400,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings = self.pixel_ssfr_mappings_values
-        nuv_h = self.pixel_ssfr_nuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings, nuv_h,
-                                 x_name=self.mappings_ssfr_name, y_name=self.nuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.nuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings, self.pixel_ssfr_nuv_h, self.mappings_ssfr_name, self.nuv_h_ssfr_name, self.mappings_ssfr_description, self.nuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4468,16 +4425,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings = self.cell_ssfr_mappings_values
-        nuv_r = self.cell_ssfr_nuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings, nuv_r,
-                                 x_name=self.mappings_ssfr_name, y_name=self.nuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.nuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings, self.cell_ssfr_nuv_r, self.mappings_ssfr_name, self.nuv_r_ssfr_name, self.mappings_ssfr_description, self.nuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4501,16 +4450,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings = self.pixel_ssfr_mappings_values
-        nuv_r = self.pixel_ssfr_nuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings, nuv_r,
-                                 x_name=self.mappings_ssfr_name, y_name=self.nuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ssfr_description,
-                                 y_description=self.nuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings, self.pixel_ssfr_nuv_r, self.mappings_ssfr_name, self.nuv_r_ssfr_name, self.mappings_ssfr_description, self.nuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS KE - NUV-H/R
@@ -4536,18 +4477,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return: 
         """
 
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings_ke, self.cell_ssfr_nuv_h, self.mappings_ke_ssfr_name, self.nuv_h_ssfr_name, self.mappings_ke_ssfr_description, self.nuv_h_ssfr_description)
 
-        # Get values
-        mappings_ke = self.cell_ssfr_mappings_ke_values
-        nuv_h = self.cell_ssfr_nuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke, nuv_h,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.nuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.nuv_h_ssfr_description)
-        
     # -----------------------------------------------------------------
 
     @property
@@ -4570,16 +4502,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return: 
         """
 
-        # Get values
-        mappings_ke = self.pixel_ssfr_mappings_ke_values
-        nuv_h = self.pixel_ssfr_nuv_h_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke, nuv_h,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.nuv_h_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.nuv_h_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings_ke, self.pixel_ssfr_nuv_h, self.mappings_ke_ssfr_name, self.nuv_h_ssfr_name, self.mappings_ke_ssfr_description, self.nuv_h_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4603,16 +4527,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ke = self.cell_ssfr_mappings_ke_values
-        nuv_r = self.cell_ssfr_nuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke, nuv_r,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.nuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.nuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_cell_scatter(self.cell_ssfr_mappings_ke, self.cell_ssfr_nuv_r, self.mappings_ke_ssfr_name, self.nuv_r_ssfr_name, self.mappings_ke_ssfr_description, self.nuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
 
@@ -4636,16 +4552,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get values
-        mappings_ke = self.pixel_ssfr_mappings_ke_values
-        nuv_r = self.pixel_ssfr_nuv_r_values
-
-        # Return
-        return Scatter2D.from_xy(mappings_ke, nuv_r,
-                                 x_name=self.mappings_ke_ssfr_name, y_name=self.nuv_r_ssfr_name,
-                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
-                                 x_description=self.mappings_ke_ssfr_description,
-                                 y_description=self.nuv_r_ssfr_description)
+        # Create scatter
+        return self.create_ssfr_colour_pixel_scatter(self.pixel_ssfr_mappings_ke, self.pixel_ssfr_nuv_r, self.mappings_ke_ssfr_name, self.nuv_r_ssfr_name, self.mappings_ke_ssfr_description, self.nuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
