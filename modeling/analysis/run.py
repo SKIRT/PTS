@@ -74,6 +74,7 @@ old = "old"
 young = "young"
 ionizing = "ionizing"
 unevolved = "unevolved"
+extra = "extra"
 
 # All contributions
 contributions = [total, bulge, disk, old, young, ionizing, unevolved]
@@ -383,6 +384,12 @@ class AnalysisRunBase(object):
     @property
     def unevolved_output_path(self):
         return self.output_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_output_path(self):
+        return self.output_path_for_contribution(extra)
 
     # -----------------------------------------------------------------
 
@@ -2260,7 +2267,9 @@ class AnalysisRun(AnalysisRunBase):
                        observed_total_output_path=self.total_output_path, observed_bulge_output_path=self.bulge_output_path,
                        observed_disk_output_path=self.disk_output_path, observed_old_output_path=self.old_output_path,
                        observed_young_output_path=self.young_output_path, observed_sfr_output_path=self.ionizing_output_path,
-                       observed_unevolved_output_path=self.unevolved_output_path, center=self.galaxy_center,
+                       observed_unevolved_output_path=self.unevolved_output_path,
+                       observed_extra_output_path=self.extra_output_path,
+                       center=self.galaxy_center,
                        galaxy_name=self.galaxy_name, hubble_stage=self.hubble_stage, earth_wcs=self.reference_wcs,
                        truncation_ellipse=self.truncation_ellipse)
 
