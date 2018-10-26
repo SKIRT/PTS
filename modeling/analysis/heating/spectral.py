@@ -1652,7 +1652,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty("WavelengthCurve", "unevolved_spectral_absorption_fraction_curve_path", True, write=False)
+    @lazyfileproperty(WavelengthCurve, "unevolved_spectral_absorption_fraction_curve_path", True, write=False)
     def unevolved_spectral_absorption_fraction_curve(self):
 
         """
@@ -1726,7 +1726,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty("WavelengthCurve", "unevolved_spectral_emission_fraction_curve_path", True, write=False)
+    @lazyfileproperty(WavelengthCurve, "unevolved_spectral_emission_fraction_curve_path", True, write=False)
     def unevolved_spectral_emission_fraction_curve(self):
 
         """
