@@ -1617,26 +1617,36 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
 # GET XY DATA
 # -----------------------------------------------------------------
 
-def get_xy(curve, return_labels=False):
+def get_xy(curve, return_labels=False, x_colname=None, y_colname=None):
 
     """
     This function ...
     :param curve:
     :param return_labels:
+    :param x_colname:
+    :param y_colname:
     :return:
     """
 
     # Get the units
-    x_unit = curve.x_unit
-    y_unit = curve.y_unit
+    # X
+    if x_colname is not None: x_unit = curve.get_unit(x_colname)
+    else: x_unit = curve.x_unit
+    # Y
+    if y_colname is not None: y_unit = curve.get_unit(y_colname)
+    else: y_unit = curve.y_unit
 
     # Get the data
-    x = curve.get_x(asarray=True, unit=x_unit)
-    y = curve.get_y(asarray=True, unit=y_unit)
+    # X
+    if x_colname is not None: x = curve.get_column_array(x_colname, unit=x_unit)
+    else: x = curve.get_x(asarray=True, unit=x_unit)
+    # Y
+    if y_colname is not None: y = curve.get_column_array(y_colname, unit=y_unit)
+    else: y = curve.get_y(asarray=True, unit=y_unit)
 
     # Get the labels
-    x_label = curve.x_name
-    y_label = curve.y_name
+    x_label = curve.x_name if x_colname is None else x_colname
+    y_label = curve.y_name if y_colname is None else y_colname
     if x_unit is not None: x_label += " [" + str(x_unit) + "]"
     if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
@@ -1862,7 +1872,7 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
                            colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
-                           aux_name=None, aux_unit=None, aux_log=False, valid_points=None):
+                           aux_name=None, aux_unit=None, aux_log=False, valid_points=None, x_colname=None, y_colname=None):
 
     """
     This function ...
@@ -1885,11 +1895,15 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param aux_unit:
     :param aux_log:
     :param valid_points:
+    :param x_colname:
+    :param y_colname:
     :return:
     """
 
     # Get x, y and labels
-    x, y, x_label, y_label = get_xy(scatter, return_labels=True)
+    #print(x_colname, y_colname)
+    x, y, x_label, y_label = get_xy(scatter, return_labels=True, x_colname=x_colname, y_colname=y_colname)
+    #print(x_label, y_label)
 
     # Get aux values
     if aux_colname is not None:
@@ -2651,6 +2665,10 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     from ...core.basics.map import Map
     output = Map()
 
+    # Set data
+    output.x = x
+    output.y = y
+
     # Set dpi
     if dpi is None: dpi = 50
 
@@ -2795,6 +2813,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             # Add colorbar
             if not only_axes:
                 if aux_name is None: aux_name = "Auxilary axis"
+                if aux_unit is not None: aux_name = aux_name + " [" + str(aux_unit) + "]"
                 figure.figure.colorbar(scatter, label=aux_name)
 
         # No auxilary axis: plot in color
@@ -3785,6 +3804,9 @@ def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpos
     # Keep only the valid data
     x = x[valid]
     y = y[valid]
+
+    # Check length
+    if len(x) == 0: raise ValueError("None of the data passes the conditions")
 
     # Make into log
     if apply_log:
