@@ -549,7 +549,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_simulation_component_cubes_faceon(self):
-        return OrderedDict(self.total_simulation_evolved_component_cubes_faceon.items() + self.total_simulation_unevolved_component_cubes.items())
+        return OrderedDict(self.total_simulation_evolved_component_cubes_faceon.items() + self.total_simulation_unevolved_component_cubes_faceon.items())
 
     # -----------------------------------------------------------------
 
