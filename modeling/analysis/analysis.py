@@ -209,7 +209,7 @@ plot_absorption_commands[map_name] = ("plot_absorption_map_command", True, "plot
 
 plot_correlations_commands = OrderedDict()
 plot_correlations_commands.description = "make plots of the correlations"
-plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot map of the sSFR to Funev scatter")
+plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot map of the sSFR to Funev scatter", None)
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -1002,6 +1002,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
 
+        # Define radii
+        definition.add_optional("inner", "length_quantity", "max radius of inner region", default=self.inner_region_max_radius)
+        definition.add_optional("outer", "length_quantity", "min radius of outer region", default=self.outer_region_min_radius)
+        definition.add_optional("max", "length_quantity", "max radius of outer region") # default is None
+
         # Return
         return definition
 
@@ -1019,15 +1024,29 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.show_heating_definition, **kwargs)
 
-        # Get heating fractions
-        fractions = self.valid_cell_heating_fractions
-        weights = self.valid_cell_weights
+        # Get global fraction
+        fraction_global = self.get_average_cell_heating_fraction()
 
-        mask = fractions.where_radius_smaller_than()
+        # Get fraction in inner region
+        fraction_inner = self.get_average_cell_heating_fraction_inside(config.inner)
+
+        # Get fraction in outer region,
+        if config.max is not None: fraction_outer = self.get_average_cell_heating_fraction_between(config.outer, config.max)
+        else: fraction_outer = self.get_average_cell_heating_fraction_outside(config.outer)
+
+        # Get fraction in intermediate and outside of inner
+        fraction_intermediate = self.get_average_cell_heating_fraction_between(config.inner, config.outer)
+        if config.max is not None: fraction_outside_inner = self.get_average_cell_heating_fraction_between(config.inner, config.max)
+        else: fraction_outside_inner = self.get_average_cell_heating_fraction_outside(config.inner)
 
         # Calculate average
-        fraction = numbers.weighed_arithmetic_mean_numpy(fractions, weights=weights)
-        print(fraction*100)
+        print("")
+        print("GLOBAL: " + tostr(fraction_global*100) + "%")
+        print("INNER REGION: " + tostr(fraction_inner*100) + "%")
+        print("OUTER REGION: " + tostr(fraction_outer*100) + "%")
+        print("INTERMEDIATE REGION: " + tostr(fraction_intermediate*100) + "%")
+        print("OUTSIDE INNER REGION: " + tostr(fraction_outside_inner*100) + "%")
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -4981,39 +5000,100 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def cell_heating_fractions_unphysical(self):
-        return self.cell_heating_fractions_data.where_greater_than(1.)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_heating_fractions_invalid(self):
-        return self.cell_heating_fractions_data.invalid + self.cell_heating_fractions_unphysical
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_heating_fractions_valid(self):
-        return np.logical_not(self.cell_heating_fractions_invalid)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def valid_cell_heating_fractions(self):
-        return self.cell_heating_fractions[self.cell_heating_fractions_valid]
-
-    # -----------------------------------------------------------------
-
     @property
     def cell_weights(self):
         return self.cell_mass_fractions
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def valid_cell_weights(self):
-        return self.cell_weights[self.cell_heating_fractions_valid]
+    def get_valid_cell_heating_fractions(self, mask=None, return_weights=False):
+
+        """
+        This function ...
+        :param mask:
+        :param return_weights:
+        :return:
+        """
+
+        # Get unphysical mask
+        unphysical_mask = self.cell_heating_fractions_data.where_greater_than(1.)
+
+        # Create invalid mask
+        invalid_mask = self.cell_heating_fractions_data.invalid + unphysical_mask
+
+        # Get valid mask
+        if mask is not None: valid_mask = np.logical_not(invalid_mask) * mask
+        else: valid_mask = np.logical_not(invalid_mask)
+
+        # Get and return the values
+        values = self.cell_heating_fractions[valid_mask]
+        if return_weights: return values, self.cell_weights[valid_mask]
+        else: return values
+
+    # -----------------------------------------------------------------
+
+    def get_average_cell_heating_fraction(self, mask=None):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        # Get fractions and weights
+        fractions, weights = self.get_valid_cell_heating_fractions(mask=mask, return_weights=True)
+
+        # Calculate and return
+        return numbers.weighed_arithmetic_mean_numpy(fractions, weights=weights)
+
+    # -----------------------------------------------------------------
+
+    def get_average_cell_heating_fraction_inside(self, radius):
+
+        """
+        Thisfunction ...
+        :param radius:
+        :return:
+        """
+
+        # Get mask of cells inside the radius
+        mask = self.cell_heating_fractions_data.where_radius_smaller_than(radius)
+
+        # Return
+        return self.get_average_cell_heating_fraction(mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def get_average_cell_heating_fraction_outside(self, radius):
+
+        """
+        This function ...
+        :param radius:
+        :return:
+        """
+
+        # Get mask of cells outside the radius
+        mask = self.cell_heating_fractions_data.where_radius_greater_than(radius)
+
+        # Return
+        return self.get_average_cell_heating_fraction(mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def get_average_cell_heating_fraction_between(self, inner_radius, outer_radius):
+
+        """
+        This function ...
+        :param inner_radius:
+        :param outer_radius:
+        :return:
+        """
+
+        # Get mask of cells
+        mask = self.cell_heating_fractions_data.where_radius_between(inner_radius, outer_radius)
+
+        # Return
+        return self.get_average_cell_heating_fraction(mask=mask)
 
     # -----------------------------------------------------------------
 

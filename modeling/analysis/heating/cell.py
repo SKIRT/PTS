@@ -890,24 +890,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def midplane_height(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.midplane_component_scaleheight * self.config.midplane_factor
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def midplane_height_pc(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.midplane_height.to("pc").value
 
     # -----------------------------------------------------------------
