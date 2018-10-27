@@ -3937,8 +3937,7 @@ class MPLFigure(Figure):
         :return:
         """
 
-        title = title.replace("_", "\_")
-
+        title = title.replace("_", "\_").replace("&", "\&")
         self.figure.suptitle("\n".join(wrap(title, width)))
 
     # -----------------------------------------------------------------

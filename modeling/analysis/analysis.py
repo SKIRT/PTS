@@ -4762,7 +4762,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def ssfr_funev_preset_names(self):
-        return ["standard", "distance", "bulge", "disk"]
+        return ["standard", "standard_log", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
 
     # -----------------------------------------------------------------
 
@@ -4818,6 +4818,32 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_funev_standard_log_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
+
+        # No auxilary axis
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
     def ssfr_funev_distance_settings(self):
 
         """
@@ -4846,7 +4872,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_disk_settings(self):
+    def ssfr_funev_radius_settings(self):
 
         """
         This function ...
@@ -4857,21 +4883,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-14, 1e-9]
-        settings.ylimits = [0.2, 1]
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
 
-        # Distance auxilary axis
-        settings.aux_colname = "Dust density"
-
-        # Set conditions
-        distance_conditions = Map()
-        distance_conditions.lower = 6500
-        settings.conditions = {"Distance from center": distance_conditions}
+        # Auxilary axis
+        settings.aux_colname = "Radius"
 
         # Logscales?
         settings.xlog = True
         settings.ylog = True
-        settings.aux_log = True
+        settings.aux_log = False
 
         # Return
         return settings
@@ -4879,7 +4900,35 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_bulge_settings(self):
+    def ssfr_funev_dust_heights_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
+
+        # Auxilary axis
+        settings.aux_colname = "Dust scale heights"
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = False
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_inner_settings(self):
 
         """
         This function ...
@@ -4897,9 +4946,109 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "vSFR"
 
         # Set conditions
-        distance_conditions = Map()
-        distance_conditions.upper = 4000
-        settings.conditions = {"Distance from center": distance_conditions}
+        radius_condition = Map()
+        radius_condition.upper = self.inner_region_max_radius.to("pc").value
+        settings.conditions = {"Radius": radius_condition}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_intermediate_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-13, 1e-9]
+        settings.ylimits = [0.1, 1]
+
+        # Distance auxilary axis
+        #settings.aux_colname = "Dust density"
+
+        # Set conditions
+        radius_conditions = Map()
+        radius_conditions.lower = self.inner_region_max_radius.to("pc").value
+        radius_conditions.upper = self.outer_region_min_radius.to("pc").value
+        settings.conditions = {"Radius": radius_conditions}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        #settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_outside_inner_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-14, 1e-9]
+        settings.ylimits = [0.1, 1]
+
+        # Distance auxilary axis
+        settings.aux_colname = "Dust density"
+
+        # Set conditions
+        radius_condition = Map()
+        radius_condition.lower = self.inner_region_max_radius.to("pc").value
+        settings.conditions = {"Radius": radius_condition}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_outer_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-14, 1e-9]
+        settings.ylimits = [0.2, 1]
+
+        # Distance auxilary axis
+        settings.aux_colname = "Dust density"
+
+        # Set conditions
+        radius_condition = Map()
+        radius_condition.lower = self.outer_region_min_radius.to("pc").value
+        settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
         settings.xlog = True
@@ -4972,9 +5121,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if config.preset is not None:
 
             if config.preset == "standard": settings = self.ssfr_funev_standard_settings
+            elif config.preset == "standard_log": settings = self.ssfr_funev_standard_log_settings
             elif config.preset == "distance": settings = self.ssfr_funev_distance_settings
-            elif config.preset == "disk": settings = self.ssfr_funev_disk_settings
-            elif config.preset == "bulge": settings = self.ssfr_funev_bulge_settings
+            elif config.preset == "radius": settings = self.ssfr_funev_radius_settings
+            elif config.preset == "dust_heights": settings = self.ssfr_funev_dust_heights_settings
+            elif config.preset == "inner": settings = self.ssfr_funev_inner_settings
+            elif config.preset == "outer": settings = self.ssfr_funev_outer_settings
+            elif config.preset == "intermediate": settings = self.ssfr_funev_intermediate_settings
+            elif config.preset == "outside_inner": settings = self.ssfr_funev_outside_inner_settings
             else: raise ValueError("Invalid preset: '" + config.preset + "'")
 
         # Create new settings

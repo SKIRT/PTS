@@ -216,7 +216,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def cell_dust_heights(self):
-        return self.cell_z_coordinates / self.model.dust_scaleheight.to(self.length_unit).value
+        return np.abs(self.cell_z_coordinates) / self.model.dust_scaleheight.to(self.length_unit).value
 
     # -----------------------------------------------------------------
 
@@ -3600,6 +3600,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.debug("Creating the " + sfr0_name + " to " + sfr1_name + " cell scatter ...")
+
         # Get sfr densities 0
         sfr_density0 = sfr0_data.values / self.cell_volumes
         sfr_density0_unit = sfr0_data.unit / self.volume_unit
@@ -3627,6 +3630,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :param sfr1_description:
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the " + sfr0_name + " to " + sfr1_name + " pixel scatter ...")
 
         # Get frames per unit of pixelarea
         sfr0_frame = sfr0_frame / sfr0_frame.pixelarea
@@ -3990,6 +3996,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.debug("Creating the " + ssfr_name + " to " + colour_name + " cell scatter ...")
+
         # Create and return
         return create_cell_scatter(ssfr_name, colour_name, ssfr_data, colour_data, ssfr_description, colour_description,
                                    x_unit=self.ssfr_unit, y_unit=self.magnitude_unit)
@@ -4008,6 +4017,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :param colour_description:
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the " + ssfr_name + " to " + colour_name + " pixel scatter ...")
 
         # Create and return
         return create_pixel_scatter(ssfr_name, colour_name, ssfr_frame, colour_frame, ssfr_description, colour_description, x_unit=self.ssfr_unit, y_unit=self.magnitude_unit, same_units=False, convolve=True)
