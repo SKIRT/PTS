@@ -526,6 +526,13 @@ class DataProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def nfaceon_coordinates(self):
+        if self.has_faceon_height: return np.sum(self.within_faceon_height)
+        else: return self.ncoordinates
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def x_faceon(self):
         if self.has_faceon_height: return self.x[self.within_faceon_height]
         else: return self.x
@@ -578,6 +585,13 @@ class DataProjections(object):
     @lazyproperty
     def within_edgeon_width(self):
         return self.absolute_x <= self.edgeon_width
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nedgeon_coordinates(self):
+        if self.has_edgeon_width: return np.sum(self.within_edgeon_width)
+        else: return self.ncoordinates
 
     # -----------------------------------------------------------------
 
@@ -1183,8 +1197,8 @@ class DataProjections(object):
         x_range, y_range = self.get_faceon_coordinate_ranges(x, y)
 
         # Create masks
-        x_mask = (x_range.min < self.x) * (self.x <= x_range.max)
-        y_mask = (y_range.min < self.y) * (self.y <= y_range.max)
+        x_mask = (x_range.min < self.x_faceon) * (self.x_faceon <= x_range.max)
+        y_mask = (y_range.min < self.y_faceon) * (self.y_faceon <= y_range.max)
 
         # Create and return the combined mask
         return x_mask * y_mask
@@ -1284,7 +1298,7 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def project_faceon(self, logfreq=100, cell_based=False):
+    def project_faceon(self, logfreq=100, cell_based=True):
 
         """
         This function ...
@@ -1350,12 +1364,12 @@ class DataProjections(object):
                 if nindices > 0:
 
                     # Calculate the heating fraction
-                    vals = self.values[indices]
+                    vals = self.values_faceon[indices]
 
                     # With weights
                     if self.has_weights:
 
-                        wghts = self.weights[indices]
+                        wghts = self.weights_faceon[indices]
                         fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
                         fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
 
@@ -1427,15 +1441,15 @@ class DataProjections(object):
         self.faceon.metadata.update(self.faceon_metadata)
 
         # Show progress bar
-        with Bar(label='', expected_size=self.ncoordinates, every=100, add_datetime=True) as bar:
+        with Bar(label='', expected_size=self.nfaceon_coordinates, every=100, add_datetime=True) as bar:
 
             # Loop over the cells
-            for index in range(self.ncoordinates):
+            for index in range(self.nfaceon_coordinates):
 
                 # Get coordinates
-                x = self.x[index]
-                y = self.y[index]
-                value = self.values[index]
+                x = self.x_faceon[index]
+                y = self.y_faceon[index]
+                value = self.values_faceon[index]
                 #if value == 0: continue
 
                 # Show progress
@@ -1448,7 +1462,7 @@ class DataProjections(object):
 
                 # Debugging
                 if index % logfreq == 0:
-                    log.debug("Calculating projected value from cell " + str(index) + " of " + str(self.ncoordinates) + " (" + tostr(float(index) / self.ncoordinates * 100, decimal_places=1, round=True) + "%) ...")
+                    log.debug("Calculating projected value from cell " + str(index) + " of " + str(self.nfaceon_coordinates) + " (" + tostr(float(index) / self.nfaceon_coordinates * 100, decimal_places=1, round=True) + "%) ...")
                     log.debug("Cell position: x = " + tostr(x) + " " + tostr(self.length_unit) + ", y = " + tostr(y) + " " + tostr(self.length_unit))
                     log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
 
@@ -1660,8 +1674,8 @@ class DataProjections(object):
         y_range, z_range = self.get_edgeon_coordinate_ranges(y, z)
 
         # Create masks
-        y_mask = (y_range.min < self.y) * (self.y <= y_range.max)
-        z_mask = (z_range.min < self.z) * (self.z <= z_range.max)
+        y_mask = (y_range.min < self.y_edgeon) * (self.y_edgeon <= y_range.max)
+        z_mask = (z_range.min < self.z_edgeon) * (self.z_edgeon <= z_range.max)
 
         # Create combined mask
         return y_mask * z_mask
@@ -1761,7 +1775,7 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def project_edgeon(self, logfreq=100, cell_based=False):
+    def project_edgeon(self, logfreq=100, cell_based=True):
 
         """
         This function ...
@@ -1826,12 +1840,12 @@ class DataProjections(object):
                 if nindices > 0:
 
                     # Calculate the heating fraction
-                    vals = self.values[indices]
+                    vals = self.values_edgeon[indices]
 
                     # With weights
                     if self.has_weights:
 
-                        wghts = self.weights[indices]
+                        wghts = self.weights_edgeon[indices]
                         fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
                         fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
 
@@ -1902,15 +1916,15 @@ class DataProjections(object):
         self.edgeon.metadata.update(self.edgeon_metadata)
 
         # Show progress bar
-        with Bar(label='', expected_size=self.ncoordinates, every=100, add_datetime=True) as bar:
+        with Bar(label='', expected_size=self.nedgeon_coordinates, every=100, add_datetime=True) as bar:
 
             # Loop over the cells
-            for index in range(self.ncoordinates):
+            for index in range(self.nedgeon_coordinates):
 
                 # Get coordinates
-                y = self.y[index]
-                z = self.z[index]
-                value = self.values[index]
+                y = self.y_edgeon[index]
+                z = self.z_edgeon[index]
+                value = self.values_edgeon[index]
                 # if value == 0: continue
 
                 # Show progress
@@ -1922,7 +1936,7 @@ class DataProjections(object):
 
                 # Debugging
                 if index % logfreq == 0:
-                    log.debug("Calculating projected value from cell " + str(index) + " of " + str(self.ncoordinates) + " (" + tostr(float(index) / self.ncoordinates * 100, decimal_places=1, round=True) + "%) ...")
+                    log.debug("Calculating projected value from cell " + str(index) + " of " + str(self.nedgeon_coordinates) + " (" + tostr(float(index) / self.nedgeon_coordinates * 100, decimal_places=1, round=True) + "%) ...")
                     log.debug("Cell position: y = " + tostr(y) + " " + tostr(self.length_unit) + ", z = " + tostr(z) + " " + tostr(self.length_unit))
                     log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
 
