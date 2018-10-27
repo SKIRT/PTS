@@ -2816,10 +2816,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         from pts.magic.plot.imagegrid import plot_residuals_aplpy
 
         # Get images
-        observations = self.get_observed_images(filters)
-        models = self.get_simulated_images(filters)
+        #observations = self.get_observed_images(filters)
+        #models = self.get_simulated_images(filters)
+        #residuals = self.get_residual_images(filters)
+        observations = self.get_observed_images_residuals(filters)
+        models = self.get_simulated_images_residuals(filters)
         residuals = self.get_residual_images(filters)
         #distributions = self.get_residual_distributions(filters)
+        masks = self.get_residual_masks(filters)
 
         # Get center and radius
         center = self.galaxy_center
@@ -2830,7 +2834,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         plot_residuals_aplpy(observations, models, residuals, center=center, radius=radius, filepath=path, dark=dark,
-                             xy_ratio=xy_ratio, distance=self.galaxy_distance, mask_simulated=mask_simulated)
+                             xy_ratio=xy_ratio, distance=self.galaxy_distance, mask_simulated=mask_simulated, masks=masks)
 
     # -----------------------------------------------------------------
     # OBSERVED
@@ -2863,6 +2867,40 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def residual_observed_path(self):
+        return fs.join(self.analysis_run.residuals_path, "observed")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_observed_dataset(self):
+        return StaticDataSet.from_directory(self.residual_observed_path)
+
+    # -----------------------------------------------------------------
+
+    def get_observed_images_residuals(self, filters):
+        return self.residual_observed_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_simulated_path(self):
+        return fs.join(self.analysis_run.residuals_path, "simulated")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_simulated_dataset(self):
+        return StaticDataSet.from_directory(self.residual_simulated_path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_images_residuals(self, filters):
+        return self.residual_simulated_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    @property
     def residual_images_path(self):
         return fs.join(self.analysis_run.residuals_path, "maps")
 
@@ -2876,6 +2914,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     def get_residual_images(self, filters):
         return self.residual_images_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_masks_path(self):
+        return fs.join(self.analysis_run.residuals_path, "masks")
+
+    # -----------------------------------------------------------------
+
+    def get_residual_masks(self, filters):
+        masks = []
+        for fltr in filters: masks.append(Mask.from_file(fs.join(self.residual_masks_path, str(fltr) + ".fits")))
+        return masks
 
     # -----------------------------------------------------------------
     # DISTRIBUTIONS
