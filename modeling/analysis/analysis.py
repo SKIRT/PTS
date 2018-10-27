@@ -4461,13 +4461,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot0, plot1, plot2 = figure.create_row(3, projections=projections)
 
         # Plot all correlation
-        output_all = self.plot_ssfr_funev_impl(cells, plot0, self.ssfr_funev_distance_settings)
+        output_all = self.plot_correlation_impl(cells, plot0, self.ssfr_funev_distance_settings, plot_coefficient=True)
 
-        # Plot bulge correlation
-        output_bulge = self.plot_ssfr_funev_impl(cells, plot1, self.ssfr_funev_bulge_settings)
+        # Plot inner correlation
+        output_bulge = self.plot_correlation_impl(cells, plot1, self.ssfr_funev_inner_settings, plot_coefficient=True)
 
-        # Plot disk correlation
-        output_disk = self.plot_ssfr_funev_impl(cells, plot2, self.ssfr_funev_disk_settings)
+        # Plot outer correlation
+        output_disk = self.plot_correlation_impl(cells, plot2, self.ssfr_funev_outer_settings, plot_coefficient=True)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -4698,7 +4698,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False):
+    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False, plot_coefficient=False):
 
         """
         This function ...
@@ -4706,6 +4706,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param plot:
         :param settings:
         :param show_coefficient:
+        :param plot_coefficient:
         :return:
         """
 
@@ -4728,7 +4729,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot.set_yticks()
         
         # Show the correlation coefficient
-        if show_coefficient:
+        if show_coefficient or plot_coefficient:
 
             # Get correlation coefficient
             if settings.xlog: x = np.log10(output.x)
@@ -4738,10 +4739,15 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             coeff, p_value = pearsonr(x, y)
 
             # Show
-            print("")
-            print("Correlation coefficient (Pearson): " + str(coeff))
-            print("Correlation p-value: " + str(p_value))
-            print("")
+            if show_coefficient:
+                print("")
+                print("Correlation coefficient (Pearson): " + str(coeff))
+                print("Correlation p-value: " + str(p_value))
+                print("")
+
+            # Plot
+            if plot_coefficient:
+                plot.text(0.9, 0.1, "p-value = " + tostr(p_value), transform=output.axes.transAxes, color="white")
 
         # Return the plotting output
         return output
@@ -4785,6 +4791,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Path
         definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("p_value", "show the p value on the plot")
 
         # Return
         return definition
@@ -5145,7 +5154,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True)
+        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:
@@ -5175,6 +5184,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Path
         definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("p_value", "show the p value on the plot")
 
         # Return
         return definition
@@ -5216,7 +5228,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.ylimits = (0,1,)
 
         # Plot
-        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True)
+        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
