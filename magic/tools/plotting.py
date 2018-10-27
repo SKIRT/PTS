@@ -2743,7 +2743,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
                 full_color = cmap(1)
 
                 # Plot scatter points
-                scatter = axes.scatter_density(_x, _y, cmap=cmap, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
+                scatter = axes.scatter_density(_x, _y, cmap=cmap, dpi=dpi, label=name, vmin=0., vmax=vmax_function) # size=size
 
                 # Set color map name
                 output.colormaps[name] = cmap_name
@@ -2756,7 +2756,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
                 base_color = average_color = full_color = color
 
                 # Plot scatter points
-                scatter = axes.scatter_density(_x, _y, color=color, dpi=dpi, label=name, density_vmin=0., density_vmax=vmax_function) # size=size
+                scatter = axes.scatter_density(_x, _y, color=color, dpi=dpi, label=name, vmin=0., vmax=vmax_function) # size=size
 
                 # Set color name
                 output.colors[name] = color
@@ -2805,7 +2805,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             else: norm = None
 
             # Plot
-            scatter = axes.scatter_density(x, y, dpi=dpi, density_vmin=0., density_vmax=vmax_function, c=aux, cmap=cmap, norm=norm)
+            scatter = axes.scatter_density(x, y, dpi=dpi, vmin=0., vmax=vmax_function, c=aux, cmap=cmap, norm=norm)
 
             # Set colormap
             output.cmap = cmap
@@ -2820,7 +2820,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         else:
 
             if color is None: color = "blue"
-            scatter = axes.scatter_density(x, y, color=color, dpi=dpi, density_vmin=0., density_vmax=vmax_function)
+            scatter = axes.scatter_density(x, y, color=color, dpi=dpi, vmin=0., vmax=vmax_function)
 
             # Set color
             output.color = color
