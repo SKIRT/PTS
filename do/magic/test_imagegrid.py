@@ -160,7 +160,7 @@ def test_direct(figsize=(4,4), nframes=5):
             frame = frames[index]
 
             #grid[i].imshow(im)  # The AxesGrid object work as a list of axes.
-            plotting.plot_frame(frame, axes=plot.axes, return_image=True, return_normalization=True)
+            plotting.plot_frame(frame, axes=plot.axes)
 
             # Add the label
             plot.axes.text(0.95, 0.95, "text", color='white', transform=plot.axes.transAxes, fontsize=10, va="top", ha="right")

@@ -131,6 +131,19 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_cwd(cls, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return cls.from_directory(fs.cwd(), **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_directory(cls, path, **kwargs):
 
         """
@@ -486,20 +499,28 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_pixelscale(self, name):
+    def get_pixelscale(self, name, average=False, unit=None):
 
         """
         This function ...
         :param name:
+        :param average:
+        :param unit:
         :return:
         """
 
         header = self.get_header(name)
         pixelscale = headers.get_pixelscale(header)
-        if pixelscale is None:
-            wcs = CoordinateSystem(header)
-            return wcs.pixelscale
-        else: return pixelscale
+
+        # Create coordinate system first
+        if pixelscale is None: pixelscale = CoordinateSystem.from_header(header).pixelscale
+
+        if average:
+            if unit is not None: return pixelscale.average.to(unit)
+            else: return pixelscale.average
+        else:
+            if unit is not None: raise ValueError("Cannot specify unit when average is not True")
+            return pixelscale
 
     # -----------------------------------------------------------------
 

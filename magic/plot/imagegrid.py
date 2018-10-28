@@ -3398,10 +3398,10 @@ def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=
 
         if dark:
             sns.kdeplot(residual[residuals_to_kde], bw='silverman', c='white', shade=True)
-            fig4.axes.set_facecolor("black") #set_facecolor('black')
+            fig4.axes.set_facecolor("black")
         else:
             sns.kdeplot(residual[residuals_to_kde], bw='silverman', c='k', shade=True)
-            fig4.axes.set_facecolor("white") #set_facecolor('white')
+            fig4.axes.set_facecolor("white")
 
         fig4.tick_params(labelleft='off')
         plt.xlim([-150, 150])

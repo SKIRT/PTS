@@ -405,6 +405,10 @@ def plot_mask(mask, **kwargs):
     :return:
     """
 
+    # Output
+    from ...core.basics.map import Map
+    output = Map()
+
     # Create prepared mask
     mask, kwargs = create_prepared_mask(mask, **kwargs)
 
@@ -418,7 +422,6 @@ def plot_mask(mask, **kwargs):
     cmap = kwargs.pop("colormap", "Greys")
     xsize = kwargs.pop("xsize", 7)
     ysize = kwargs.pop("ysize", 7)
-    return_image = kwargs.pop("return_image", False)
 
     # Get the data
     if isinstance(mask, np.ndarray): maskdata = mask
@@ -448,6 +451,7 @@ def plot_mask(mask, **kwargs):
     # Plot the mask
     aspect = "equal"
     image = axes.imshow(maskdata, origin="lower", interpolation="nearest", cmap=cmap, aspect=aspect)
+    output.image = image
 
     # Add region
     region = kwargs.pop("region", None)
@@ -483,8 +487,8 @@ def plot_mask(mask, **kwargs):
         # Close the figure
         plt.close()
 
-    # Return the image?
-    if return_image: return image
+    # Return
+    return output
 
 # -----------------------------------------------------------------
 
@@ -630,7 +634,8 @@ def plot_masks(masks, **kwargs):
     sliderax = plt.subplot(gs[1])
 
     # Plot first mask
-    image = plot_mask(masks[0], axes=axes, return_image=True)
+    output = plot_mask(masks[0], axes=axes)
+    image = output.image
 
     # Show axis?
     if not show_axes: axes.axis('off')
@@ -750,10 +755,12 @@ def plot_cube(cube, **kwargs):
     else: intervals = None
 
     # Plot first plane
-    if share_normalization: vmin, vmax, image, norm = plot_box(cube[0], axes=axes, return_image=True, return_normalization=True, **kwargs)
-    else:
-        vmin, vmax, image = plot_box(cube[0], axes=axes, return_image=True, interval=intervals[0], **kwargs)
-        vmin = vmax = None
+    output = plot_box(cube[0], axes=axes, **kwargs)
+    if share_normalization:
+        norm = output.norm
+        vmin = output.vmin
+        vmax = output.vmax
+    else: vmin = vmax = None
 
     # Show axis?
     if not show_axes: axes.axis('off')
@@ -762,7 +769,7 @@ def plot_cube(cube, **kwargs):
     if title is not None: axes.set_title(title)
 
     # Add colorbar?
-    if colorbar: cb = plt.colorbar(image, ax=axes)
+    if colorbar: cb = plt.colorbar(output.image, ax=axes)
     else: cb = None
 
     # Add text
@@ -775,15 +782,10 @@ def plot_cube(cube, **kwargs):
     # Create update function
     def update(index):
 
-        if share_normalization: image.set_data(cube[index])
+        if share_normalization: output.image.set_data(cube[index])
         else:
-            #vmin, vmax, new_image, norm = plot_box(cube[index], axes=axes, return_image=True, return_normalization=True, **kwargs)
-            #if colorbar:
-            #    cb.set_clim(vmin=vmin,vmax=vmax)
-            #    cb.draw_all()
-
-            image.set_data(cube[index])
-            image.set_clim(vmin=intervals[index][0], vmax=intervals[index][1])
+            output.image.set_data(cube[index])
+            output.image.set_clim(vmin=intervals[index][0], vmax=intervals[index][1])
             if colorbar:
                 cb.set_clim(vmin=intervals[index][0], vmax=intervals[index][1])
                 cb.draw_all()
@@ -1019,9 +1021,8 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
 def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1.,
-             region=None, regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
-             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True, background_color=None,
-             plot=None):
+             region=None, regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, aspect="equal",
+             symmetric_method="mean", check_around_zero=True, background_color=None, plot=None):
 
     """
     This function ...
@@ -1050,8 +1051,6 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param ysize:
     :param interpolation:
     :param alpha:
-    :param return_image:
-    :param return_normalization:
     :param aspect:
     :param symmetric_method:
     :param check_around_zero:
@@ -1059,6 +1058,10 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param plot:
     :return:
     """
+
+    # Output
+    from ...core.basics.map import Map
+    output = Map()
 
     # Get the data
     if isinstance(box, np.ndarray): data = box
@@ -1078,9 +1081,12 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
                                soft_min_scaling=soft_min_scaling, soft_max_scaling=soft_max_scaling,
                                symmetric_method=symmetric_method, check_around_zero=check_around_zero, wcs=wcs)
     #print(vmin, vmax, scale)
+    output.vmin = vmin
+    output.vmax = vmax
 
     # Get the normalization
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
+    output.norm = norm
 
     # Create figure if necessary, get the axes
     if plot is not None: axes = plot.axes
@@ -1091,11 +1097,13 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         plt.ylim(0, nypix - 1)
         axes = plt.gca()
     else: only_axes = True
+    output.axes = axes
 
     # Show the data
     extent = None
     image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap,
                 alpha=alpha, aspect=aspect, extent=extent)
+    output.image = image
 
     # Set background color
     if background_color is not None: axes.set_facecolor(background_color)
@@ -1134,13 +1142,32 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         # Close the figure
         plt.close()
 
-    # Return vmin and vmax
-    if return_image:
-        if return_normalization: return vmin, vmax, image, norm
-        else: return vmin, vmax, image
-    else:
-        if return_normalization: return vmin, vmax, norm
-        else: return vmin, vmax
+    # Return
+    return output
+
+# -----------------------------------------------------------------
+
+def plot_residual_map(frame, is_percentual=False, title=None, plot=None, path=None):
+
+    """
+    Thisf unction ...
+    :param frame:
+    :param is_percentual:
+    :param title:
+    :param plot:
+    :param path:
+    :return:
+    """
+
+    # Plot
+    cmap = 'RdBu'
+
+    # Set interval
+    if is_percentual: interval = (-100,100,)
+    else: interval = (-1,1,)
+
+    # Plot
+    plot_map(frame, interval=interval, scale="linear", colorbar=True, cmap=cmap, path=path, title=title, plot=plot)
 
 # -----------------------------------------------------------------
 
@@ -1168,12 +1195,12 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     if contours:
 
         # Plot with contours
-        plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
+        return plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
                             data_cmap=cmap, plot_data=True, nlevels=ncontours,
                             single_colour=contours_color, path=path, background_color=background_color, title=title, plot=plot)
 
     # No contours
-    else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
+    else: return plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
                      background_color=background_color, title=title, plot=plot)
 
 # -----------------------------------------------------------------
@@ -1205,6 +1232,10 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
     from ...core.tools import numbers
     from ...core.basics.range import RealRange
 
+    # Output
+    from ...core.basics.map import Map
+    output = Map()
+
     # Get physical pixelscale
     pixelscale = frame.average_physical_pixelscale
 
@@ -1223,10 +1254,15 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
 
     # Get new pixel center
     center_pix = cutout.pixel_center
+    output.x_min = cutout.get_meta("x_min")
+    output.x_max = cutout.get_meta("x_max")
+    output.y_min = cutout.get_meta("y_min")
+    output.y_max = cutout.get_meta("y_max")
+    output.center_pix = center_pix
 
     # Plot
-    plot_map(cutout, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, contours=contours, ncontours=ncontours,
-             contours_color=contours_color, path=path, background_color=background_color, title=title, plot=plot)
+    output.update(plot_map(cutout, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, contours=contours, ncontours=ncontours,
+                    contours_color=contours_color, path=path, background_color=background_color, title=title, plot=plot))
 
     # Set axes
     plot.set_xlabel(axes_label + " [" + offset_unit_string + "]")
@@ -1239,6 +1275,7 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
     # offsets = [-15, -10, -5, 0, 5, 10, 15]  # in kpc
     radius_range = RealRange(-radius.value, radius.value, inclusive=True)
     offsets = radius_range.linear_step(offset, symmetric=True, center=0.)
+    output.offsets = offsets
 
     # labels = [str(offset) for offset in kpc_offsets]
     xticks = [center_pix.x + float(offset) / pixelscale_in_offset_unit for offset in offsets]
@@ -1250,8 +1287,49 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
     plot._plot.set_yticks(yticks)
     plot._plot.set_yticklabels(offsets)
 
-    # Return the new pixel center
-    return center_pix
+    # Return the output
+    return output
+
+# -----------------------------------------------------------------
+
+def plot_map_centered(frame, radius, offset, interval=None, cmap="viridis", plot=None, plot_radii=None, colorbar=False):
+
+    """
+    This function ...
+    :param frame:
+    :param radius:
+    :param offset:
+    :param interval:
+    :param cmap:
+    :param plot:
+    :param plot_radii:
+    :param colorbar:
+    :return:
+    """
+
+    from matplotlib.patches import Circle
+
+    # Assume center pixel is the center of the map
+    center_pix = frame.pixel_center
+
+    # Plot
+    output = plot_map_offset(frame, center_pix, radius, offset, interval=interval, colorbar=colorbar, cmap=cmap, plot=plot)
+
+    # Plot radii?
+    if plot_radii is not None:
+
+        # Loop over the radii
+        for rad in plot_radii:
+
+            # Create patch
+            inner_radius = (rad / frame.average_physical_pixelscale).to("").value # in pixels
+            inner_circle = Circle(output.center_pix.cartesian, inner_radius, fill=False, edgecolor="white")
+
+            # Add circles
+            output.axes.add_patch(inner_circle)
+
+    # Return
+    return output
 
 # -----------------------------------------------------------------
 
@@ -1268,7 +1346,7 @@ def plot_frame_contours(frame, **kwargs):
     frame, kwargs = create_prepared_frame(frame, **kwargs)
 
     # Plot
-    plot_contours(frame, **kwargs)
+    return plot_contours(frame, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -1279,7 +1357,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
                   # For plotting data
                   interval="pts", data_cmap="viridis", around_zero=False, symmetric=False, soft_min=False, soft_max=False,
                   soft_min_scaling=1., soft_max_scaling=1., interpolation="nearest", alpha=1,
-                  return_image=False, return_normalization=False, aspect="equal", symmetric_method="mean",
+                  aspect="equal", symmetric_method="mean",
                   check_around_zero=True, background_color=None, plot=None
                   ):
 
@@ -1315,8 +1393,6 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param soft_max_scaling:
     :param interpolation:
     :param alpha:
-    :param return_image:
-    :param return_normalization:
     :param aspect:
     :param symmetric_method:
     :param check_around_zero:
@@ -1324,6 +1400,10 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param plot:
     :return:
     """
+
+    # Output
+    from ...core.basics.map import Map
+    output = Map()
 
     # Get the data
     if isinstance(box, np.ndarray): data = box
@@ -1342,15 +1422,19 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
         plt.ylim(0, nypix - 1)
         axes = plt.gca()
     else: only_axes = True
+    output.axes = axes
 
     # Get interval
     vmin, vmax = get_vmin_vmax(data, interval=interval, around_zero=around_zero, symmetric=symmetric,
                                soft_min=soft_min, soft_max=soft_max, soft_min_scaling=soft_min_scaling,
                                soft_max_scaling=soft_max_scaling, symmetric_method=symmetric_method,
                                check_around_zero=check_around_zero)
+    output.vmin = vmin
+    output.vmax = vmax
 
     # Get the normalization
     norm = get_normalization(scale, vmin, vmax, data=data)
+    output.norm = norm
 
     # Also plot the image data underneath
     if plot_data:
@@ -1362,6 +1446,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
         extent = None
         image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm,
                             cmap=data_cmap, alpha=alpha, aspect=aspect, extent=extent)
+        output.image = image
 
     # Set to None
     else: vmin = vmax = norm = image = None
@@ -1420,13 +1505,8 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
         # Close the figure
         plt.close()
 
-    # Return vmin and vmax
-    if return_image:
-        if return_normalization: return vmin, vmax, image, norm
-        else: return vmin, vmax, image
-    else:
-        if return_normalization: return vmin, vmax, norm
-        else: return vmin, vmax
+    # Return
+    return output
 
 # -----------------------------------------------------------------
 
@@ -1728,7 +1808,8 @@ def get_multiple_xy(curves, return_labels=False, return_units=False):
 
 def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-               ynonzero=False, x_label=None, y_label=None, plot=None, vlines=None, hlines=None):
+               ynonzero=False, x_label=None, y_label=None, plot=None, vlines=None, hlines=None, color=None,
+               x_color=None, y_color=None, vlinestyle="solid", hlinestyle="solid", vlinecolor=None, hlinecolor=None):
 
     """
     This function ...
@@ -1750,6 +1831,13 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
     :param plot:
     :param vlines:
     :param hlines:
+    :param color:
+    :param x_color:
+    :param y_color:
+    :param vlinestyle:
+    :param hlinestyle:
+    :param vlinecolor:
+    :param hlinecolor:
     :return:
     """
 
@@ -1781,7 +1869,9 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
             xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
-            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero, plot=plot, vlines=vlines, hlines=hlines)
+            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero, plot=plot, vlines=vlines, hlines=hlines,
+            color=color, x_color=x_color, y_color=y_color, vlinestyle=vlinestyle, hlinestyle=hlinestyle,
+            vlinecolor=vlinecolor, hlinecolor=hlinecolor)
 
 # -----------------------------------------------------------------
 
@@ -2059,7 +2149,8 @@ def plot_densities(points, title=None, path=None, xlog=False, ylog=False, xlimit
 def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_label=None, xlog=False,
             ylog=False, vlines=None, hlines=None, legend=True, xlimits=None, ylimits=None, connect=True,
             density=False, xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-            ynonzero=False, size=None, axes=None, plot=None, show=None):
+            ynonzero=False, size=None, axes=None, plot=None, show=None, color=None, x_color=None, y_color=None,
+            vlinestyle="solid", hlinestyle="solid", vlinecolor=None, hlinecolor=None):
 
     """
     Low-level function, only scalar values (no units)
@@ -2090,10 +2181,20 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
     :param axes:
     :param plot:
     :param show:
+    :param color:
+    :param x_color:
+    :param y_color:
+    :param vlinestyle:
+    :param hlinestyle:
+    :param vlinecolor:
+    :param hlinecolor:
     :return:
     """
 
+    from pts.core.basics.map import Map
     from pts.core.basics.plot import sequential_colormaps
+
+    output = Map()
 
     # Check
     if connect and density: raise ValueError("Cannot enable 'connect' and 'density' at the same time")
@@ -2106,12 +2207,17 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
         # Create plot
         figure = MPLFigure()
         figure.transparent = transparent
+        output.figure = figure
         plot = figure.create_one_plot()
+        output.plot = plot
         axes = plot.axes
     else: only_axes = True
+    output.axes = axes
 
     original_xlimits = xlimits
     original_ylimits = ylimits
+    output.original_xlimits = original_xlimits
+    output.original_ylimits = original_ylimits
 
     # Add the data
     if types.is_dictionary(x):
@@ -2157,7 +2263,7 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
                                              xnonzero=xnonzero, ynonzero=ynonzero, adjust_limits=False)
 
         # Plot
-        _plot_xy(x, y, connect=connect, density=density, plot=plot, size=size)
+        _plot_xy(x, y, connect=connect, density=density, plot=plot, size=size, color=color)
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
@@ -2166,13 +2272,15 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
     if vlines is not None:
         for vline in vlines:
             #if xlog: vline = np.log10(vline)
-            plot.axvline(x=vline)
+            if vlinecolor is not None: plot.axvline(x=vline, color=vlinecolor, linestyle=vlinestyle)
+            else: plot.axvline(x=vline, linestyle=vlinestyle)
 
     # Add horizontal lines
     if hlines is not None:
         for hline in hlines:
             #if ylog: hline = np.log10(hline)
-            plot.axhline(y=hline)
+            if hlinecolor is not None: plot.axhline(y=hline, color=hlinecolor, linestyle=hlinestyle)
+            else: plot.axhline(y=hline, linestyle=hlinestyle)
 
     # Set scales
     if xlog: axes.set_xscale("log")
@@ -2183,8 +2291,16 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
     if ylimits is not None: axes.set_ylim(ylimits[0], ylimits[1])
 
     # Set labels
-    if x_label is not None: plot.set_xlabel(x_label)
-    if y_label is not None: plot.set_ylabel(y_label)
+    if x_label is not None:
+        if x_color is not None: plot.set_xlabel(x_label, color=x_color)
+        else: plot.set_xlabel(x_label)
+    if y_label is not None:
+        if y_color is not None: plot.set_ylabel(y_label, color=y_color)
+        else: plot.set_ylabel(y_label)
+
+    # Set tick colors?
+    if x_color is not None: axes.tick_params("x", colors=x_color)
+    if y_color is not None: axes.tick_params("y", colors=y_color)
 
     # Create legend
     if legend: plot.legend()
@@ -2198,10 +2314,12 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
         # Show or save
         if show is None and path is None: show = True
         if show: figure.show()
-        if path is not None: figure.saveto(path)
+        if path is not None:
+            output.path = path
+            figure.saveto(path)
 
-    # Return the plot
-    return figure, plot
+    # Return the output
+    return output
 
 # -----------------------------------------------------------------
 

@@ -104,6 +104,12 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
+        header["NAXIS"] = 2
+        if "NAXIS3" in header: del header["NAXIS3"]
+        for key in header:
+            if "PLANE" in key: del header[key]
+
+        # Create
         return cls(header=header)
 
     # -----------------------------------------------------------------
@@ -148,15 +154,9 @@ class CoordinateSystem(wcs.WCS):
 
         # Get the header and flatten it (remove references to third axis)
         header = fits.getheader(path)
-        header["NAXIS"] = 2
-        if "NAXIS3" in header: del header["NAXIS3"]
-        for key in header:
-            if "PLANE" in key: del header[key]
-
-        # Create and return
-        system = cls(header)
-        system.path = path
-        return system
+        wcs = cls.from_header(header)
+        wcs.path = path
+        return wcs
 
     # -----------------------------------------------------------------
 
@@ -624,6 +624,9 @@ class CoordinateSystem(wcs.WCS):
 
         x_pixelscale = result[0] * self.axis1_unit
         y_pixelscale = result[1] * self.axis2_unit
+
+        #print(self.axis1_unit, self.axis2_unit, self.is_celestial, self.is_physical)
+        #print(self.naxis)
 
         # Return the pixel scale as an extent
         if self.is_celestial: return Pixelscale(x_pixelscale, y_pixelscale)
