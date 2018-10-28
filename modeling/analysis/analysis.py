@@ -4015,7 +4015,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.info("Creating the paper bolometric heating plot ...")
 
         # Create figure
-        figsize = (24, 6,)
+        figsize = (20, 6,)
         figure = MPLFigure(size=figsize)
 
         # Set width ratios
@@ -4053,7 +4053,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         start_y = plot1.bounding_box.bounds[1]
         x_width = plot1.bounding_box.bounds[2]
         y_width = plot1.bounding_box.bounds[3]
-        cb_ax = figure.add_colorbar(start_x + 0.1*x_width, start_y + 0.2*y_width, x_width*0.8, 0.05 * y_width, "RdBu", "horizontal", (-1,1), ticks=[-1,-0.5,0,0.5,1])
+        cb_ax = figure.add_colorbar(start_x + 0.1*x_width, start_y + 0.1*y_width, x_width*0.8, 0.05 * y_width, "RdBu", "horizontal", (-1,1), ticks=[-1,-0.5,0,0.5,1])
 
         # Plot distribution
         #print(self.heating_distribution)
