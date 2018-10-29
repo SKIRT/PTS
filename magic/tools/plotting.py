@@ -2593,7 +2593,9 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, rug=
     :return:
     """
 
+    from ...core.basics.map import Map
     from ...core.basics.plot import sequential_colormaps
+    output = Map()
 
     # Define method
     if method is None:
@@ -2601,7 +2603,9 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, rug=
         else: method = "kde" # default method
 
     # Create figure if necessary, get the axes
-    if plot is not None: axes = plot.axes
+    if plot is not None:
+        axes = plot.axes
+        output.plot = plot
     only_axes = False
     if axes is None:
         from ...core.basics.plot import MPLFigure
@@ -2610,10 +2614,15 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, rug=
         figure.transparent = transparent
         plot = figure.create_one_plot()
         axes = plot.axes
+        output.figure = figure
+        output.plot = plot
     else: only_axes = True
+    output.axes = axes
 
     original_xlimits = xlimits
     original_ylimits = ylimits
+    output.original_xlimits = original_xlimits
+    output.original_ylimits = original_ylimits
 
     # Multiple data
     if types.is_dictionary(x):
@@ -2701,7 +2710,8 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, rug=
         if path is not None: figure.saveto(path)
 
     # Return the plot?
-    return figure, plot
+    #return figure, plot
+    return output
 
 # -----------------------------------------------------------------
 
@@ -2785,7 +2795,9 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     from ...core.basics.plot import sequential_colormaps
 
     # Create figure if necessary, get the axes
-    if plot is not None: axes = plot.axes
+    if plot is not None:
+        output.plot = plot
+        axes = plot.axes
     only_axes = False
     if axes is None:
         from ...core.basics.plot import MPLFigure

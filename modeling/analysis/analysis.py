@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from copy import deepcopy
 from scipy.stats import pearsonr
 from collections import OrderedDict
 
@@ -476,33 +477,47 @@ class CorrelationPlotSettings(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         """
 
         # Column names
-        self.x_colname = None
-        self.y_colname = None
+        self.x_colname = kwargs.pop("x_colname", None)
+        self.y_colname = kwargs.pop("y_colname", None)
 
         # Axes limits
-        self.xlimits = None
-        self.ylimits = None
+        self.xlimits = kwargs.pop("xlimits", None)
+        self.ylimits = kwargs.pop("ylimits", None)
 
         # Axes scales
-        self.xlog = False
-        self.ylog = False
+        self.xlog = kwargs.pop("xlog", False)
+        self.ylog = kwargs.pop("ylog", False)
 
         # Conditions for getting subsets
-        self.conditions = None
+        self.conditions = kwargs.pop("conditions", None)
 
         # Plotting color
-        self.color = "red"
+        self.color = kwargs.pop("color", "red")
 
         # Auxilary axis
-        self.aux_colname = None
-        self.aux_log = False
+        self.aux_colname = kwargs.pop("aux_colname", None)
+        self.aux_log = kwargs.pop("aux_log", False)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        Thisfunction ..
+        :return:
+        """
+
+        return CorrelationPlotSettings(x_colname=self.x_colname, y_colname=self.y_colname, xlimits=self.xlimits, ylimits=self.ylimits,
+                                       xlog=self.xlog, ylog=self.ylog, conditions=deepcopy(self.conditions),
+                                       color=self.color, aux_colname=self.aux_colname, aux_log=self.aux_log)
 
 # -----------------------------------------------------------------
 
@@ -3930,7 +3945,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #4: SPECTRAL HEATING
         elif config.which == 4: self.plot_paper4(path=config.path)
 
-        # Plot #5: CORRELATION BETWEEN PIXEL sSFR and FUNEV VALUES
+        # Plot #5: CORRELATION BETWEEN sSFR and FUNEV VALUES
         elif config.which == 5: self.plot_paper5(path=config.path)
 
         # Plot #6 CORRELATION BETWEEN CELL sSFR and FUNEV VALUES
@@ -4534,6 +4549,15 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         return np.log10(self.m31_valid_funev_values)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_ssfr_funev_scatters(self):
+        scatters = OrderedDict()
+        scatters["M51"] = self.m51_ssfr_funev_scatter
+        scatters["M31"] = self.m31_ssfr_funev_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
     # This galaxy correlation
     # -----------------------------------------------------------------
 
@@ -4706,6 +4730,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #ylimits = [0.002,1] # for log
         cells = self.get_cells_ssfr_funev_scatter("ke")
         output1 = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
+        plot1.set_yaxis_right()
 
         # Plot fits
         #plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
@@ -4727,7 +4752,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper sSFR - Funev pixel correlation plot ...")
+        log.info("Creating the paper advanced sSFR - Funev correlation plots ...")
 
         import mpl_scatter_density # NOQA
 
@@ -4735,22 +4760,54 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         cells = self.get_cells_ssfr_funev_scatter("ke")
 
         # Create the figure
-        figsize = (35, 6,)
+        #figsize = (35, 6,)
+        figsize = (30,15)
         figure = MPLFigure(size=figsize)
 
         # Create plots
         #projections = [None, "scatter_density", "scatter_density"]
-        projections = ["scatter_density", "scatter_density", "scatter_density"]
-        plot0, plot1, plot2 = figure.create_row(3, projections=projections)
+        #projections = ["scatter_density", "scatter_density", "scatter_density"]
+        nrows = 2
+        ncols = 3
+        projection = "scatter_density"
+        #plot0, plot1, plot2 = figure.create_row(3, projections=projections)
+        rows = figure.create_grid(nrows, ncols, projections="scatter_density")
+        first_row = rows[0]
+        second_row = rows[1]
+
+        # Set y limits
+        default_funev_limits = [0.0015, 1]
 
         # Plot all correlation
-        output_all = self.plot_correlation_impl(cells, plot0, self.ssfr_funev_distance_settings, plot_coefficient=True)
+        #output_all = self.plot_correlation_impl(cells, plot0, self.ssfr_funev_distance_settings, plot_coefficient=True)
+        radius_settings = self.ssfr_funev_radius_settings.copy()
+        radius_settings.xlimits[0] = 1e-17
+        output_all = self.plot_correlation_impl(cells, first_row[0], radius_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, figure=figure)
+
+        # Plot outside inner
+        outside_bulge_settings = self.ssfr_funev_outside_inner_settings.copy()
+        outside_bulge_settings.color = "green"
+        outside_bulge_settings.ylimits = default_funev_limits
+        output_outside = self.plot_correlation_impl(cells, first_row[1], outside_bulge_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, inset_text="Outside inner region", figure=figure, references=self.reference_ssfr_funev_scatters)
 
         # Plot inner correlation
-        output_bulge = self.plot_correlation_impl(cells, plot1, self.ssfr_funev_inner_settings, plot_coefficient=True)
+        bulge_settings = self.ssfr_funev_inner_settings.copy()
+        bulge_settings.ylimits = default_funev_limits
+        bulge_settings.xlimits[0] = 1e-17
+        output_bulge = self.plot_correlation_impl(cells, second_row[0], bulge_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, inset_text="Inner region", figure=figure)
+
+        # Plot intermediate correlation
+        intermediate_settings = self.ssfr_funev_intermediate_settings.copy()
+        intermediate_settings.ylimits = default_funev_limits
+        intermediate_settings.color = "green"
+        intermediate_settings.xlimits[0] = 1e-15
+        output_intermediate = self.plot_correlation_impl(cells, second_row[1], intermediate_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, inset_text="Intermediate region", figure=figure)
 
         # Plot outer correlation
-        output_disk = self.plot_correlation_impl(cells, plot2, self.ssfr_funev_outer_settings, plot_coefficient=True)
+        disk_settings = self.ssfr_funev_outer_settings.copy()
+        disk_settings.ylimits = default_funev_limits
+        disk_settings.xlimits[0] = 1e-15
+        output_disk = self.plot_correlation_impl(cells, second_row[2], disk_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, add_colorbar=True, inset_text="Outer region", figure=figure)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -4981,7 +5038,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False, plot_coefficient=False):
+    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
+                              high_dynamic_range=False, add_colorbar=False, inset_text=None, figure=None):
 
         """
         This function ...
@@ -4990,6 +5048,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param settings:
         :param show_coefficient:
         :param plot_coefficient:
+        :param references:
+        :param high_dynamic_range:
+        :param add_colorbar:
+        :param inset_text:
+        :param figure:
         :return:
         """
 
@@ -5007,9 +5070,26 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                         aux_colname=settings.aux_colname, aux_log=settings.aux_log, valid_points=mask,
                                         x_colname=settings.x_colname, y_colname=settings.y_colname)
 
+        # Plot references?
+        if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits, xlog=settings.xlog, ylog=settings.ylog, plot=output.plot)
+
+        # Add colorbar for auxilary axis?
+        if settings.aux_colname is not None and add_colorbar:
+
+            # Figure has to be passed
+            if figure is None: raise ValueError("Figure has to be passed to be able to create colorbar")
+
+            # Create colorbar
+            figure.create_colorbar_in_plot(plot, output.scatter, position="bottom", label=settings.aux_colname, logarithmic=settings.aux_log)
+
+        # Add inset text
+        if inset_text is not None: plot.add_text(inset_text, position="top")
+
         # Set nice ticks
-        plot.set_xticks()
-        plot.set_yticks()
+        if high_dynamic_range: log_subs = (1.,)
+        else: log_subs = (1.,5.,)
+        plot.set_xticks(log_subs=log_subs)
+        plot.set_yticks(log_subs=log_subs)
         
         # Show the correlation coefficient
         if show_coefficient or plot_coefficient:
@@ -5029,8 +5109,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                 print("")
 
             # Plot
-            if plot_coefficient:
-                plot.text(0.9, 0.1, "p-value = " + tostr(p_value), transform=output.axes.transAxes, color="white")
+            if plot_coefficient: plot.text(0.9, 0.1, "p-value = " + tostr(p_value), transform=output.axes.transAxes, color="white")
 
         # Return the plotting output
         return output
@@ -5299,7 +5378,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Axes limits
         settings.xlimits = [1e-14, 1e-9]
-        settings.ylimits = [0.1, 1]
+        settings.ylimits = [0.05, 1]
 
         # Distance auxilary axis
         settings.aux_colname = "Dust density"

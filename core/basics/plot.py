@@ -27,6 +27,10 @@ from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, Perc
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib import cbook
 from matplotlib.legend import Legend
+from matplotlib.colorbar import colorbar_factory
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import LogNorm, Normalize
+#from matplotlib.ticker import LogFormatterMathtext, LogLocator
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -391,7 +395,7 @@ class BokehPlot(Plot):
 
         raise NotImplementedError("Not yet implemented")
 
-    #
+    # -----------------------------------------------------------------
 
     def vertical_arrow(self, x, min_y, max_y):
 
@@ -1257,6 +1261,48 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bounds(self):
+        return self.bounding_box.bounds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_min(self):
+        return self.bounds[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_min(self):
+        return self.bounds[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def width(self):
+        return self.bounds[2]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def height(self):
+        return self.bounds[3]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_max(self):
+        return self.x_min + self.width
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_max(self):
+        return self.y_min + self.height
+
+    # -----------------------------------------------------------------
+
     def add_patch(self, patch):
         self.axes.add_patch(patch)
 
@@ -1332,6 +1378,35 @@ class MPLPlot(Plot):
         """
 
         return self._plot.text(x, y, s, *args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def add_text(self, text, position="top"):
+
+        """
+        This function ...
+        :param text:
+        :param position:
+        :return:
+        """
+
+        # Set position
+        #x = self.x_min + 0.5 * self.width
+        x = 0.5
+        if position == "top":
+            #y = self.y_min + 0.9 * self.height
+            y = 0.95
+            alignment = "top"
+        elif position == "bottom":
+            #y = self.y_min + 0.1 * self.height
+            y = 0.05
+            alignment = "bottom"
+        else: raise ValueError("Invalid position: '" + position + "'")
+
+        #print("adding text", x, y, text)
+
+        # Create
+        return self.text(x, y, text, horizontalalignment='center', verticalalignment=alignment, transform=self.axes.transAxes)
 
     # -----------------------------------------------------------------
 
@@ -2130,6 +2205,16 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def set_xaxis_top(self):
+        self.set_xaxis_position("top")
+
+    # -----------------------------------------------------------------
+
+    def set_xaxis_bottom(self):
+        self.set_xaxis_position("bottom")
+
+    # -----------------------------------------------------------------
+
     def set_yaxis_position(self, position):
 
         """
@@ -2140,6 +2225,16 @@ class MPLPlot(Plot):
 
         self.yaxis.set_ticks_position(position)
         self.yaxis.set_label_position(position)
+
+    # -----------------------------------------------------------------
+
+    def set_yaxis_left(self):
+        self.set_yaxis_position("left")
+
+    # -----------------------------------------------------------------
+
+    def set_yaxis_right(self):
+        self.set_yaxis_position("right")
 
 # -----------------------------------------------------------------
 
@@ -2230,6 +2325,11 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_axes(self, left, bottom, width, height):
+        return self.figure.add_axes([left, bottom, width, height])
+
+    # -----------------------------------------------------------------
+
     def add_colorbar(self, left, bottom, width, height, cmap, orientation, interval, logscale=False, ticks=None):
 
         """
@@ -2246,18 +2346,76 @@ class MPLFigure(Figure):
         :return:
         """
 
-        from matplotlib.colorbar import ColorbarBase
-        from matplotlib.colors import LogNorm, Normalize
-
         # Create norm
         if logscale: norm = LogNorm(vmin=interval[0], vmax=interval[1])
         else: norm = Normalize(vmin=interval[0], vmax=interval[1])
 
         # Create axes
-        axes = self.figure.add_axes([left, bottom, width, height])
+        axes = self.create_axes(left, bottom, width, height)
 
         # Create colorbar
         cb = ColorbarBase(axes, cmap=cmap, norm=norm, orientation=orientation)
+
+        # Set ticks
+        if ticks is not None: cb.set_ticks(ticks)
+
+        # Return
+        return cb
+
+    # -----------------------------------------------------------------
+
+    def create_colorbar_in_plot(self, plot, plotted=None, position="bottom", relwidth=0.8, relheight=0.05,
+                                cmap=None, norm=None, ticks=None, label=None, logarithmic=False):
+
+        """
+        This function ...
+        :param plot:
+        :param plotted:
+        :param position:
+        :param relwidth:
+        :param relheight:
+        :param cmap:
+        :param norm:
+        :param ticks:
+        :param label:
+        :param logarithmic:
+        :return:
+        """
+
+        ## Set anchor
+
+        # centered in width
+        leftright_margin = 0.5 * (1 - relwidth)
+        left = plot.x_min + leftright_margin * plot.width
+
+        # height
+        if position == "bottom": bottom = plot.y_min + 0.1 * plot.height
+        elif position == "top": bottom = plot.y_min + (0.9 - relheight) * plot.height
+        else: raise ValueError("Invalid position: '" + position + "'")
+
+        # Set size
+        width = plot.width * relwidth
+        height = plot.height * relheight
+
+        # Create axes for colorbar
+        cb_axes = self.create_axes(left, bottom, width, height) #self.add_colorbar(left, bottom, width, height, "RdBu", "horizontal", (-1, 1), ticks=[-1, -0.5, 0, 0.5, 1])
+
+        # Create
+        if plotted is not None: cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
+        else:
+            if cmap is None: raise ValueError("If plotted is not passed, colormap must be passed")
+            if norm is None: raise ValueError("If plotted is not passed, normalization must be passed")
+            cb = ColorbarBase(cb_axes, cmap=cmap, norm=norm, orientation="horizontal")
+
+        # Add label
+        if label is not None:
+            #cb_axes.set_label(label)
+            plot.add_text(label, position=position)
+
+        # Set scale
+        #if logarithmic:
+            #cb.locator = LogLocator()
+            #cb.formatter = LogFormatterMathtext()
 
         # Set ticks
         if ticks is not None: cb.set_ticks(ticks)
@@ -3150,8 +3308,8 @@ class MPLFigure(Figure):
     # -----------------------------------------------------------------
 
     def create_grid(self, nrows, ncols, width_ratios=None, height_ratios=None, sharex=False, sharey=False,
-                    projections=None, first_row_not_shared_x=None, first_row_not_shared_y=None, last_row_not_shared_x=None,
-                    last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
+                    projections=None, first_row_not_shared_x=None, first_row_not_shared_y=None,
+                    last_row_not_shared_x=None, last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
                     last_column_not_shared_x=None, last_column_not_shared_y=None, rows_shared_x=None, rows_shared_y=None,
                     columns_shared_x=None, columns_shared_y=None, subplotspec=None, share_per_row=True, share_per_column=True,
                     wspace=None, hspace=None):
@@ -3302,11 +3460,15 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Get the grid spec
         rect = grid[row, col]
 
         # Get the projection
-        if projections is not None: projection = projections[row][col]
+        if projections is not None:
+            if types.is_sequence(projections) or types.is_dictionary(projections): projection = projections[row][col]
+            else: projection = projections  # assume one projection for all plots
         else: projection = None
 
         # Create and return the plot
@@ -3348,11 +3510,15 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Get the grid spec
         rect = grid[row, col]
 
         # Get the projection
-        if projections is not None: projection = projections[row][col]
+        if projections is not None:
+            if types.is_sequence(projections) or types.is_dictionary(projections): projection = projections[row][col]
+            else: projection = projections  # assume one projection for all plots
         else: projection = None
 
         # Create and return the plot
@@ -3393,11 +3559,15 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Get the grid spec
         rect = grid[row, col]
 
         # Get the projection
-        if projections is not None: projection = projections[row][col]
+        if projections is not None:
+            if types.is_sequence(projections) or types.is_dictionary(projections): projection = projections[row][col]
+            else: projection = projections  # assume one projection for all plots
         else: projection = None
 
         # Create and return the plot
@@ -3437,11 +3607,15 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Get the grid spec
         rect = grid[row, col]
 
         # Get the projection
-        if projections is not None: projection = projections[row][col]
+        if projections is not None:
+            if types.is_sequence(projections) or types.is_dictionary(projections): projection = projections[row][col]
+            else: projection = projections  # assume one projection for all plots
         else: projection = None
 
         # Create and return the plot
@@ -3698,6 +3872,8 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Initialize structure to contain the plots
         plots = [[None for i in range(ncols)] for j in range(nrows)]
 
@@ -3711,7 +3887,9 @@ class MPLFigure(Figure):
                 rect = grid[row, col]
 
                 # Get the projection
-                if projections is not None: projection = projections[row][col]
+                if projections is not None:
+                    if types.is_sequence(projections) or types.is_dictionary(projections): projection = projections[row][col]
+                    else: projection = projections  # same projection for each plot
                 else: projection = None
 
                 # Get the axes
