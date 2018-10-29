@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy.stats import pearsonr
 from collections import OrderedDict
-from matplotlib.patches import Circle
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
@@ -70,7 +69,7 @@ from .sfr import SFRAnalyser
 from ...core.units.parsing import parse_unit as u
 from ...core.data.sed import SED
 from ...magic.core.dataset import StaticDataSet
-from ...core.basics.distribution import Distribution
+from ...core.basics.distribution import Distribution, Distribution2D
 from ...core.basics.plot import MPLFigure
 from ...core.units.parsing import parse_quantity as q
 from ...core.units.quantity import PhotometricQuantity
@@ -79,9 +78,9 @@ from ..fitting.modelanalyser import FluxDifferencesTable
 from ...core.tools.parsing import lazy_broad_band_filter_list
 from ...magic.core.frame import Frame
 from ...magic.core.mask import Mask
-from ...magic.tools.plotting import plot_map, plot_map_offset
+from ...magic.tools.plotting import plot_map, plot_map_offset, plot_map_centered
 from ...core.basics.curve import WavelengthCurve
-from ...core.plot.distribution import plot_distribution
+from ...core.plot.distribution import plot_distribution, plot_2d_distribution
 from ...magic.core.list import uniformize
 from ...core.basics.scatter import Scatter2D
 from ...core.basics.range import RealRange
@@ -90,6 +89,7 @@ from ...magic.region.circle import PhysicalCircleRegion
 from ...magic.basics.coordinate import PhysicalCoordinate
 from ..core.data import Data3D
 from ...core.tools import numbers
+from ...core.basics.curve import Curve
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -2816,10 +2816,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         from pts.magic.plot.imagegrid import plot_residuals_aplpy
 
         # Get images
-        observations = self.get_observed_images(filters)
-        models = self.get_simulated_images(filters)
+        #observations = self.get_observed_images(filters)
+        #models = self.get_simulated_images(filters)
+        #residuals = self.get_residual_images(filters)
+        observations = self.get_observed_images_residuals(filters)
+        models = self.get_simulated_images_residuals(filters)
         residuals = self.get_residual_images(filters)
         #distributions = self.get_residual_distributions(filters)
+        masks = self.get_residual_masks(filters)
 
         # Get center and radius
         center = self.galaxy_center
@@ -2830,7 +2834,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         plot_residuals_aplpy(observations, models, residuals, center=center, radius=radius, filepath=path, dark=dark,
-                             xy_ratio=xy_ratio, distance=self.galaxy_distance, mask_simulated=mask_simulated)
+                             xy_ratio=xy_ratio, distance=self.galaxy_distance, mask_simulated=mask_simulated, masks=masks)
 
     # -----------------------------------------------------------------
     # OBSERVED
@@ -2863,6 +2867,40 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def residual_observed_path(self):
+        return fs.join(self.analysis_run.residuals_path, "observed")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_observed_dataset(self):
+        return StaticDataSet.from_directory(self.residual_observed_path)
+
+    # -----------------------------------------------------------------
+
+    def get_observed_images_residuals(self, filters):
+        return self.residual_observed_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_simulated_path(self):
+        return fs.join(self.analysis_run.residuals_path, "simulated")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_simulated_dataset(self):
+        return StaticDataSet.from_directory(self.residual_simulated_path)
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_images_residuals(self, filters):
+        return self.residual_simulated_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    @property
     def residual_images_path(self):
         return fs.join(self.analysis_run.residuals_path, "maps")
 
@@ -2876,6 +2914,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     def get_residual_images(self, filters):
         return self.residual_images_dataset.get_frames_for_filters(filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residual_masks_path(self):
+        return fs.join(self.analysis_run.residuals_path, "masks")
+
+    # -----------------------------------------------------------------
+
+    def get_residual_masks(self, filters):
+        masks = []
+        for fltr in filters: masks.append(Mask.from_file(fs.join(self.residual_masks_path, str(fltr) + ".fits")))
+        return masks
 
     # -----------------------------------------------------------------
     # DISTRIBUTIONS
@@ -3788,14 +3839,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #2: HEATING
         elif config.which == 2: self.plot_paper2(path=config.path)
 
-        # Plot #3: SPECTRAL HEATING
+        # Plot #3: HEATING CURVES (RADIAL AND VERTICAL)
         elif config.which == 3: self.plot_paper3(path=config.path)
 
-        # Plot #4: CORRELATION BETWEEN PIXEL sSFR and FUNEV VALUES
+        # Plot #4: SPECTRAL HEATING
         elif config.which == 4: self.plot_paper4(path=config.path)
 
-        # Plot #5 CORRELATION BETWEEN CELL sSFR and FUNEV VALUES
+        # Plot #5: CORRELATION BETWEEN PIXEL sSFR and FUNEV VALUES
         elif config.which == 5: self.plot_paper5(path=config.path)
+
+        # Plot #6 CORRELATION BETWEEN CELL sSFR and FUNEV VALUES
+        elif config.which == 6: self.plot_paper6(path=config.path)
 
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
@@ -3925,7 +3979,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def inner_region_max_radius(self):
-        return q("4 kpc")
+        #return q("4 kpc")
+        return q("3 kpc")
 
     # -----------------------------------------------------------------
 
@@ -3937,7 +3992,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def outer_region_min_radius(self):
-        return q("6.5 kpc")
+        #return q("6.5 kpc")
+        return q("6 kpc")
 
     # -----------------------------------------------------------------
 
@@ -3959,49 +4015,90 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.info("Creating the paper bolometric heating plot ...")
 
         # Create figure
-        figsize = (12, 6,)
+        figsize = (20, 6,)
         figure = MPLFigure(size=figsize)
 
         # Set width ratios
-        width_ratios = [0.5, 0.5]
+        #width_ratios = [0.5, 0.5, 0.5]
+        width_ratios = None
 
-        # Create 2 plots
-        #plot0, plot1 = figure.create_row(2, wspace=0, width_ratios=width_ratios)
-        plot0, plot1 = figure.create_row(2, width_ratios=width_ratios)
-
-        # Get the heating map
-        frame = self.get_heating_map("cells")
+        # Create plots
+        plot0, plot1, plot2 = figure.create_row(3, width_ratios=width_ratios)
 
         # Zoom from the normal galaxy truncation
         zoom = 1.1
         radius = self.physical_truncation_radius * zoom
+        offset = q("5 kpc")
 
-        # Assume center pixel is the center of the map (galaxy)
-        center_pix = frame.pixel_center
-        #print(center_pix)
+        # Set radii to plot
+        radii = [self.inner_region_max_radius, self.outer_region_min_radius]
 
-        # Plot
-        new_center_pix = plot_map_offset(frame, center_pix, radius, q("5 kpc"), interval=self.heating_fraction_interval, colorbar=False, cmap="inferno", plot=plot0)
+        # Get the heating maps
+        midplane = self.get_heating_map("midplane")
+        faceon = self.get_heating_map("cells")
+        faceon.apply_mask_nans(midplane.nans)
+        midplane.apply_mask_nans(faceon.nans)
 
-        # Create inner and outer region
-        inner_radius = (self.inner_region_max_radius / frame.average_physical_pixelscale).to("").value # in pixels
-        outer_radius = (self.outer_region_min_radius / frame.average_physical_pixelscale).to("").value # in pixels
-        inner_circle = Circle(new_center_pix.cartesian, inner_radius, fill=False, edgecolor="white")
-        outer_circle = Circle(new_center_pix.cartesian, outer_radius, fill=False, edgecolor="white")
+        # Plot the faceon heating map
+        plot_map_centered(faceon, radius, offset, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0, plot_radii=radii)
 
-        # Add circles
-        plot0.add_patch(inner_circle)
-        plot0.add_patch(outer_circle)
+        # Plot midplane map
+        midplane_residual = (midplane - faceon) / faceon
+        #plot_map_centered(midplane, radius, offset, interval=self.heating_fraction_interval, cmap="inferno", plot=plot1)
+        plot_map_centered(midplane_residual, radius, offset, interval=(-1,1,), cmap='RdBu', plot=plot1)
+        plot1.hide_yaxis()
+
+        # colorbar for residuals
+        start_x = plot1.bounding_box.bounds[0]
+        start_y = plot1.bounding_box.bounds[1]
+        x_width = plot1.bounding_box.bounds[2]
+        y_width = plot1.bounding_box.bounds[3]
+        cb_ax = figure.add_colorbar(start_x + 0.1*x_width, start_y + 0.1*y_width, x_width*0.8, 0.05 * y_width, "RdBu", "horizontal", (-1,1), ticks=[-1,-0.5,0,0.5,1])
 
         # Plot distribution
         #print(self.heating_distribution)
         #distr_axes = figure.figure.add_subplot(gs[1])
         #plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
-        plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval, plot=plot1, show_mean=True, show_median=True, show_most_frequent=False)
-        plot1.set_xlabel("Heating fraction by unevolved stars")
-        plot1.hide_yaxis()
+        plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval, plot=plot2, show_mean=True, show_median=True, show_most_frequent=False)
+        plot2.set_xlabel("Heating fraction by unevolved stars")
+        plot2.hide_yaxis()
 
         # Save or show
+        figure.tight_layout()
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_paper3(self, path=None):
+        
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the paper radial and vertical heating curves ...")
+
+        # Create figure
+        figsize = (9, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot0, plot1 = figure.create_twin_plots(share="y")
+
+        # Plot radial curve
+        radii = [self.inner_region_max_radius, self.outer_region_min_radius]
+        plot_curve(self.radial_heating_fraction_curve, vlines=radii, ylimits=self.heating_fraction_interval, plot=plot0,
+                   color="green", x_color="green", vlinestyle="dashed", vlinecolor="green")
+
+        # Plot vertical curve
+        plot_curve(self.vertical_heating_fraction_curve, vlines=[self.midplane_height], ylimits=self.heating_fraction_interval, plot=plot1,
+                   color="blue", x_color="blue", vlinestyle="dashed", vlinecolor="blue")
+
+        # Save or show
+        figure.tight_layout()
         if path is not None: figure.saveto(path)
         else: figure.show()
 
@@ -4043,7 +4140,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper3(self, path=None):
+    def plot_paper4(self, path=None):
 
         """
         This function ...
@@ -4319,7 +4416,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper4(self, path=None):
+    def plot_paper5(self, path=None):
 
         """
         This function ...
@@ -4435,7 +4532,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper5(self, path=None):
+    def plot_paper6(self, path=None):
 
         """
         This function ...
@@ -4461,13 +4558,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot0, plot1, plot2 = figure.create_row(3, projections=projections)
 
         # Plot all correlation
-        output_all = self.plot_ssfr_funev_impl(cells, plot0, self.ssfr_funev_distance_settings)
+        output_all = self.plot_correlation_impl(cells, plot0, self.ssfr_funev_distance_settings, plot_coefficient=True)
 
-        # Plot bulge correlation
-        output_bulge = self.plot_ssfr_funev_impl(cells, plot1, self.ssfr_funev_bulge_settings)
+        # Plot inner correlation
+        output_bulge = self.plot_correlation_impl(cells, plot1, self.ssfr_funev_inner_settings, plot_coefficient=True)
 
-        # Plot disk correlation
-        output_disk = self.plot_ssfr_funev_impl(cells, plot2, self.ssfr_funev_disk_settings)
+        # Plot outer correlation
+        output_disk = self.plot_correlation_impl(cells, plot2, self.ssfr_funev_outer_settings, plot_coefficient=True)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -4698,7 +4795,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False):
+    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False, plot_coefficient=False):
 
         """
         This function ...
@@ -4706,6 +4803,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param plot:
         :param settings:
         :param show_coefficient:
+        :param plot_coefficient:
         :return:
         """
 
@@ -4728,7 +4826,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot.set_yticks()
         
         # Show the correlation coefficient
-        if show_coefficient:
+        if show_coefficient or plot_coefficient:
 
             # Get correlation coefficient
             if settings.xlog: x = np.log10(output.x)
@@ -4738,10 +4836,15 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             coeff, p_value = pearsonr(x, y)
 
             # Show
-            print("")
-            print("Correlation coefficient (Pearson): " + str(coeff))
-            print("Correlation p-value: " + str(p_value))
-            print("")
+            if show_coefficient:
+                print("")
+                print("Correlation coefficient (Pearson): " + str(coeff))
+                print("Correlation p-value: " + str(p_value))
+                print("")
+
+            # Plot
+            if plot_coefficient:
+                plot.text(0.9, 0.1, "p-value = " + tostr(p_value), transform=output.axes.transAxes, color="white")
 
         # Return the plotting output
         return output
@@ -4762,7 +4865,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def ssfr_funev_preset_names(self):
-        return ["standard", "distance", "bulge", "disk"]
+        return ["standard", "standard_log", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
 
     # -----------------------------------------------------------------
 
@@ -4785,6 +4888,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Path
         definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("p_value", "show the p value on the plot")
 
         # Return
         return definition
@@ -4811,6 +4917,32 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Logscales?
         settings.xlog = True
         settings.ylog = False
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_standard_log_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
+
+        # No auxilary axis
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
 
         # Return
         return settings
@@ -4846,7 +4978,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_disk_settings(self):
+    def ssfr_funev_radius_settings(self):
 
         """
         This function ...
@@ -4857,21 +4989,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-14, 1e-9]
-        settings.ylimits = [0.2, 1]
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
 
-        # Distance auxilary axis
-        settings.aux_colname = "Dust density"
-
-        # Set conditions
-        distance_conditions = Map()
-        distance_conditions.lower = 6500
-        settings.conditions = {"Distance from center": distance_conditions}
+        # Auxilary axis
+        settings.aux_colname = "Radius"
 
         # Logscales?
         settings.xlog = True
         settings.ylog = True
-        settings.aux_log = True
+        settings.aux_log = False
 
         # Return
         return settings
@@ -4879,7 +5006,35 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_bulge_settings(self):
+    def ssfr_funev_dust_heights_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
+
+        # Auxilary axis
+        settings.aux_colname = "Dust scale heights"
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = False
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_inner_settings(self):
 
         """
         This function ...
@@ -4897,9 +5052,109 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "vSFR"
 
         # Set conditions
-        distance_conditions = Map()
-        distance_conditions.upper = 4000
-        settings.conditions = {"Distance from center": distance_conditions}
+        radius_condition = Map()
+        radius_condition.upper = self.inner_region_max_radius.to("pc").value
+        settings.conditions = {"Radius": radius_condition}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_intermediate_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-13, 1e-9]
+        settings.ylimits = [0.1, 1]
+
+        # Distance auxilary axis
+        #settings.aux_colname = "Dust density"
+
+        # Set conditions
+        radius_conditions = Map()
+        radius_conditions.lower = self.inner_region_max_radius.to("pc").value
+        radius_conditions.upper = self.outer_region_min_radius.to("pc").value
+        settings.conditions = {"Radius": radius_conditions}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        #settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_outside_inner_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-14, 1e-9]
+        settings.ylimits = [0.1, 1]
+
+        # Distance auxilary axis
+        settings.aux_colname = "Dust density"
+
+        # Set conditions
+        radius_condition = Map()
+        radius_condition.lower = self.inner_region_max_radius.to("pc").value
+        settings.conditions = {"Radius": radius_condition}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_outer_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-14, 1e-9]
+        settings.ylimits = [0.2, 1]
+
+        # Distance auxilary axis
+        settings.aux_colname = "Dust density"
+
+        # Set conditions
+        radius_condition = Map()
+        radius_condition.lower = self.outer_region_min_radius.to("pc").value
+        settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
         settings.xlog = True
@@ -4972,9 +5227,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if config.preset is not None:
 
             if config.preset == "standard": settings = self.ssfr_funev_standard_settings
+            elif config.preset == "standard_log": settings = self.ssfr_funev_standard_log_settings
             elif config.preset == "distance": settings = self.ssfr_funev_distance_settings
-            elif config.preset == "disk": settings = self.ssfr_funev_disk_settings
-            elif config.preset == "bulge": settings = self.ssfr_funev_bulge_settings
+            elif config.preset == "radius": settings = self.ssfr_funev_radius_settings
+            elif config.preset == "dust_heights": settings = self.ssfr_funev_dust_heights_settings
+            elif config.preset == "inner": settings = self.ssfr_funev_inner_settings
+            elif config.preset == "outer": settings = self.ssfr_funev_outer_settings
+            elif config.preset == "intermediate": settings = self.ssfr_funev_intermediate_settings
+            elif config.preset == "outside_inner": settings = self.ssfr_funev_outside_inner_settings
             else: raise ValueError("Invalid preset: '" + config.preset + "'")
 
         # Create new settings
@@ -4991,7 +5251,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True)
+        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:
@@ -5021,6 +5281,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Path
         definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("p_value", "show the p value on the plot")
 
         # Return
         return definition
@@ -5062,7 +5325,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.ylimits = (0,1,)
 
         # Plot
-        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True)
+        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -5171,12 +5434,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_valid_cell_heating_fractions(self, mask=None, return_weights=False):
+    def get_valid_cell_heating_fractions(self, mask=None, return_valid=False):
 
         """
         This function ...
         :param mask:
-        :param return_weights:
+        :param return_valid:
         :return:
         """
 
@@ -5192,8 +5455,60 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get and return the values
         values = self.cell_heating_fractions[valid_mask]
-        if return_weights: return values, self.cell_weights[valid_mask]
+        if return_valid: return values, valid_mask
         else: return values
+
+    # -----------------------------------------------------------------
+
+    def get_valid_cell_heating_fractions_and_weights(self, mask=None):
+
+        """
+        THis function ...
+        :param mask:
+        :return:
+        """
+
+        # Get
+        values, valid_mask = self.get_valid_cell_heating_fractions(mask=mask, return_valid=True)
+
+        # Return
+        return values, self.cell_weights[valid_mask]
+
+    # -----------------------------------------------------------------
+
+    def get_valid_cell_heating_fractions_radii_and_weights(self, mask=None):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        # Get values
+        values, valid_mask = self.get_valid_cell_heating_fractions(mask=mask, return_valid=True)
+        weights = self.cell_weights[valid_mask]
+        radii = self.cell_heating_fractions_data.radii[valid_mask]
+
+        # Return
+        return values, radii, weights
+
+    # -----------------------------------------------------------------
+
+    def get_valid_cell_heating_fractions_heights_and_weights(self, mask=None):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        # Get values
+        values, valid_mask = self.get_valid_cell_heating_fractions(mask=mask, return_valid=True)
+        weights = self.cell_weights[valid_mask]
+        heights = self.cell_heating_fractions_data.heights[valid_mask]
+
+        # Return
+        return values, heights, weights
 
     # -----------------------------------------------------------------
 
@@ -5206,7 +5521,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get fractions and weights
-        fractions, weights = self.get_valid_cell_heating_fractions(mask=mask, return_weights=True)
+        fractions, weights = self.get_valid_cell_heating_fractions_and_weights(mask=mask)
 
         # Calculate and return
         return numbers.weighed_arithmetic_mean_numpy(fractions, weights=weights)
@@ -5638,6 +5953,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def default_distribution_name(self):
+        return "total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_distribution_names(self):
+        return ["total", "radial", "vertical"]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def plot_heating_distribution_definition(self):
 
@@ -5648,6 +5975,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Which distribution?
+        definition.add_positional_optional("name", "string", "distribution to plot", self.default_distribution_name, choices=self.heating_distribution_names)
+
+        # Plot to file
+        definition.add_optional("path", "new_path", "plot to file")
 
         # Return the definition
         return definition
@@ -5665,6 +5998,278 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get config
         config = self.get_config_from_command(command, self.plot_heating_distribution_definition, **kwargs)
+
+        # Total
+        if config.name == "total": self.plot_total_heating_distribution(path=config.path)
+
+        # Radial
+        elif config.name == "radial": self.plot_radial_heating_distribution(path=config.path)
+
+        # Vertical
+        elif config.name == "vertical": self.plot_vertical_heating_distribution(path=config.path)
+
+        # Invalid
+        else: raise ValueError("Invalid name: '" + config.name + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_heating_fraction_distribution(self):
+        return self.heating_distribution
+
+    # -----------------------------------------------------------------
+
+    def plot_total_heating_distribution(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the total heating fraction distribution ...")
+
+        # Plot
+        plot_distribution(self.total_heating_fraction_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval,
+                          show_mean=True, show_median=True, show_most_frequent=False)
+        #plot2.set_xlabel("Heating fraction by unevolved stars")
+        #plot2.hide_yaxis()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nradial_bins_distribution(self):
+        return 200
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radial_heating_fraction_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get fractions, weights and radii
+        fractions, radii, weights = self.get_valid_cell_heating_fractions_radii_and_weights()
+        length_unit = self.cell_heating_fractions_data.length_unit
+
+        # Generate the radial distribution
+        return Distribution2D.from_values("Number of cells", radii, fractions, weights=weights,
+                                          x_name="Radius", y_name="Heating fraction", x_unit=length_unit, nbins=self.nradial_bins_distribution,
+                                          description="Radial distribution of the dust cell heating fraction")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nradial_bins(self):
+        return 100
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radial_bins(self):
+        return RealRange(0., self.cell_heating_fractions_data.max_radius, inclusive=True).linear(self.nradial_bins+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_curve_radii(self):
+        return [numbers.arithmetic_mean(min_radius, max_radius) for min_radius, max_radius in zip(self.radial_bins[:-1], self.radial_bins[1:])]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radial_heating_fraction_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get fractions, weights and radii
+        fractions, radii, weights = self.get_valid_cell_heating_fractions_radii_and_weights()
+        length_unit = self.cell_heating_fractions_data.length_unit
+
+        # Loop over the bins
+        curve_radii = []
+        fractions_radii = []
+        for min_radius, max_radius in zip(self.radial_bins[:-1], self.radial_bins[1:]):
+
+            # Debugging
+            log.debug("Calculating heating fraction for cells within a radius of " + tostr(min_radius) + " and " + tostr(max_radius) + " ...")
+
+            # Get the radius mask
+            where = (min_radius < radii) * (radii < max_radius)
+            ncells = np.sum(where)
+            log.debug("Number of cells: " + str(ncells))
+            if ncells < 100: break
+
+            # Calculate the average fraction, weighed
+            fraction = numbers.weighed_arithmetic_mean_numpy(fractions[where], weights=weights[where])
+
+            # Add the fraction
+            radius = numbers.arithmetic_mean(min_radius, max_radius)
+            curve_radii.append(radius)
+            fractions_radii.append(fraction)
+
+        # Return curve
+        return Curve.from_columns(curve_radii, fractions_radii, x_name="Radius", y_name="Heating fraction", x_unit=length_unit)
+
+    # -----------------------------------------------------------------
+
+    def plot_radial_heating_distribution(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the radial heating fraction distribution ...")
+
+        # Plot
+        plot_2d_distribution(self.radial_heating_fraction_distribution, path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_radial_heating_curve(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the radial heating fraction curve ...")
+
+        # Plot
+        radii = [self.inner_region_max_radius, self.outer_region_min_radius]
+        plot_curve(self.radial_heating_fraction_curve, path=path, vlines=radii, ylimits=self.heating_fraction_interval)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nvertical_bins_distribution(self):
+        return 100
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vertical_heating_fraction_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get fractions, heights and weights
+        fractions, heights, weights = self.get_valid_cell_heating_fractions_heights_and_weights()
+        length_unit = self.cell_heating_fractions_data.length_unit
+
+        # Generate the vertical distribution
+        return Distribution2D.from_values("Number of cells", heights, fractions, weights=weights,
+                                          x_name="Height", y_name="Heating fraction", x_unit=length_unit, nbins=self.nvertical_bins_distribution,
+                                          description="Vertical distribution of the dust cell heating fraction")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nvertical_bins(self):
+        return 50
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vertical_bins(self):
+        return RealRange(0., self.cell_heating_fractions_data.max_z, inclusive=True).linear(self.nvertical_bins+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_curve_heights(self):
+        return [numbers.arithmetic_mean(min_height, max_height) for min_height, max_height in zip(self.vertical_bins[:-1], self.vertical_bins[1:])]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vertical_heating_fraction_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get fractions, heights and weights
+        fractions, heights, weights = self.get_valid_cell_heating_fractions_heights_and_weights()
+        length_unit = self.cell_heating_fractions_data.length_unit
+
+        # Loop over the bins
+        curve_heights = []
+        fractions_heights = []
+        for min_height, max_height in zip(self.vertical_bins[:-1], self.vertical_bins[1:]):
+
+            # Debugging
+            log.debug("Calculating heating fraction for cells within a height of " + tostr(min_height) + " and " + tostr(max_height) + " ...")
+
+            # Get the height mask
+            where = (min_height < heights) * (heights < max_height)
+            ncells = np.sum(where)
+            log.debug("Number of cells: " + str(ncells))
+            if ncells < 100: break
+
+            # Calculate the average fraction, weighed
+            fraction = numbers.weighed_arithmetic_mean_numpy(fractions[where], weights=weights[where])
+
+            # Add the height and fraction
+            height = numbers.arithmetic_mean(min_height, max_height)
+            curve_heights.append(height)
+            fractions_heights.append(fraction)
+
+        # Return curve
+        return Curve.from_columns(curve_heights, fractions_heights, x_name="Height", y_name="Heating fraction", x_unit=length_unit)
+
+    # -----------------------------------------------------------------
+
+    def plot_vertical_heating_distribution(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the vertical heating fraction distribution ...")
+
+        # Plot
+        plot_2d_distribution(self.vertical_heating_fraction_distribution, path=path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def midplane_height(self):
+        return 0.2 * self.model.sfr_scaleheight
+
+    # -----------------------------------------------------------------
+
+    def plot_vertical_heating_curve(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the vertical heating fraction curve ...")
+
+        # Plot
+        plot_curve(self.vertical_heating_fraction_curve, path=path, vlines=[self.midplane_height], ylimits=self.heating_fraction_interval)
 
     # -----------------------------------------------------------------
 
@@ -5686,6 +6291,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def default_heating_curve_name(self):
+        return "spectral"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_curve_names(self):
+        return ["spectral", "radial", "vertical"]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def plot_heating_curve_definition(self):
 
@@ -5697,8 +6314,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
 
+        # Which curve
+        definition.add_required("name", "string", "which heating curve", choices=self.heating_curve_names)
+
         # Absorption or emission
-        definition.add_required("abs_or_em", "string", "absorption or emission", choices=self.absorption_or_emission)
+        definition.add_positional_optional("abs_or_em", "string", "absorption or emission", choices=self.absorption_or_emission)
 
         # Projection
         definition.add_positional_optional("projection", "string", "projection for the curve", self.default_heating_curve_projection, self.heating_curve_projections)
@@ -5832,22 +6452,51 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_heating_curve_definition, **kwargs)
 
+        # Spectral
+        if config.name == "spectral": self.plot_spectral_heating_curve(config.abs_or_em, config.projection, path=config.path)
+
+        # Radial
+        elif config.name == "radial":
+            if config.abs_or_em is not None: raise ValueError("Invalid option abs_or_em is specified")
+            self.plot_radial_heating_curve(path=config.path)
+
+        # Vertical
+        elif config.name == "vertical":
+            if config.abs_or_em is not None: raise ValueError("Invalid option abs_or_em is specified")
+            self.plot_vertical_heating_curve(path=config.path)
+
+        # Invalid
+        else: raise ValueError("Invalid name: '" + config.name + "'")
+
+    # -----------------------------------------------------------------
+
+    def plot_spectral_heating_curve(self, abs_or_em, projection, path=None):
+
+        """
+        This function ...
+        :param abs_or_em:
+        :param projection:
+        :param path:
+        :return:
+        """
+
         # Absorption
-        if config.abs_or_em == absorption_name: self.plot_spectral_absorption_fraction_curves(config.projection)
+        if abs_or_em == absorption_name: self.plot_spectral_absorption_fraction_curves(projection, path=path)
 
         # Emission
-        elif config.abs_or_em == emission_name: self.plot_spectral_emission_fraction_curves(config.projection)
+        elif abs_or_em == emission_name: self.plot_spectral_emission_fraction_curves(projection, path=path)
 
         # Invalid
         else: raise ValueError("Invalid value for 'abs_or_em'")
 
     # -----------------------------------------------------------------
 
-    def plot_spectral_absorption_fraction_curves(self, projection):
+    def plot_spectral_absorption_fraction_curves(self, projection, path=None):
 
         """
         This function ...
         :param projection:
+        :param path:
         :return:
         """
 
@@ -5862,7 +6511,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             curves = {"cells": cells, "earth": earth, "faceon": faceon, "edgeon": edgeon}
 
             # Plot
-            plot_curves(curves, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+            plot_curves(curves, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
+                        xlog=True, y_label=self.heating_fraction_name, path=path)
 
         # Single curve
         else:
@@ -5871,15 +6521,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             curve = self.get_spectral_absorption_fraction_curve(projection)
 
             # Plot
-            plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+            plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
+                       xlog=True, y_label=self.heating_fraction_name, path=path)
 
     # -----------------------------------------------------------------
 
-    def plot_spectral_emission_fraction_curves(self, projection):
+    def plot_spectral_emission_fraction_curves(self, projection, path=None):
 
         """
         This function ...
         :param projection:
+        :param path:
         :return:
         """
 
@@ -5894,7 +6546,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             curves = {"cells": cells, "earth": earth, "faceon": faceon, "edgeon": edgeon}
 
             # Plot
-            plot_curves(curves, xlimits=self.heating_emission_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+            plot_curves(curves, xlimits=self.heating_emission_wavelength_limits, ylimits=self.heating_fraction_interval,
+                        xlog=True, y_label=self.heating_fraction_name, path=path)
 
         # Single curve
         else:
@@ -5903,7 +6556,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             curve = self.get_spectral_emission_fraction_curve(projection)
 
             # Plot
-            plot_curve(curve, xlimits=self.heating_emission_wavelength_limits, ylimits=self.heating_fraction_interval, xlog=True, y_label=self.heating_fraction_name)
+            plot_curve(curve, xlimits=self.heating_emission_wavelength_limits, ylimits=self.heating_fraction_interval,
+                       xlog=True, y_label=self.heating_fraction_name, path=path)
 
     # -----------------------------------------------------------------
 

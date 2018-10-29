@@ -3213,7 +3213,7 @@ def plot_one_residual_aplpy(observation, model, residual=None, path=None, scale=
 # ------------------------------------------------------------------------------
 
 def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=None, radius=None, xy_ratio=None,
-                         dark=False, scale="log", plotsize=3., distance=None, mask_simulated=False):
+                         dark=False, scale="log", plotsize=3., distance=None, mask_simulated=False, masks=None):
 
     """
     This function ...
@@ -3229,6 +3229,7 @@ def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=
     :param plotsize:
     :param distance:
     :param mask_simulated:
+    :param masks: if passed, both observations, models and residuals are masked
     :return:
     """
 
@@ -3273,7 +3274,8 @@ def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=
     plot_idx = 0
 
     # Loop over the filters
-    for observation, model, residual, index in zip(observations, models, residuals, range(nimages)):
+    if masks is None: masks = [None] * nimages
+    for observation, model, residual, mask, index in zip(observations, models, residuals, masks, range(nimages)):
 
         #print("units:")
         #print(observation.unit)
@@ -3285,6 +3287,12 @@ def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=
         if mask_simulated:
             model.rebin(observation.wcs)
             model.apply_mask_nans(observation.nans)
+
+        # MASK ALL?
+        if mask is not None:
+            observation.apply_mask_nans(mask)
+            model.apply_mask_nans(mask)
+            residual.apply_mask_nans(mask)
 
         # IS FIRST OR LAST IMAGE?
         is_first = index == 0
@@ -3390,10 +3398,10 @@ def plot_residuals_aplpy(observations, models, residuals, filepath=None, center=
 
         if dark:
             sns.kdeplot(residual[residuals_to_kde], bw='silverman', c='white', shade=True)
-            fig4.axes.set_axis_bgcolor("black") #set_facecolor('black')
+            fig4.axes.set_facecolor("black")
         else:
             sns.kdeplot(residual[residuals_to_kde], bw='silverman', c='k', shade=True)
-            fig4.axes.set_axis_bgcolor("white") #set_facecolor('white')
+            fig4.axes.set_facecolor("white")
 
         fig4.tick_params(labelleft='off')
         plt.xlim([-150, 150])

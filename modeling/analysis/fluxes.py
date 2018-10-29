@@ -28,6 +28,7 @@ from ...core.plot.sed import plot_seds
 from ...core.filter.filter import parse_filter_from_instrument_and_band
 from ...core.tools import tables
 from ..fitting.modelanalyser import FluxDifferencesTable
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -53,6 +54,9 @@ class FluxesAnalyser(AnalysisRunComponent):
 
         # The observed images
         self.observed = dict()
+
+        # The masks
+        self.masks = dict()
 
         # The SED
         self.sed = None
@@ -177,6 +181,9 @@ class FluxesAnalyser(AnalysisRunComponent):
         # Simulated images
         self.load_simulated_images()
 
+        # Load masks
+        self.load_masks()
+
     # -----------------------------------------------------------------
 
     def load_observed_images(self):
@@ -209,6 +216,27 @@ class FluxesAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def load_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the image masks ...")
+
+        # Get the frames
+        for fltr in self.filters:
+
+            # Get mask path
+            path = fs.join(self.analysis_run.residuals_path, "masks", str(fltr) + ".fits")
+
+            # Load
+            self.masks[fltr] = Mask.from_file(path)
+
+    # -----------------------------------------------------------------
+
     def mask_images(self):
 
         """
@@ -231,8 +259,12 @@ class FluxesAnalyser(AnalysisRunComponent):
             model.convert_to("mJy/sr", distance=self.galaxy_distance)
 
             # Mask
-            model.rebin(observation.wcs)
-            model.apply_mask_nans(observation.nans)
+            #model.rebin(observation.wcs)
+            #model.apply_mask_nans(observation.nans)
+
+            # Mask
+            model.rebin(self.masks[fltr].wcs)
+            model.apply_mask_nans(self.masks[fltr])
 
             # Convert back to unit
             observation.convert_to(self.config.unit, distance=self.galaxy_distance)

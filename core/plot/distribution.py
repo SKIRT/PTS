@@ -70,7 +70,7 @@ def plot_distribution_from_file(path, **kwargs):
 
 def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
                       y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf", axes=None,
-                      xsize=5, ysize=5, return_image=False, colors=None, statistics=True, soft_xmin=False,
+                      xsize=5, ysize=5, colors=None, statistics=True, soft_xmin=False,
                       soft_xmax=False, soft_ymin=False, soft_ymax=False, mean=None, median=None, most_frequent=None,
                       stddev=None, fwhm=None, show_mean=None, show_median=None, show_most_frequent=None,
                       show_stddev=False, show_fwhm=False, alpha=None, plot=None, cmap=None, cmap_interval=None):
@@ -91,7 +91,6 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param axes:
     :param xsize:
     :param ysize:
-    :param return_image:
     :param colors:
     :param statistics:
     :param soft_xmin:
@@ -114,6 +113,10 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param cmap_interval:
     :return:
     """
+
+    # Output
+    from ...core.basics.map import Map
+    output = Map()
 
     # Get format from path
     if path is not None: format = fs.get_extension(path)
@@ -151,6 +154,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 
         # Plot
         patch = axes.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+        output.patch = patch
 
     else:
 
@@ -165,6 +169,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 
         # Plot
         patch = axes.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+        output.patch = patch
 
     # Determine automatic x_min and x_max
     x_min_auto = distribution.min_edge_log if logscale else distribution.min_edge
@@ -315,7 +320,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         plt.close()
 
     # Return
-    if return_image: return patch
+    return output
 
 # -----------------------------------------------------------------
 
@@ -395,7 +400,7 @@ def plot_2d_distribution_from_file(path, **kwargs):
 # -----------------------------------------------------------------
 
 def plot_2d_distribution(distribution, title=None, path=None, x_lines=None, y_lines=None, xlim=None, ylim=None,
-                         mode="colormesh", add_average=False, format=None):
+                         mode="colormesh", add_average=False, format=None, cmap="Blues"):
 
     """
     This function ...
@@ -432,7 +437,7 @@ def plot_2d_distribution(distribution, title=None, path=None, x_lines=None, y_li
 
         # Plot the colored 2D distribution
         # Plot 2D histogram using pcolor
-        ax.pcolormesh(distribution.x, distribution.y, distribution.counts)
+        ax.pcolormesh(distribution.x, distribution.y, distribution.counts, cmap=cmap)
 
         # Plot the running average
         # if self.rBins_F is not None and self.FBins_r is not None:

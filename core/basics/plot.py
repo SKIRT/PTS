@@ -2192,6 +2192,28 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
+    def create_twin_plots(self, share="x"):
+
+        """
+        This function ...
+        :param share:
+        :return:
+        """
+
+        # Create first plot
+        plot0 = self.create_one_plot()
+
+        # Create second plot
+        if share == "x": ax1 = plot0.axes.twinx()
+        elif share == "y": ax1 = plot0.axes.twiny()
+        else: raise ValueError("Invalid value for 'share'")
+        plot1 = MPLPlot(plot=ax1)
+
+        # Return plots
+        return plot0, plot1
+
+    # -----------------------------------------------------------------
+
     def add_plot(self, left, bottom, width, height):
 
         """
@@ -2208,7 +2230,7 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def add_colorbar(self, left, bottom, width, height, cmap, orientation, interval, logscale=False):
+    def add_colorbar(self, left, bottom, width, height, cmap, orientation, interval, logscale=False, ticks=None):
 
         """
         This function ...
@@ -2219,7 +2241,8 @@ class MPLFigure(Figure):
         :param cmap:
         :param orientation:
         :param interval:
-        :param logscale
+        :param logscale:
+        :param ticks:
         :return:
         """
 
@@ -2233,8 +2256,13 @@ class MPLFigure(Figure):
         # Create axes
         axes = self.figure.add_axes([left, bottom, width, height])
 
-        #handle = colorbar(im1a, cax=cbar_im1a_ax)
+        # Create colorbar
         cb = ColorbarBase(axes, cmap=cmap, norm=norm, orientation=orientation)
+
+        # Set ticks
+        if ticks is not None: cb.set_ticks(ticks)
+
+        # Return
         return cb
 
     # -----------------------------------------------------------------
@@ -3937,8 +3965,7 @@ class MPLFigure(Figure):
         :return:
         """
 
-        title = title.replace("_", "\_")
-
+        title = title.replace("_", "\_").replace("&", "\&")
         self.figure.suptitle("\n".join(wrap(title, width)))
 
     # -----------------------------------------------------------------

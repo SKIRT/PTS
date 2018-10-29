@@ -1906,19 +1906,21 @@ def sigma_clip_mask(values, sigma_level=3.0, return_nmasked=False):
 
 # -----------------------------------------------------------------
 
-def sigma_clip(values, sigma_level=3.0, return_nmasked=False):
+def sigma_clip(values, sigma_level=3.0, return_nmasked=False, logarithmic=False):
 
     """
     This function ...
     :param values:
     :param sigma_level:
     :param return_nmasked:
+    :param logarithmic: the values are logarithmically distributed
     :return:
     """
 
     from astropy.stats import sigma_clip
 
     # Sigma-clip
+    if logarithmic: values = np.log10(logarithmic)
     masked_array = sigma_clip(values, sigma=sigma_level, iters=None)
 
     # Get the number of masked values

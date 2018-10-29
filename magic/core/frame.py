@@ -198,15 +198,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def get_meta(self, key):
+    def get_meta(self, key, default=None):
 
         """
         This function ...
         :param key:
+        :param default:
         :return:
         """
 
-        return self.metadata[key]
+        if key in self.metadata: return self.metadata[key]
+        elif default is not None: return default
+        else: KeyError("No meta entry '" + key + "'")
 
     # -----------------------------------------------------------------
 
@@ -1160,12 +1163,6 @@ class Frame(NDDataArray):
 
     @property
     def absolute(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Frame(np.abs(self.data), wcs=self.wcs, unit=self.unit, pixelscale=self.pixelscale, filter=self.filter)
 
     # -----------------------------------------------------------------

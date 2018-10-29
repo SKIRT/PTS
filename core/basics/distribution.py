@@ -101,7 +101,8 @@ class Distribution(Curve):
         else: data = np.asarray(data)
 
         # Get a mask of the finite values
-        finite = np.logical_not(np.logical_or(np.isnan(data), np.isinf(data)))
+        #finite = np.logical_not(np.logical_or(np.isnan(data), np.isinf(data)))
+        finite = np.isfinite(data)
 
         # Get the finite values
         values = data[finite]
@@ -117,13 +118,16 @@ class Distribution(Curve):
         # Mask
         if mask is not None: values = values[mask]
 
+        # Logscale?
+        logarithmic = kwargs.get("logarithmic", False)
+
         # Sigma clip
         sigma_clip = kwargs.pop("sigma_clip", False)
         if sigma_clip:
             from .log import log
             noriginal = len(values)
             sigma_level = kwargs.pop("sigma_level", 3.)
-            values, nmasked = numbers.sigma_clip(values, sigma_level=sigma_level, return_nmasked=True)
+            values, nmasked = numbers.sigma_clip(values, sigma_level=sigma_level, return_nmasked=True, logarithmic=logarithmic)
             log.debug("Masked " + str(nmasked) + " out of " + str(noriginal) + " values by sigma-clipping")
 
         # Create the distribution
@@ -179,6 +183,7 @@ class Distribution(Curve):
         # Create histogram
         if logarithmic:
             logvalues = np.log10(np.array(values))
+            logvalues = logvalues[np.isfinite(logvalues)]
             counts, edges = np.histogram(logvalues, bins=nbins, density=density, weights=weights)
             edges = 10**edges
         else: counts, edges = np.histogram(values, bins=nbins, density=density, weights=weights)

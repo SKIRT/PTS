@@ -229,6 +229,18 @@ class Data3DBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def max_radius(self):
+        return np.max(self.radii)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heights(self):
+        return np.abs(self.z)
+
+    # -----------------------------------------------------------------
+
+    @property
     def x_unit(self):
         return self.length_unit
 

@@ -67,21 +67,21 @@ if not config.points and not config.density: raise ValueError("Must plot points 
 # -----------------------------------------------------------------
 
 # Scatter points (with or without density)
-if config.points: figure, plot = plot_scatters(scatters, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, density=config.density, size=12, show=False)
+if config.points: output = plot_scatters(scatters, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, density=config.density, size=12, show=False)
 
 # Density field
-else: figure, plot = plot_densities(scatters, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, method=config.density_method, show=False)
+else: output = plot_densities(scatters, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=config.ylog, method=config.density_method, show=False)
 
 # Set ticks in nice way
-plot.set_xticks()
-plot.set_yticks()
+output.plot.set_xticks()
+output.plot.set_yticks()
 
 # Set axes labels
-if config.xlabel is not None: plot.set_xlabel(config.xlabel)
-if config.ylabel is not None: plot.set_ylabel(config.ylabel)
+if config.xlabel is not None: output.plot.set_xlabel(config.xlabel)
+if config.ylabel is not None: output.plot.set_ylabel(config.ylabel)
 
 # Show
-if config.path is not None: figure.saveto(config.path)
-else: figure.show()
+if config.path is not None: output.figure.saveto(config.path)
+else: output.figure.show()
 
 # -----------------------------------------------------------------

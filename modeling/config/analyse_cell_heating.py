@@ -149,7 +149,7 @@ definition.add_flag("contours", "add contours to the plots")
 # -----------------------------------------------------------------
 
 # For creating interpolated maps
-definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated maps of the heating fraction", 5)
+definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for each pixel of the interpolated maps of the heating fraction", 5)
 definition.add_optional("not_nans_dilation_radius", "positive_real", "radius for dilating not-nans", 3)
 
 # -----------------------------------------------------------------
