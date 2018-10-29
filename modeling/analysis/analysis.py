@@ -217,6 +217,7 @@ curve_name = "curve"
 
 ssfr_funev_name = "ssfr_funev"
 vsfr_funev_name = "vsfr_funev"
+temperature_funev_name = "temp_funev"
 
 plot_heating_commands = OrderedDict()
 plot_heating_commands.description = "make plots of the heating fraction"
@@ -233,6 +234,7 @@ plot_correlations_commands = OrderedDict()
 plot_correlations_commands.description = "make plots of the correlations"
 plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot the sSFR to Funev scatter", None)
 plot_correlations_commands[vsfr_funev_name] = ("plot_vsfr_funev_command", True, "plot the vSFR to Funev scatter", None)
+plot_correlations_commands[temperature_funev_name] = ("plot_temperature_funev_command", True, "plot the dust temperature to Funev scatter", None)
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -4858,6 +4860,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                                      show_coefficient=True, plot_coefficient=True, references=self.reference_ssfr_funev_scatters,
                                                      high_dynamic_range=True, figure=figure, fit=True)
 
+        # PLOT vSFR vs Funev
+        vsfr_settings = self.vsfr_funev_standard_settings
+        output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", cells, second_row[1], vsfr_settings, show_coefficient=True, plot_coefficient=True)
+
+        # Plot Temperature vs. Funev
+        temperature_settings = self.temperature_funev_standard_settings
+        output_temperature = self.plot_correlation_impl("Dust temperature-Funev (all cells)", cells, second_row[2], temperature_settings, show_coefficient=True, plot_coefficient=True)
+
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
         #aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
@@ -5149,8 +5159,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Set nice ticks
         if high_dynamic_range: log_subs = (1.,)
         else: log_subs = (1.,5.,)
-        plot.set_xticks(log_subs=log_subs)
-        plot.set_yticks(log_subs=log_subs)
+        if settings.xlog: plot.set_xticks(log_subs=log_subs)
+        if settings.ylog: plot.set_yticks(log_subs=log_subs)
         
         # Show the correlation coefficient
         if show_coefficient or plot_coefficient:
@@ -5661,6 +5671,34 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def vsfr_funev_standard_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        # settings.ylog = True
+        settings.color = "blue"
+
+        settings.x_colname = "vSFR"
+
+        # Limits
+        settings.xlimits = (1e-15, 1e-10)
+        # settings.ylimits = (0.0015, 1,)
+        settings.ylimits = (0, 1,)
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
     def plot_vsfr_funev_command(self, command, **kwargs):
 
         """
@@ -5685,23 +5723,102 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Load the data
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
-        # Set settings
-        settings = CorrelationPlotSettings()
-        settings.xlog = True
-        #settings.ylog = True
-        settings.color = "blue"
-        settings.x_colname = "vSFR"
-        settings.xlimits = (1e-15,1e-10)
-        #settings.ylimits = (0.0015, 1,)
-        settings.ylimits = (0,1,)
-
         # Plot
-        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
+        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, self.vsfr_funev_standard_settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
         #aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
         #figure.figure.colorbar(output.scatter, label=aux_label)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_temperature_funev_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("p_value", "show the p value on the plot")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_standard_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        #settings.xlog = False
+        #settings.ylog = True
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "orange"
+        settings.x_colname = "Dust temperature"
+
+        # Limits
+        #settings.xlimits = (1e-15, 1e-10)
+        # settings.ylimits = (0.0015, 1,)
+        settings.ylimits = (0, 1,)
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    def plot_temperature_funev_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_temperature_funev_definition, **kwargs)
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter("salim")
+
+        # Plot
+        output = self.plot_correlation_impl("Temperature-Funev", scatter, plot, self.temperature_funev_standard_settings, show_coefficient=True, plot_coefficient=config.p_value)
+
+        # Create colorbar
+        # aux_unit = scatter.get_unit(settings.aux_colname)
+        # aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
+        # figure.figure.colorbar(output.scatter, label=aux_label)
 
         # Save or show
         if config.path is not None: figure.saveto(config.path)

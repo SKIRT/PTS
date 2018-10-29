@@ -2246,7 +2246,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
                 if rebinning_factor is not None:
 
                     # Debugging
-                    log.debug("Converting the '" + filter_name + "' frame of the '" + instr_name + "' instrument to '" + tostr(rebinning_unit, add_physical_type=True) + "' with a factor of '" + rebinning_factor + "' ...")
+                    log.debug("Converting the '" + filter_name + "' frame of the '" + instr_name + "' instrument to '" + tostr(rebinning_unit, add_physical_type=True) + "' with a factor of '" + tostr(rebinning_factor) + "' ...")
 
                     # Convert
                     self.images[instr_name][filter_name].convert_by_factor(rebinning_factor, rebinning_unit)
