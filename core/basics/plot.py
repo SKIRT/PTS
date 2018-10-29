@@ -1871,7 +1871,7 @@ class MPLPlot(Plot):
         :return:
         """
 
-        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
+        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ').replace("&", "\&")
         self._plot.set_xlabel(label, **kwargs)
 
     # -----------------------------------------------------------------
@@ -1885,7 +1885,7 @@ class MPLPlot(Plot):
         :return:
         """
 
-        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ')
+        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ').replace("&", "\&")
         self._plot.set_ylabel(label, **kwargs)
 
     # -----------------------------------------------------------------
