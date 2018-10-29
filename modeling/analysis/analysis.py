@@ -17,6 +17,7 @@ import numpy as np
 from copy import deepcopy
 from scipy.stats import pearsonr
 from collections import OrderedDict
+from matplotlib.colors import to_hex, to_rgb
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
@@ -4577,10 +4578,22 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def m51_color(self):
+        return "purple"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def m31_color(self):
+        return "dodgerblue"
+
+    # -----------------------------------------------------------------
+
+    @property
     def reference_ssfr_funev_scatter_colors(self):
         colors = dict()
-        colors["M51"] = "dodgerblue"
-        colors["M31"] = "purple"
+        colors["M51"] = self.m51_color
+        colors["M31"] = self.m31_color
         return colors
 
     # -----------------------------------------------------------------
@@ -4652,6 +4665,42 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def npoints_fit(self):
+        return 100
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_limits_fit(self):
+        return [1e-13, 1e-9]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_points_fit(self):
+        return RealRange(*self.ssfr_limits_fit).log(self.npoints_fit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_ssfr_points_fit(self):
+        return np.log10(self.ssfr_points_fit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_m51(self):
+        return get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_m31(self):
+        return get_linear_fitted_values(self.m31_valid_ssfr_values, self.m31_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True)
+
+    # -----------------------------------------------------------------
+
     def plot_paper5(self, path=None):
 
         """
@@ -4693,42 +4742,29 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatters1[m51_label] = self.m51_ssfr_funev_scatter
 
         # Make the first plot
-        xlimits = [1e-13,1e-9]
         ylimits = [0,1]
         xlog = True
         ylog = False
         #plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
-        output0 = plot_scatters_astrofrog(scatters1, xlimits=xlimits, ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0)
-
-        # Plot line
-        npoints = 100
-        ssfr_points = RealRange(*xlimits).log(npoints)
-        log_ssfr_points = np.log10(ssfr_points)
+        output0 = plot_scatters_astrofrog(scatters1, xlimits=self.ssfr_limits_fit, ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0)
 
         # Ilse
         #logfunev = 0.42 * logssfr + 4.14      # M51 PAPER -> but doesn't quite fit when plotting her points
-        log_funev_m51_ilse = 0.42 * log_ssfr_points + 4.14
+        log_funev_m51_ilse = 0.42 * self.log_ssfr_points_fit + 4.14
         funev_m51_ilse = 10**log_funev_m51_ilse
-
-        # M51
-        funev_m51 = get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, ssfr_points, xlog=True, ylog=True)
-
-        # M31
-        funev_m31 = get_linear_fitted_values(self.m31_valid_ssfr_values, self.m31_valid_funev_values, ssfr_points, xlog=True, ylog=True)
 
         # M81
 
         # original
-        funev_m81 = get_linear_fitted_values(pixels_original.x_array, pixels_original.y_array, ssfr_points, xlog=True, ylog=True)
+        funev_m81 = get_linear_fitted_values(pixels_original.x_array, pixels_original.y_array, self.ssfr_points_fit, xlog=True, ylog=True)
 
         # clipped
-        funev_m81_clipped = get_linear_fitted_values(pixels.x_array, pixels.y_array, ssfr_points, xlog=True, ylog=True)
+        funev_m81_clipped = get_linear_fitted_values(pixels.x_array, pixels.y_array, self.ssfr_points_fit, xlog=True, ylog=True)
 
         # cells
         cells = self.get_cells_ssfr_funev_scatter("ke")
-        funev_m81_cells = get_linear_fitted_values(cells.x_array, cells.y_array, ssfr_points, xlog=True, ylog=True)
+        funev_m81_cells = get_linear_fitted_values(cells.x_array, cells.y_array, self.ssfr_points_fit, xlog=True, ylog=True)
 
-        from matplotlib.colors import to_hex, to_rgb
         m51_color = to_rgb(output0.colors[m51_label])
         m31_color = to_rgb(output0.colors[m31_label])
         m81_color = to_rgb(output0.colors[m81_pixels_label])
@@ -4739,12 +4775,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot fits
         #plot0.plot(ssfr_points, funev_m51_ilse, label="M51 (Ilse)")
-        plot0.plot(ssfr_points, funev_m51, label="M51", color=darker_m51_color)
-        plot0.plot(ssfr_points, funev_m31, label="M31", color=darker_m31_color)
+        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=darker_m51_color)
+        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=darker_m31_color)
         #plot0.plot(ssfr_points, funev_m81, label="M81")
         #plot0.plot(ssfr_points, funev_m81_clipped, label="M81 clipped")
-        plot0.plot(ssfr_points, funev_m81_clipped, label="M81", color=darker_m81_color)
-        plot0.plot(ssfr_points, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
+        plot0.plot(self.ssfr_points_fit, funev_m81_clipped, label="M81", color=darker_m81_color)
+        plot0.plot(self.ssfr_points_fit, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
 
         # Add legend for fits
         plot0.legend(loc="lower right")
@@ -4752,13 +4788,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Make the second plot
         #ylimits = [0.002,1] # for log
         cells = self.get_cells_ssfr_funev_scatter("ke")
-        output1 = plot_scatter_astrofrog(cells, xlimits=xlimits, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
+        output1 = plot_scatter_astrofrog(cells, xlimits=self.ssfr_limits_fit, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
         plot1.set_yaxis_right()
 
         # Plot fits
         #plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
-        plot1.plot(ssfr_points, funev_m81_clipped, label="M81 pixels", color=darker_m81_color)
-        plot1.plot(ssfr_points, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
+        plot1.plot(self.ssfr_points_fit, funev_m81_clipped, label="M81 pixels", color=darker_m81_color)
+        plot1.plot(self.ssfr_points_fit, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -4806,7 +4842,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         radius_settings = self.ssfr_funev_radius_settings.copy()
         radius_settings.xlimits[0] = 1e-17
         output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", cells, first_row[0], radius_settings,
-                                                plot_coefficient=True, show_coefficient=True, high_dynamic_range=True,
+                                                plot_coefficient=True, show_coefficient=True,
                                                 add_colorbar=True, figure=figure)
 
         # Plot inner correlation
@@ -4814,7 +4850,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         bulge_settings.ylimits = default_funev_limits
         bulge_settings.xlimits[0] = 1e-17
         output_bulge = self.plot_correlation_impl("sSFR-Funev (inner region)", cells, first_row[1], bulge_settings,
-                                                  plot_coefficient=True, show_coefficient=True, high_dynamic_range=True,
+                                                  plot_coefficient=True, show_coefficient=True,
                                                   add_colorbar=True, inset_text="Inner region", figure=figure)
 
         # Plot outside inner
@@ -4823,7 +4859,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         outside_bulge_settings.ylimits = [0.05,1]
         outside_bulge_settings.xlimits[0] = 1e-15
         output_outside = self.plot_correlation_impl("sSFR-Funev (outside inner region)", cells, first_row[2], outside_bulge_settings,
-                                                    plot_coefficient=True, show_coefficient=True, high_dynamic_range=True, add_colorbar=True,
+                                                    plot_coefficient=True, show_coefficient=True, add_colorbar=True,
                                                     inset_text="Outside inner region", figure=figure, references=self.reference_ssfr_funev_scatters,
                                                     reference_colors=self.reference_ssfr_funev_scatter_colors)
 
@@ -4831,41 +4867,73 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #bulge_settings = self.ssfr_funev_inner_settings.copy()
         #bulge_settings.ylimits = default_funev_limits
         #bulge_settings.xlimits[0] = 1e-17
-        #output_bulge = self.plot_correlation_impl(cells, second_row[0], bulge_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, inset_text="Inner region", figure=figure)
+        #output_bulge = self.plot_correlation_impl(cells, second_row[0], bulge_settings, plot_coefficient=True, add_colorbar=True, inset_text="Inner region", figure=figure)
 
         # Plot intermediate correlation
         #intermediate_settings = self.ssfr_funev_intermediate_settings.copy()
         #intermediate_settings.ylimits = default_funev_limits
         #intermediate_settings.color = "green"
         #intermediate_settings.xlimits[0] = 1e-15
-        #output_intermediate = self.plot_correlation_impl(cells, second_row[1], intermediate_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, inset_text="Intermediate region", figure=figure)
+        #output_intermediate = self.plot_correlation_impl(cells, second_row[1], intermediate_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, inset_text="Intermediate region", figure=figure)
 
         # Plot outer correlation
         #disk_settings = self.ssfr_funev_outer_settings.copy()
         #disk_settings.ylimits = default_funev_limits
         #disk_settings.xlimits[0] = 1e-15
-        #output_disk = self.plot_correlation_impl(cells, second_row[2], disk_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, add_colorbar=True, inset_text="Outer region", figure=figure)
+        #output_disk = self.plot_correlation_impl(cells, second_row[2], disk_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, add_colorbar=True, inset_text="Outer region", figure=figure)
 
         # Plot dust scale heights
         height_settings = self.ssfr_funev_dust_heights_settings.copy()
         height_settings.xlimits[0] = 1e-17
         output_height = self.plot_correlation_impl("sSFR-Funev (all cells)", cells, second_row[0], height_settings,
-                                                   references=self.reference_ssfr_funev_scatters, high_dynamic_range=True,
+                                                   references=self.reference_ssfr_funev_scatters,
+                                                   reference_colors=self.reference_ssfr_funev_scatter_colors,
                                                    add_colorbar=True, figure=figure)
 
+        # Make the fit
+        # Set conditions
+        #height_condition = Map()
+        #height_condition.upper = 0.1
+        #settings.conditions = {"Dust scale heights": height_condition}
+
+        dust_heights = cells.get_array("Dust scale heights")
+        valid_mask = dust_heights < 0.1
+        fit_x = output_height.x[valid_mask]
+        fit_y = output_height.y[valid_mask]
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Slope: " + str(slope))
+        print("Intercept: " + str(intercept))
+
+        # Plot
+        m51_color = to_rgb(self.m51_color)
+        m31_color = to_rgb(self.m31_color)
+        m81_color = to_rgb("red")
+        darker_m51_color = tuple(np.array(m51_color) * 0.7)
+        darker_m31_color = tuple(np.array(m31_color) * 0.7)
+        darker_m81_color = tuple(np.array(m81_color) * 0.7)
+
+        # Plot fit
+        second_row[0].plot(self.ssfr_points_fit, fitted, label="Midplane", color=darker_m81_color, linestyle="solid")
+        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=darker_m31_color, linestyle="dashed")
+        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=darker_m51_color, linestyle="dashed")
+
+        # print(m51_color, m31_color, m81_color)
+
+
         # Plot midplane heating
-        midplane_settings = self.ssfr_funev_midplane_settings.copy()
-        midplane_settings.xlimits[0] = 1e-17
+        #midplane_settings = self.ssfr_funev_midplane_settings.copy()
+        #midplane_settings.xlimits[0] = 1e-17
         #output_midplane = self.plot_correlation_impl("sSFR-Funev (midplane)", cells, second_row[1], midplane_settings,
         #                                             show_coefficient=True, plot_coefficient=True, references=self.reference_ssfr_funev_scatters,
-        #                                             high_dynamic_range=True, figure=figure, fit=True)
+        #                                             figure=figure, fit=True)
 
         # PLOT vSFR vs Funev
-        vsfr_settings = self.vsfr_funev_standard_settings
+        #vsfr_settings = self.vsfr_funev_standard_settings
+        vsfr_settings = self.vsfr_funev_radius_settings.copy()
         output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", cells, second_row[1], vsfr_settings, show_coefficient=True, plot_coefficient=True)
 
         # Plot Temperature vs. Funev
-        temperature_settings = self.temperature_funev_standard_settings
+        temperature_settings = self.temperature_funev_standard_settings.copy()
         output_temperature = self.plot_correlation_impl("Dust temperature-Funev (all cells)", cells, second_row[2], temperature_settings,
                                                         add_colorbar=True, show_coefficient=True, plot_coefficient=True, figure=figure)
 
@@ -5099,8 +5167,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
-                              high_dynamic_range=False, add_colorbar=False, inset_text=None, figure=None, fit=False,
-                              fit_linestyle="solid", fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None):
+                              add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
+                              fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None):
 
         """
         This function ...
@@ -5111,7 +5179,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param show_coefficient:
         :param plot_coefficient:
         :param references:
-        :param high_dynamic_range:
         :param add_colorbar:
         :param inset_text:
         :param figure:
@@ -5161,10 +5228,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if inset_text is not None: plot.add_text(inset_text, position="top")
 
         # Set nice ticks
-        if high_dynamic_range: log_subs = (1.,)
-        else: log_subs = (1.,2.,5.,)
-        if settings.xlog: plot.set_xticks(log_subs=log_subs)
-        if settings.ylog: plot.set_yticks(log_subs=log_subs)
+        if settings.xlog:
+            if settings.xlimits is not None and settings.xlimits[1]/settings.xlimits[0] > 1e3: log_subs = (1.,) # high dynamic range
+            else: log_subs = (1.,2.,5.,)
+            plot.set_xticks(log_subs=log_subs)
+        if settings.ylog:
+            if settings.ylimits is not None and settings.ylimits[1]/settings.ylimits[0] > 1e3: log_subs = (1.,) # high dynamic ranges
+            else: log_subs = (1.,2.,5.,)
+            plot.set_yticks(log_subs=log_subs)
         
         # Show the correlation coefficient
         if show_coefficient or plot_coefficient:
@@ -5675,7 +5746,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def vsfr_funev_standard_settings(self):
 
         """
@@ -5694,9 +5765,39 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.x_colname = "vSFR"
 
         # Limits
-        settings.xlimits = (1e-15, 1e-10)
+        settings.xlimits = (1e-15, 1e-10,)
         # settings.ylimits = (0.0015, 1,)
         settings.ylimits = (0, 1,)
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_funev_radius_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales
+        settings.xlog = True
+        settings.ylog = True
+
+        # Data
+        settings.x_colname = "vSFR"
+
+        # Radius auxilary axis
+        settings.aux_colname = "Radius"
+
+        # Limits
+        settings.xlimits = (1e-15, 1e-10,)
+        settings.ylimits = (0.0015, 1,)
 
         # Return
         return settings
@@ -5776,7 +5877,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Logscales?
         settings.xlog = False
-        settings.ylog = False
+        settings.ylog = True
         settings.color = "orange"
         settings.x_colname = "Dust temperature"
 
@@ -5784,10 +5885,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "Radius"
 
         # Limits
-        #settings.xlimits = (1e-15, 1e-10)
-        # settings.ylimits = (0.0015, 1,)
-        #settings.ylimits = (0.0015, 1,)
-        settings.ylimits = (0,1)
+        settings.xlimits = (15,60,)
+        settings.ylimits = (0.0015, 1,)
 
         # Return
         return settings
