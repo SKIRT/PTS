@@ -635,7 +635,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Check normalization of the weights
         total = self.cell_old_luminosity_contributions + self.cell_young_luminosity_contributions + self.cell_sfr_luminosity_contributions
-        close = np.isclose(total, 1.)
+        valid_total = total[np.isfinite(total)]
+        close = np.isclose(valid_total, 1.)
         if not np.all(close): raise RuntimeError("Something went wrong")
 
         # Calculate the mean age in dust cell, by weighing each stellar component age (old, young, ionizing) by the respective contribution to the global luminosity in that cell
