@@ -178,6 +178,12 @@ class AnalysisRunComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def analysis_run_path(self):
+        return self.analysis_run.path
+
+    # -----------------------------------------------------------------
+
+    @property
     def model_name(self):
         return self.analysis_run.model_name
 

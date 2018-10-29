@@ -90,6 +90,7 @@ from ...magic.basics.coordinate import PhysicalCoordinate
 from ..core.data import Data3D
 from ...core.tools import numbers
 from ...core.basics.curve import Curve
+from ...core.tools.serialization import load_dict, write_dict
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -117,6 +118,7 @@ dust_map_names = (diffuse_mass_map_name, mass_map_name,)
 _help_command_name = "help"
 _history_command_name = "history"
 _status_command_name = "status"
+_set_command_name = "set"
 
 # Other commands
 _show_command_name = "show"
@@ -170,11 +172,26 @@ _components_name = "components"
 
 _absorption_name = "absorption"
 
+_radius_command_name = "radius"
+_radii_command_name = "radii"
+
+# -----------------------------------------------------------------
+
+# Set subcommands
+set_commands = OrderedDict()
+set_commands.description = "set parameters"
+
+# Radii
+set_commands[_radius_command_name] = ("set_radius_command", True, "set inner, outer, or max radius", None)
+
 # -----------------------------------------------------------------
 
 # Show subcommands
 show_commands = OrderedDict()
 show_commands.description = "show analysis results"
+
+# Radii
+show_commands[_radii_command_name] = ("show_radii", False, "show the radii", None)
 
 # Properties
 show_commands[_properties_command_name] = ("show_properties", False, "show the model properties", None)
@@ -319,6 +336,7 @@ commands = OrderedDict()
 commands[_help_command_name] = ("show_help", False, "show help", None)
 commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
 commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
+commands[_set_command_name] = set_commands
 
 # Show stuff
 commands[_show_command_name] = show_commands
@@ -744,6 +762,52 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def radius_names(self):
+        return ["inner", "outer", "max"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def set_radius_definition(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Required
+        definition.add_required("which", "string", "which radius to set", choices=self.radius_names)
+        definition.add_required("value", "length_quantity", "value for the radius")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def set_radius_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.set_radius_definition, **kwargs)
+
+        # Set
+        if config.which == "inner": self.set_inner_radius(config.value)
+        elif config.which == "outer": self.set_outer_radius(config.value)
+        elif config.which == "max": self.set_max_radius(config.value)
+        else: raise ValueError("Invalid value for 'which'")
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def show_status_definition(self):
 
@@ -786,6 +850,27 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Inform the user
         log.info("Showing status ...")
+
+    # -----------------------------------------------------------------
+
+    def show_radii(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the radii ...")
+
+        # Show
+        print("")
+        print(" - Max radius of inner region: " + tostr(self.inner_region_max_radius))
+        print(" - Min radius of outer region: " + tostr(self.outer_region_min_radius))
+        if self.has_max_radius: print(" - Max radius: " + tostr(self.max_radius))
+        else: print(" - Max radius: not defined")
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -1045,7 +1130,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Define radii
         definition.add_optional("inner", "length_quantity", "max radius of inner region", default=self.inner_region_max_radius)
         definition.add_optional("outer", "length_quantity", "min radius of outer region", default=self.outer_region_min_radius)
-        definition.add_optional("max", "length_quantity", "max radius of outer region") # default is None
+        definition.add_optional("max", "length_quantity", "max radius of outer region", default=self.max_radius) # default is None
 
         # Return
         return definition
@@ -3972,15 +4057,73 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def radii_filepath(self):
+        return fs.join(self.analysis_run_path, "radii.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_radii_file(self):
+        return fs.is_file(self.radii_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_inner_radius(self):
+        return q("3 kpc")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_outer_radius(self):
+        return q("6 kpc")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_max_radius(self):
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def physical_center(self):
         return PhysicalCoordinate(q("0 pc"), q("0 pc"))
 
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def radii(self):
+        if not self.has_radii_file:
+            radii = dict()
+            radii["inner"] = self.default_inner_radius
+            radii["outer"] = self.default_outer_radius
+            radii["max"] = self.default_max_radius
+            write_dict(radii, self.radii_filepath)
+            return radii
+        else: return load_dict(self.radii_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
     def inner_region_max_radius(self):
-        #return q("4 kpc")
-        return q("3 kpc")
+        return self.radii["inner"]
+
+    # -----------------------------------------------------------------
+
+    def set_inner_radius(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set
+        self.radii["inner"] = value
+
+        # Save
+        write_dict(self.radii, self.radii_filepath)
 
     # -----------------------------------------------------------------
 
@@ -3990,16 +4133,59 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def outer_region_min_radius(self):
-        #return q("6.5 kpc")
-        return q("6 kpc")
+        return self.radii["outer"]
+
+    # -----------------------------------------------------------------
+
+    def set_outer_radius(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set
+        self.radii["outer"] = value
+
+        # Save
+        write_dict(self.radii, self.radii_filepath)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def outer_region(self):
         return PhysicalCircleRegion(self.physical_center, self.outer_region_min_radius)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_radius(self):
+        return self.radii["max"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_max_radius(self):
+        return self.max_radius is not None
+
+    # -----------------------------------------------------------------
+
+    def set_max_radius(self, value):
+
+        """
+        This fnction ...
+        :param value:
+        :return:
+        """
+
+        # Set
+        self.radii["max"] = value
+
+        # Save
+        write_dict(self.radii, self.radii_filepath)
 
     # -----------------------------------------------------------------
 
