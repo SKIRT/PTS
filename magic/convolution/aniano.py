@@ -210,24 +210,12 @@ class AnianoKernels(Kernels):
 
     @property
     def filters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [parse_filter(key) for key in aniano_names.keys()]
 
     # -----------------------------------------------------------------
 
     @property
     def filter_names(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [str(fltr) for fltr in self.filters]
 
     # -----------------------------------------------------------------
@@ -528,11 +516,12 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_psf_basename(self, fltr):
+    def get_psf_basename(self, fltr, return_name=False):
 
         """
         This function ...
         :param fltr:
+        :param return_name:
         :return:
         """
 
@@ -548,7 +537,8 @@ class AnianoKernels(Kernels):
         else: raise ValueError("Invalid aniano PSF files URL '" + aniano_psf_files_link + "'")
 
         # Return
-        return basename
+        if return_name: return basename, psf_name
+        else: return basename
 
     # -----------------------------------------------------------------
 
@@ -564,7 +554,7 @@ class AnianoKernels(Kernels):
         """
 
         # Get the PSF basename
-        basename = self.get_psf_basename(fltr)
+        basename, psf_name = self.get_psf_basename(fltr, return_name=True)
 
         # Set path
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
