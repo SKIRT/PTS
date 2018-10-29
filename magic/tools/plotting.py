@@ -2925,8 +2925,10 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             # Plot
             scatter = axes.scatter_density(x, y, dpi=dpi, vmin=0., vmax=vmax_function, c=aux, cmap=cmap, norm=norm)
 
-            # Set colormap
+            # Set colormap and other
             output.cmap = cmap
+            if aux_name is not None: output.aux_name = aux_name
+            if aux_unit is not None: output.aux_unit = aux_unit
 
             # Add colorbar
             if not only_axes:

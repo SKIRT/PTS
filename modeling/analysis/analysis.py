@@ -92,6 +92,7 @@ from ..core.data import Data3D
 from ...core.tools import numbers
 from ...core.basics.curve import Curve
 from ...core.tools.serialization import load_dict, write_dict
+from ...magic.tools.fitting import linear_regression, get_linear_fitted_values
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -505,6 +506,20 @@ class CorrelationPlotSettings(object):
         # Auxilary axis
         self.aux_colname = kwargs.pop("aux_colname", None)
         self.aux_log = kwargs.pop("aux_log", False)
+
+    # -----------------------------------------------------------------
+
+    def set(self, **options):
+
+        """
+        This function ...
+        :param options:
+        :return:
+        """
+
+        for key in options:
+            if not hasattr(self, key): raise ValueError("Invalid option: '" + key + "'")
+            setattr(self, key, options[key])
 
     # -----------------------------------------------------------------
 
@@ -4558,6 +4573,15 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         return scatters
 
     # -----------------------------------------------------------------
+
+    @property
+    def reference_ssfr_funev_scatter_colors(self):
+        colors = dict()
+        colors["M51"] = "dodgerblue"
+        colors["M31"] = "purple"
+        return colors
+
+    # -----------------------------------------------------------------
     # This galaxy correlation
     # -----------------------------------------------------------------
 
@@ -4684,9 +4708,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log_funev_m51_ilse = 0.42 * log_ssfr_points + 4.14
         funev_m51_ilse = 10**log_funev_m51_ilse
 
-        # FIT LINE
-        from ...magic.tools.fitting import linear_regression, get_linear_fitted_values
-
         # M51
         funev_m51 = get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, ssfr_points, xlog=True, ylog=True)
 
@@ -4782,32 +4803,60 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #output_all = self.plot_correlation_impl(cells, plot0, self.ssfr_funev_distance_settings, plot_coefficient=True)
         radius_settings = self.ssfr_funev_radius_settings.copy()
         radius_settings.xlimits[0] = 1e-17
-        output_all = self.plot_correlation_impl(cells, first_row[0], radius_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, figure=figure)
-
-        # Plot outside inner
-        outside_bulge_settings = self.ssfr_funev_outside_inner_settings.copy()
-        outside_bulge_settings.color = "green"
-        outside_bulge_settings.ylimits = default_funev_limits
-        output_outside = self.plot_correlation_impl(cells, first_row[1], outside_bulge_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, inset_text="Outside inner region", figure=figure, references=self.reference_ssfr_funev_scatters)
+        output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", cells, first_row[0], radius_settings,
+                                                plot_coefficient=True, show_coefficient=True, high_dynamic_range=True,
+                                                add_colorbar=True, figure=figure)
 
         # Plot inner correlation
         bulge_settings = self.ssfr_funev_inner_settings.copy()
         bulge_settings.ylimits = default_funev_limits
         bulge_settings.xlimits[0] = 1e-17
-        output_bulge = self.plot_correlation_impl(cells, second_row[0], bulge_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, inset_text="Inner region", figure=figure)
+        output_bulge = self.plot_correlation_impl("sSFR-Funev (inner region)", cells, first_row[1], bulge_settings,
+                                                  plot_coefficient=True, show_coefficient=True, high_dynamic_range=True,
+                                                  add_colorbar=True, inset_text="Inner region", figure=figure)
+
+        # Plot outside inner
+        outside_bulge_settings = self.ssfr_funev_outside_inner_settings.copy()
+        #outside_bulge_settings.color = "green"
+        outside_bulge_settings.ylimits = [0.05,1]
+        outside_bulge_settings.xlimits[0] = 1e-15
+        output_outside = self.plot_correlation_impl("sSFR-Funev (outside inner region)", cells, first_row[2], outside_bulge_settings,
+                                                    plot_coefficient=True, show_coefficient=True, high_dynamic_range=True, add_colorbar=True,
+                                                    inset_text="Outside inner region", figure=figure, references=self.reference_ssfr_funev_scatters,
+                                                    reference_colors=self.reference_ssfr_funev_scatter_colors)
+
+        # Plot inner correlation
+        #bulge_settings = self.ssfr_funev_inner_settings.copy()
+        #bulge_settings.ylimits = default_funev_limits
+        #bulge_settings.xlimits[0] = 1e-17
+        #output_bulge = self.plot_correlation_impl(cells, second_row[0], bulge_settings, plot_coefficient=True, high_dynamic_range=True, add_colorbar=True, inset_text="Inner region", figure=figure)
 
         # Plot intermediate correlation
-        intermediate_settings = self.ssfr_funev_intermediate_settings.copy()
-        intermediate_settings.ylimits = default_funev_limits
-        intermediate_settings.color = "green"
-        intermediate_settings.xlimits[0] = 1e-15
-        output_intermediate = self.plot_correlation_impl(cells, second_row[1], intermediate_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, inset_text="Intermediate region", figure=figure)
+        #intermediate_settings = self.ssfr_funev_intermediate_settings.copy()
+        #intermediate_settings.ylimits = default_funev_limits
+        #intermediate_settings.color = "green"
+        #intermediate_settings.xlimits[0] = 1e-15
+        #output_intermediate = self.plot_correlation_impl(cells, second_row[1], intermediate_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, inset_text="Intermediate region", figure=figure)
 
         # Plot outer correlation
-        disk_settings = self.ssfr_funev_outer_settings.copy()
-        disk_settings.ylimits = default_funev_limits
-        disk_settings.xlimits[0] = 1e-15
-        output_disk = self.plot_correlation_impl(cells, second_row[2], disk_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, add_colorbar=True, inset_text="Outer region", figure=figure)
+        #disk_settings = self.ssfr_funev_outer_settings.copy()
+        #disk_settings.ylimits = default_funev_limits
+        #disk_settings.xlimits[0] = 1e-15
+        #output_disk = self.plot_correlation_impl(cells, second_row[2], disk_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, high_dynamic_range=True, add_colorbar=True, inset_text="Outer region", figure=figure)
+
+        # Plot dust scale heights
+        height_settings = self.ssfr_funev_dust_heights_settings.copy()
+        height_settings.xlimits[0] = 1e-17
+        output_height = self.plot_correlation_impl("sSFR-Funev (all cells)", cells, second_row[0], height_settings,
+                                                   references=self.reference_ssfr_funev_scatters, high_dynamic_range=True,
+                                                   add_colorbar=True, figure=figure)
+
+        # Plot midplane heating
+        midplane_settings = self.ssfr_funev_midplane_settings.copy()
+        midplane_settings.xlimits[0] = 1e-17
+        output_midplane = self.plot_correlation_impl("sSFR-Funev (midplane)", cells, second_row[1], midplane_settings,
+                                                     show_coefficient=True, plot_coefficient=True, references=self.reference_ssfr_funev_scatters,
+                                                     high_dynamic_range=True, figure=figure, fit=True)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -5038,11 +5087,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_correlation_impl(self, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
-                              high_dynamic_range=False, add_colorbar=False, inset_text=None, figure=None):
+    def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
+                              high_dynamic_range=False, add_colorbar=False, inset_text=None, figure=None, fit=False,
+                              fit_linestyle="solid", fit_label=None, fit_color="black", fit_npoints=100):
 
         """
         This function ...
+        :param name:
         :param scatter:
         :param plot:
         :param settings:
@@ -5053,8 +5104,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param add_colorbar:
         :param inset_text:
         :param figure:
+        :param fit:
+        :param fit_linestyle:
+        :param fit_label:
+        :param fit_color:
+        :param fit_npoints:
         :return:
         """
+
+        # Debugging
+        log.debug("Plotting the " + name + " correlation ...")
 
         # Get mask
         if settings.conditions is not None and len(settings.conditions) > 0:
@@ -5067,8 +5126,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Make the plot
         output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                         xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
-                                        aux_colname=settings.aux_colname, aux_log=settings.aux_log, valid_points=mask,
-                                        x_colname=settings.x_colname, y_colname=settings.y_colname)
+                                        aux_colname=settings.aux_colname, aux_log=settings.aux_log,
+                                        valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname)
 
         # Plot references?
         if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits, xlog=settings.xlog, ylog=settings.ylog, plot=output.plot)
@@ -5080,7 +5139,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             if figure is None: raise ValueError("Figure has to be passed to be able to create colorbar")
 
             # Create colorbar
-            figure.create_colorbar_in_plot(plot, output.scatter, position="bottom", label=settings.aux_colname, logarithmic=settings.aux_log)
+            aux_label = output.aux_name
+            if output.aux_unit is not None: aux_label = aux_label + " [" + str(output.aux_unit) + "]"
+            figure.create_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label, logarithmic=settings.aux_log)
 
         # Add inset text
         if inset_text is not None: plot.add_text(inset_text, position="top")
@@ -5110,6 +5171,21 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
             # Plot
             if plot_coefficient: plot.text(0.9, 0.1, "p-value = " + tostr(p_value), transform=output.axes.transAxes, color="white")
+
+        # Make a fit and plot it
+        if fit:
+
+            # Construct points to create fit
+            if settings.xlog: x_grid = RealRange(*settings.xlimits).log(fit_npoints)
+            else: x_grid = RealRange(*settings.xlimits).linear(fit_npoints)
+
+            # Make the fit
+            fitted, slope, intercept = get_linear_fitted_values(output.x, output.y, x_grid, xlog=settings.xlog, ylog=settings.ylog, return_parameters=True)
+            print("Slope: " + str(slope))
+            print("Intercept: " + str(intercept))
+
+            # Plot fit
+            plot.plot(x_grid, fitted, label=fit_label, color=fit_color, linestyle=fit_linestyle)
 
         # Return the plotting output
         return output
@@ -5432,6 +5508,35 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_funev_midplane_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = [1e-18, 1e-9]
+        settings.ylimits = [0.0015, 1]
+
+        # Set conditions
+        height_condition = Map()
+        height_condition.upper = 0.1
+        settings.conditions = {"Dust scale heights": height_condition}
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
     def ssfr_funev_aux_colnames(self):
         return ["Dust density", "vSFR", "Bulge disk ratio", "Distance from center", "Radius", "Dust scale heights", "Dust temperature", "Mean stellar age"]
 
@@ -5500,6 +5605,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             elif config.preset == "outer": settings = self.ssfr_funev_outer_settings
             elif config.preset == "intermediate": settings = self.ssfr_funev_intermediate_settings
             elif config.preset == "outside_inner": settings = self.ssfr_funev_outside_inner_settings
+            elif config.preset == "midplane": settings = self.ssfr_funev_midplane_settings
             else: raise ValueError("Invalid preset: '" + config.preset + "'")
 
         # Create new settings
@@ -5516,7 +5622,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
+        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:
@@ -5590,7 +5696,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.ylimits = (0,1,)
 
         # Plot
-        output = self.plot_correlation_impl(scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
+        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)

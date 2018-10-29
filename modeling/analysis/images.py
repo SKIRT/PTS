@@ -178,9 +178,10 @@ class ImagesAnalyser(AnalysisRunComponent):
         input_dict["unit"] = u("Jy")  # self.misc_options.images_unit
 
         # Convolution
-        input_dict["auto_psfs"] = True
-        # input_dict["kernel_paths"] = self.misc_options.images_kernels
-        input_dict["fwhms_dataset"] = self.static_photometry_dataset  # self.misc_options.fwhms_dataset # path or dataset is possible
+        if self.config.convolve:
+            input_dict["auto_psfs"] = True
+            # input_dict["kernel_paths"] = self.misc_options.images_kernels
+            input_dict["fwhms_dataset"] = self.static_photometry_dataset  # self.misc_options.fwhms_dataset # path or dataset is possible
 
         # Set dataset for rebinning
         input_dict["rebin_dataset"] = self.static_photometry_dataset  # path or dataset is possible
@@ -229,6 +230,9 @@ class ImagesAnalyser(AnalysisRunComponent):
 
         # Group (don't add instrument name prefixes), but write earth instrument output into the main directory (see input)
         maker.config.group = True
+
+        # Don't convolve unless auto_psfs is enabled in input
+        maker.config.convolve = False
 
         # Run
         maker.run(**self.image_maker_input)

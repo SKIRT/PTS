@@ -1381,25 +1381,27 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def add_text(self, text, position="top"):
+    def add_text(self, text, position="top", x_shift=0, y_shift=0):
 
         """
         This function ...
         :param text:
         :param position:
+        :param x_shift:
+        :param y_shift:
         :return:
         """
 
         # Set position
         #x = self.x_min + 0.5 * self.width
-        x = 0.5
+        x = 0.5 + x_shift
         if position == "top":
             #y = self.y_min + 0.9 * self.height
-            y = 0.95
+            y = 0.95 + y_shift
             alignment = "top"
         elif position == "bottom":
             #y = self.y_min + 0.1 * self.height
-            y = 0.05
+            y = 0.05 + y_shift
             alignment = "bottom"
         else: raise ValueError("Invalid position: '" + position + "'")
 
@@ -1937,6 +1939,27 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def _clean_label(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        # label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ').replace("&", "\&")
+        label = label.decode("utf8").replace(u'\xa0', u' ').replace("&", "\&")
+        if "$" in label:
+            if label.count("&") != 2: raise ValueError("Label cannot contain $ unless there are two and latex is used")
+            before, inside, after = label.split("$")[0]
+            before = before.replace("_", "\_")
+            after = after.replace("_", "\_")
+            label = before + "$" + inside + "$" + after
+        else: label = label.replace("_", "\_")
+        return label
+
+    # -----------------------------------------------------------------
+
     def set_xlabel(self, label, **kwargs):
 
         """
@@ -1946,7 +1969,7 @@ class MPLPlot(Plot):
         :return:
         """
 
-        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ').replace("&", "\&")
+        label = self._clean_label(label)
         self._plot.set_xlabel(label, **kwargs)
 
     # -----------------------------------------------------------------
@@ -1960,7 +1983,7 @@ class MPLPlot(Plot):
         :return:
         """
 
-        label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ').replace("&", "\&")
+        label = self._clean_label(label)
         self._plot.set_ylabel(label, **kwargs)
 
     # -----------------------------------------------------------------
@@ -2401,7 +2424,13 @@ class MPLFigure(Figure):
         cb_axes = self.create_axes(left, bottom, width, height) #self.add_colorbar(left, bottom, width, height, "RdBu", "horizontal", (-1, 1), ticks=[-1, -0.5, 0, 0.5, 1])
 
         # Create
-        if plotted is not None: cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
+        if plotted is not None:
+            if logarithmic: # something went wrong when from logarithmic auxilary axis scatter density plot (Astrofrog implementation)
+                #cmap = "inferno"
+                #print(plotted.cmap) if hasattr(plotted, "cmap") else print("nope")
+                norm = LogNorm(vmin=plotted.norm.vmin, vmax=plotted.norm.vmax)
+                cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="horizontal")
+            else: cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
         else:
             if cmap is None: raise ValueError("If plotted is not passed, colormap must be passed")
             if norm is None: raise ValueError("If plotted is not passed, normalization must be passed")
@@ -2410,12 +2439,15 @@ class MPLFigure(Figure):
         # Add label
         if label is not None:
             #cb_axes.set_label(label)
-            plot.add_text(label, position=position)
+            plot.add_text(label, position=position, y_shift=0.12)
 
         # Set scale
         #if logarithmic:
-            #cb.locator = LogLocator()
-            #cb.formatter = LogFormatterMathtext()
+        #    print(plotted.norm)
+        #    print(plotted.norm.vmin)
+        #    print(plotted.norm.vmax)
+        #    #cb.locator = LogLocator()
+        #    #cb.formatter = LogFormatterMathtext()
 
         # Set ticks
         if ticks is not None: cb.set_ticks(ticks)
@@ -2701,7 +2733,8 @@ class MPLFigure(Figure):
                 nrows_for_main = nrows - nres
 
                 # Create the main plot
-                rect = grid[:-nres, index]
+                #rect = grid[:-nres, index]
+                rect = grid[:nrows_for_main, index]
 
                 # Create plot
                 #main_plot = self._create_plot_not_shared(rect)

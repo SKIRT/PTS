@@ -32,6 +32,11 @@ definition.add_flag("kernels", "write kernel images", True)
 
 # -----------------------------------------------------------------
 
+# Convolve?
+definition.add_flag("convolve", "perform spatial convolution", False)
+
+# -----------------------------------------------------------------
+
 # Plot?
 definition.add_flag("plot", "do plotting")
 
