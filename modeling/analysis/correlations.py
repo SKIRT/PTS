@@ -64,9 +64,9 @@ temperature_name = "Dust temperature"
 mean_age_name = "Mean stellar age"
 funev_name = "Fraction of heating by unevolved stars"
 sfr_density_salim_name = "vSFR (Salim)"
-sfr_density_ke_name = "vSFR (K\&E)"
+sfr_density_ke_name = "vSFR (K&E)"
 sfr_density_mappings_name = "vSFR (MAPPINGS)"
-sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K\&E)"
+sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K&E)"
 
 # -----------------------------------------------------------------
 
@@ -1471,7 +1471,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #if temperature_name not in colnames: self.ssfr_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_ke, self.temperature_unit, as_column=True)
                 #if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_ke, self.log_age_unit, as_column=True)
                 #self.ssfr_ke_funev_cells.save() # save
-                log.warning("The K\&E sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                log.warning("The K&E sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
                 fs.remove_file(self.ssfr_ke_funev_cells_path)
                 return False
             return True
@@ -1488,11 +1488,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_cell_ssfr_ke: raise IOError("The cell sSFR (K\&E) data is not present: run the SFR analysis first")
+        if not self.has_cell_ssfr_ke: raise IOError("The cell sSFR (K&E) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Create
-        return self.create_ssfr_funev_cell_scatter("K\&E", self.cell_ssfr_ke, self.cell_funev, sfr_densities=self.cell_sfr_densities_ke, sfr_density_unit=self.sfr_density_ke_unit)
+        return self.create_ssfr_funev_cell_scatter("K&E", self.cell_ssfr_ke, self.cell_funev, sfr_densities=self.cell_sfr_densities_ke, sfr_density_unit=self.sfr_density_ke_unit)
 
     # -----------------------------------------------------------------
     #   MAPPINGS
@@ -1885,7 +1885,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #if temperature_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings_ke, self.temperature_unit, as_column=True)
                 #if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings_ke, self.log_age_unit, as_column=True)
                 #self.ssfr_mappings_ke_funev_cells.save() # save
-                log.warning("The MAPPINGS + K\&E sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
+                log.warning("The MAPPINGS + K&E sSFR - Funev cell scatter file does not contain all axuilary columns: removing and recalculating ...")
                 fs.remove_file(self.ssfr_mappings_ke_funev_cells_path)
                 return False
             return True
@@ -1902,11 +1902,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR (MAPPINGS + K\&E) data is not present: run the SFR analysis first")
+        if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR (MAPPINGS + K&E) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Create
-        return self.create_ssfr_funev_cell_scatter("MAPPINGS + K\&E", self.cell_ssfr_mappings_ke, self.cell_funev, sfr_densities=self.cell_sfr_densities_mappings_ke, sfr_density_unit=self.sfr_density_mappings_ke_unit)
+        return self.create_ssfr_funev_cell_scatter("MAPPINGS + K&E", self.cell_ssfr_mappings_ke, self.cell_funev, sfr_densities=self.cell_sfr_densities_mappings_ke, sfr_density_unit=self.sfr_density_mappings_ke_unit)
 
     # -----------------------------------------------------------------
     # sSFR-Funev pixel scatter data
@@ -2098,11 +2098,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_pixel_ssfr_ke: raise IOError("The sSFR (K\&E) frame is not present: run the SFR analysis first")
+        if not self.has_pixel_ssfr_ke: raise IOError("The sSFR (K&E) frame is not present: run the SFR analysis first")
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
-        return self.create_ssfr_funev_pixel_scatter("K\&E", self.pixel_ssfr_ke, self.pixel_funev)
+        return self.create_ssfr_funev_pixel_scatter("K&E", self.pixel_ssfr_ke, self.pixel_funev)
 
     # -----------------------------------------------------------------
     #   MAPPINGS
@@ -2316,11 +2316,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_pixel_ssfr_mappings_ke: raise IOError("The sSFR (MAPPINGS + K\&E) frame is not present: run the SFR analysis first")
+        if not self.has_pixel_ssfr_mappings_ke: raise IOError("The sSFR (MAPPINGS + K&E) frame is not present: run the SFR analysis first")
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
-        return self.create_ssfr_funev_pixel_scatter("MAPPINGS + K\&E", self.pixel_ssfr_mappings_ke, self.pixel_funev)
+        return self.create_ssfr_funev_pixel_scatter("MAPPINGS + K&E", self.pixel_ssfr_mappings_ke, self.pixel_funev)
 
     # -----------------------------------------------------------------
     # FUV-H / Funev
@@ -3425,7 +3425,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR MAPPINGS K\&E data is not present: run the sfr analysis first")
+        if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR MAPPINGS K&E data is not present: run the sfr analysis first")
 
         # Get values
         mean_ages = self.cell_mean_ages
@@ -3693,7 +3693,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def mappings_ke_sfr_description(self):
-        return "Star formation rate (MAPPINGS + K\&E)"
+        return "Star formation rate (MAPPINGS + K&E)"
 
     # -----------------------------------------------------------------
 
@@ -3705,7 +3705,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def mappings_ke_sfr_density_description(self):
-        return "Star formation rate density (MAPPINGS + K\&E)"
+        return "Star formation rate density (MAPPINGS + K&E)"
 
     # -----------------------------------------------------------------
 
@@ -4282,7 +4282,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def mappings_ke_ssfr_description(self):
-        return "Specific star formation rate (MAPPINGS + K\&E)"
+        return "Specific star formation rate (MAPPINGS + K&E)"
 
     # -----------------------------------------------------------------
 
@@ -4801,7 +4801,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the sSFR (K\&E) to Funev cell scatter data ...")
+        log.info("Writing the sSFR (K&E) to Funev cell scatter data ...")
 
         # Write
         self.ssfr_ke_funev_cells.saveto(self.ssfr_ke_funev_cells_path)
@@ -4822,7 +4822,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the sSFR (K\&E) to Funev pixel scatter data ...")
+        log.info("Writing the sSFR (K&E) to Funev pixel scatter data ...")
 
         # Write
         self.ssfr_ke_funev_pixels.saveto(self.ssfr_ke_funev_pixels_path)
@@ -4919,7 +4919,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the sSFR (MAPPINGS + K\&E) to Funev cell scatter data ...")
+        log.info("Writing the sSFR (MAPPINGS + K&E) to Funev cell scatter data ...")
 
         # Write
         self.ssfr_mappings_ke_funev_cells.saveto(self.ssfr_mappings_ke_funev_cells_path)
@@ -4940,7 +4940,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the sSFR (MAPPINGS + K\&E) to Funev pixel scatter data ...")
+        log.info("Writing the sSFR (MAPPINGS + K&E) to Funev pixel scatter data ...")
 
         # Write
         self.ssfr_mappings_ke_funev_pixels.saveto(self.ssfr_mappings_ke_funev_pixels_path)
@@ -5435,7 +5435,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the MAPPINGS K\&E SFR to TIR SFR dust cell scatter data ...")
+        log.info("Writing the MAPPINGS K&E SFR to TIR SFR dust cell scatter data ...")
 
         # Write
         self.mappings_ke_tir_sfr_cells.saveto(self.mappings_ke_tir_sfr_cells_path)
@@ -5450,7 +5450,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the MAPPINGS K\&E SFR to TIR SFR pixel scatter data ...")
+        log.info("Writing the MAPPINGS K&E SFR to TIR SFR pixel scatter data ...")
 
         # Write
         self.mappings_ke_tir_sfr_pixels.saveto(self.mappings_ke_tir_sfr_pixels_path)
@@ -5492,7 +5492,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the MAPPINGS + K\&E SFR to 24 micron SFR dust cell scatter data ...")
+        log.info("Writing the MAPPINGS + K&E SFR to 24 micron SFR dust cell scatter data ...")
 
         # Write
         self.mappings_ke_24um_sfr_cells.saveto(self.mappings_ke_24um_sfr_cells_path)
@@ -5507,7 +5507,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the MAPPINGS + K\&E SFR to 24 micron SFR dust pixel scatter data ...")
+        log.info("Writing the MAPPINGS + K&E SFR to 24 micron SFR dust pixel scatter data ...")
 
         # Write
         self.mappings_ke_24um_sfr_pixels.saveto(self.mappings_ke_24um_sfr_pixels_path)
@@ -6451,7 +6451,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_ke_funev_cells_title(self):
-        return "Correlation between sSFR (K\&E) and Funev of dust cells"
+        return "Correlation between sSFR (K&E) and Funev of dust cells"
 
     # -----------------------------------------------------------------
 
@@ -6463,7 +6463,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Plotting the sSFR (K\&E) to Funev cell scatter data ...")
+        log.info("Plotting the sSFR (K&E) to Funev cell scatter data ...")
 
         # Plot using TOPCAT's STILTS
         if self.config.topcat: plot_stilts(self.ssfr_ke_funev_cells_scatter_paths, self.ssfr_name, self.funev_name,
@@ -6524,7 +6524,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_ke_funev_pixels_title(self):
-        return "Correlation between sSFR (K\&E) and Funev of model pixels"
+        return "Correlation between sSFR (K&E) and Funev of model pixels"
 
     # -----------------------------------------------------------------
 
@@ -6759,7 +6759,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_mappings_ke_funev_cells_title(self):
-        return "Correlation between sSFR (MAPPINGS + K\&E) and Funev of dust cells"
+        return "Correlation between sSFR (MAPPINGS + K&E) and Funev of dust cells"
 
     # -----------------------------------------------------------------
 
@@ -6829,7 +6829,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_mappings_ke_funev_pixels_title(self):
-        return "Correlation between sSFR (MAPPINGS + K\&E) and Funev of model pixels"
+        return "Correlation between sSFR (MAPPINGS + K&E) and Funev of model pixels"
 
     # -----------------------------------------------------------------
 
