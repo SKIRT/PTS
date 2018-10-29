@@ -4856,9 +4856,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot midplane heating
         midplane_settings = self.ssfr_funev_midplane_settings.copy()
         midplane_settings.xlimits[0] = 1e-17
-        output_midplane = self.plot_correlation_impl("sSFR-Funev (midplane)", cells, second_row[1], midplane_settings,
-                                                     show_coefficient=True, plot_coefficient=True, references=self.reference_ssfr_funev_scatters,
-                                                     high_dynamic_range=True, figure=figure, fit=True)
+        #output_midplane = self.plot_correlation_impl("sSFR-Funev (midplane)", cells, second_row[1], midplane_settings,
+        #                                             show_coefficient=True, plot_coefficient=True, references=self.reference_ssfr_funev_scatters,
+        #                                             high_dynamic_range=True, figure=figure, fit=True)
 
         # PLOT vSFR vs Funev
         vsfr_settings = self.vsfr_funev_standard_settings
@@ -4866,7 +4866,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot Temperature vs. Funev
         temperature_settings = self.temperature_funev_standard_settings
-        output_temperature = self.plot_correlation_impl("Dust temperature-Funev (all cells)", cells, second_row[2], temperature_settings, show_coefficient=True, plot_coefficient=True)
+        output_temperature = self.plot_correlation_impl("Dust temperature-Funev (all cells)", cells, second_row[2], temperature_settings,
+                                                        add_colorbar=True, show_coefficient=True, plot_coefficient=True, figure=figure)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -5099,7 +5100,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               high_dynamic_range=False, add_colorbar=False, inset_text=None, figure=None, fit=False,
-                              fit_linestyle="solid", fit_label=None, fit_color="black", fit_npoints=100):
+                              fit_linestyle="solid", fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None):
 
         """
         This function ...
@@ -5119,6 +5120,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param fit_label:
         :param fit_color:
         :param fit_npoints:
+        :param reference_colors:
         :return:
         """
 
@@ -5140,7 +5142,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                         valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname)
 
         # Plot references?
-        if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits, xlog=settings.xlog, ylog=settings.ylog, plot=output.plot)
+        if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits,
+                                                                               xlog=settings.xlog, ylog=settings.ylog, plot=output.plot,
+                                                                               colors=reference_colors)
 
         # Add colorbar for auxilary axis?
         if settings.aux_colname is not None and add_colorbar:
@@ -5158,7 +5162,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Set nice ticks
         if high_dynamic_range: log_subs = (1.,)
-        else: log_subs = (1.,5.,)
+        else: log_subs = (1.,2.,5.,)
         if settings.xlog: plot.set_xticks(log_subs=log_subs)
         if settings.ylog: plot.set_yticks(log_subs=log_subs)
         
@@ -5771,17 +5775,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Logscales?
-        #settings.xlog = False
-        #settings.ylog = True
-        settings.xlog = True
-        settings.ylog = True
+        settings.xlog = False
+        settings.ylog = False
         settings.color = "orange"
         settings.x_colname = "Dust temperature"
+
+        # Radius auxilary axis
+        settings.aux_colname = "Radius"
 
         # Limits
         #settings.xlimits = (1e-15, 1e-10)
         # settings.ylimits = (0.0015, 1,)
-        settings.ylimits = (0, 1,)
+        #settings.ylimits = (0.0015, 1,)
+        settings.ylimits = (0,1)
 
         # Return
         return settings

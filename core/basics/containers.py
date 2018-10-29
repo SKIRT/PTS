@@ -1315,13 +1315,15 @@ def dict_from_sequence(sequence, attribute=None, key=None):
 
 # -----------------------------------------------------------------
 
-def sequence_from_dict(dictionary, keys, none_if_not_contains=False):
+def sequence_from_dict(dictionary, keys, none_if_not_contains=False, default_value=None, default_iterator=None):
 
     """
     This function ...
     :param dictionary:
     :param keys:
     :param none_if_not_contains:
+    :param default_value:
+    :param default_iterator:
     :return:
     """
 
@@ -1330,6 +1332,8 @@ def sequence_from_dict(dictionary, keys, none_if_not_contains=False):
     for key in keys:
         if key not in dictionary:
             if none_if_not_contains: element = None
+            elif default_value is not None: element = default_value
+            elif default_iterator is not None: element = default_iterator.next()
             else: raise ValueError("Dictionary does not contain key '" + str(key) + "'")
         else: element = dictionary[key]
         elements.append(element)

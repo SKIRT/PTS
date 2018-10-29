@@ -35,6 +35,7 @@ from photutils import CircularAperture
 # Import the relevant PTS classes and modules
 from ...core.tools import types, sequences
 from ...core.basics.log import log
+from ...core.basics import containers
 
 # -----------------------------------------------------------------
 
@@ -2051,7 +2052,7 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
 # -----------------------------------------------------------------
 
 def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
-                            show=None, colormaps=False, axes=None, plot=None, dpi=None):
+                            show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None):
 
     """
     This function ...
@@ -2064,6 +2065,7 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
     :param ylimits:
     :param show:
     :param colormaps:
+    :param colors:
     :param axes:
     :param plot:
     :param dpi:
@@ -2075,8 +2077,8 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
 
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
-                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
-                             dpi=dpi)
+                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, colors=colors,
+                             axes=axes, plot=plot, dpi=dpi)
 
 # -----------------------------------------------------------------
 # PLOTTING DENSITY
@@ -2745,7 +2747,7 @@ def vmax_function(array):
 # -----------------------------------------------------------------
 
 def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
-                      xlimits=None, ylimits=None, show=None, colormaps=False, axes=None, plot=None, dpi=None, color=None,
+                      xlimits=None, ylimits=None, show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None, color=None,
                       cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, density_log=False):
 
     """
@@ -2762,6 +2764,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :param ylimits:
     :param show:
     :param colormaps:
+    :param colors:
     :param axes:
     :param plot:
     :param dpi:
@@ -2834,7 +2837,11 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             else: pass
             output.colormaps = dict()
         else:
-            colors = iter(pretty_colours)
+            if colors is None: colors = iter(pretty_colours)
+            else:
+                if types.is_dictionary(colors): colors = iter(containers.sequence_from_dict(colors, x.keys(), default_iterator=iter(pretty_colours)))
+                elif types.is_sequence(colors): colors = iter(colors)
+                else: raise ValueError("Invalid type for 'colors': must be dict or sequence with length of the number of datasets")
             colormaps = None
             output.colors = dict()
 
