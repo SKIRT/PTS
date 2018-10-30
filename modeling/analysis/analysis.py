@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 from copy import deepcopy
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from collections import OrderedDict
 from matplotlib.colors import to_hex, to_rgb
 
@@ -536,6 +536,26 @@ class CorrelationPlotSettings(object):
         return CorrelationPlotSettings(x_colname=self.x_colname, y_colname=self.y_colname, xlimits=self.xlimits, ylimits=self.ylimits,
                                        xlog=self.xlog, ylog=self.ylog, conditions=deepcopy(self.conditions),
                                        color=self.color, aux_colname=self.aux_colname, aux_log=self.aux_log)
+
+# -----------------------------------------------------------------
+
+class Condition(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, lower=None, upper=None):
+
+        """
+        The constructor ...
+        :param lower:
+        :param upper:
+        """
+
+        # Set
+        self.lower = lower
+        self.upper = upper
 
 # -----------------------------------------------------------------
 
@@ -5002,6 +5022,88 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def ssfr_funev_scatter_valid_cells(self):
+        valid_x = np.isfinite(self.ssfr_funev_scatter_cells.x_array)
+        valid_y = np.isfinite(self.ssfr_funev_scatter_cells.y_array)
+        return valid_x * valid_y
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_funev_mask_for_conditions(self, conditions):
+
+        """
+        This function ...
+        :param conditions:
+        :return:
+        """
+
+        # Get mask of where
+        where = self.get_mask_for_conditions(self.ssfr_funev_scatter_cells, conditions)
+
+        # Return the mask
+        return self.ssfr_funev_scatter_valid_cells * where
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_funev_mask_for_bounds(self, column_name, lower=None, upper=None):
+
+        """
+        This function ...
+        :param column_name:
+        :param lower:
+        :param upper:
+        :return:
+        """
+
+        # Create conditions
+        conditions = dict()
+        conditions[column_name] = Condition(lower=lower, upper=upper)
+
+        # Return
+        return self.get_ssfr_funev_mask_for_conditions(conditions)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_funev_arrays_for_conditions(self, conditions):
+
+        """
+        This function ...
+        :param conditions:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_conditions(conditions)
+
+        # Get values
+        ssfr = self.ssfr_funev_scatter_cells.x_array[mask]
+        funev = self.ssfr_funev_scatter_cells.y_array[mask]
+
+        # Return
+        return ssfr, funev
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_funev_array_for_bounds(self, column_name, lower=None, upper=None):
+
+        """
+        This function ...
+        :param column_name:
+        :param lower:
+        :param upper:
+        :return:
+        """
+
+        # Create conditions
+        conditions = dict()
+        conditions[column_name] = Condition(lower=lower, upper=upper)
+
+        # Return
+        return self.get_ssfr_funev_arrays_for_conditions(conditions)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def funev_points_fit_cells(self):
         fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_cells.x_array, self.ssfr_funev_scatter_cells.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
         print("Cells slope =", slope)
@@ -5014,19 +5116,26 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     def funev_points_fit_midplane(self):
 
         # Get midplane cells
-        dust_heights = self.ssfr_funev_scatter_cells.get_array("Dust scale heights")
-        valid_mask = dust_heights < self.midplane_dust_heights
-        valid_x = np.isfinite(self.ssfr_funev_scatter_cells.x_array)
-        valid_y = np.isfinite(self.ssfr_funev_scatter_cells.y_array)
-        valid_mask = valid_mask * valid_x * valid_y
+        fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Dust scale heights", upper=self.midplane_dust_heights)
 
-        # Get values
-        fit_x = self.ssfr_funev_scatter_cells.x_array[valid_mask]
-        fit_y = self.ssfr_funev_scatter_cells.y_array[valid_mask]
-
+        # Fit
         fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
         print("Midplane slope: ", slope)
         print("Midplane intercept: ", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_high_vsfr(self):
+
+        # Get high vSFR cells
+        fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("vSFR", lower=1e-11)
+
+        # Fit
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("High vSFR slope: ", slope)
+        print("High vSFR intercept: ", intercept)
         return fitted
 
     # -----------------------------------------------------------------
@@ -5214,6 +5323,98 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ssfr_bins(self):
+        return RealRange(*self.ssfr_limits, inclusive=True).log(self.fit_npoints+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_bin_values(self):
+        return [numbers.geometric_mean(min_ssfr, max_ssfr) for min_ssfr, max_ssfr in zip(self.ssfr_bins[:-1], self.ssfr_bins[1:])]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_points_at_inner_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        lower_radius = self.inner_region_max_radius * 0.95
+        upper_radius = self.inner_region_max_radius * 1.05
+
+        ssfr_values = []
+        funev_values = []
+        for min_ssfr, max_ssfr in zip(self.ssfr_bins[:-1], self.ssfr_bins[1:]):
+
+            # Debugging
+            log.debug("Getting cells with a sSFR between " + tostr(min_ssfr) + " and " + tostr(max_ssfr) + " ...")
+
+            # Get cells
+            conditions = dict()
+            conditions["sSFR"] = Condition(lower=min_ssfr, upper=max_ssfr)
+            conditions["Radius"] = Condition(lower=lower_radius, upper=upper_radius)
+            where = self.get_ssfr_funev_mask_for_conditions(conditions)
+            ncells = np.sum(where)
+            if ncells == 0: continue
+
+            # Get funev fractions
+            fractions = self.ssfr_funev_scatter_cells.y_array[where]
+            funev = numbers.arithmetic_mean(*fractions)
+
+            # Add point
+            ssfr_value = numbers.geometric_mean(min_ssfr, max_ssfr)
+            ssfr_values.append(ssfr_value)
+            funev_values.append(funev)
+
+        # Return
+        return ssfr_values, funev_values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_points_at_outer_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        lower_radius = self.outer_region_min_radius * 0.95
+        upper_radius = self.outer_region_min_radius * 1.05
+
+        ssfr_values = []
+        funev_values = []
+        for min_ssfr, max_ssfr in zip(self.ssfr_bins[:-1], self.ssfr_bins[1:]):
+
+            # Debugging
+            log.debug("Getting cells with a sSFR between " + tostr(min_ssfr) + " and " + tostr(max_ssfr) + " ...")
+
+            # Get cells
+            conditions = dict()
+            conditions["sSFR"] = Condition(lower=min_ssfr, upper=max_ssfr)
+            conditions["Radius"] = Condition(lower=lower_radius, upper=upper_radius)
+            where = self.get_ssfr_funev_mask_for_conditions(conditions)
+            ncells = np.sum(where)
+            if ncells == 0: continue
+
+            # Get funev fractions
+            fractions = self.ssfr_funev_scatter_cells.y_array[where]
+            funev = numbers.arithmetic_mean(*fractions)
+
+            # Add point
+            ssfr_value = numbers.geometric_mean(min_ssfr, max_ssfr)
+            ssfr_values.append(ssfr_value)
+            funev_values.append(funev)
+
+        # Return
+        return ssfr_values, funev_values
+
+    # -----------------------------------------------------------------
+
     def plot_paper7(self, path=None):
 
         """
@@ -5228,7 +5429,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         import mpl_scatter_density  # NOQA
 
         # Create the figure
-        figsize = (30, 20)
+        #figsize = (30, 20)
+        figsize = (20,15)
         figure = MPLFigure(size=figsize)
 
         # Create plots
@@ -5244,9 +5446,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # FIRST PLOT
         settings0 = self.ssfr_funev_standard_log_settings
-        output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, first_row[0], settings0, plot_coefficient=True, show_coefficient=True)
+        output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, first_row[0], settings0,
+                                                plot_coefficient=True, show_coefficient=True, coefficients=("spearman"))
         first_row[0].set_xaxis_top()
         first_row[0].set_background_color("gainsboro")
+        #first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
+        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
+        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
 
         # SECOND PLOT: with radius
         settings1 = self.ssfr_funev_radius_settings
@@ -5254,6 +5461,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         first_row[1].set_xaxis_top()
         first_row[1].hide_yaxis()
         first_row[1].set_background_color("gainsboro")
+
+        inner_radius_ssfr_values, inner_radius_funev_values = self.ssfr_funev_points_at_inner_radius
+        first_row[1].plot(inner_radius_ssfr_values, inner_radius_funev_values, label="Inner", color="white")
+
+        outer_radius_ssfr_values, outer_radius_funev_values = self.ssfr_funev_points_at_outer_radius
+        first_row[1].plot(outer_radius_ssfr_values, outer_radius_funev_values, label="Outer", color="white")
 
         # THIRD PLOT: with height
         settings2 = self.ssfr_funev_dust_heights_settings
@@ -5266,14 +5479,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         first_row[2].set_background_color("gainsboro")
 
         # Plot fits
-        first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
-        first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+        #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
+        #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+        #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
+        #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
 
         ## SECOND ROW
 
         # FIRST PLOT
         settings3 = self.vsfr_funev_standard_log_settings
-        output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[0], settings3, plot_coefficient=True, show_coefficient=True)
+        output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[0], settings3,
+                                                 plot_coefficient=True, show_coefficient=True, coefficients=("spearman"))
 
         # SECOND PLOT: vSFR as auxilary
         settings4 = self.ssfr_funev_vsfr_settings
@@ -5281,6 +5497,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         second_row[1].hide_xaxis()
         second_row[1].hide_yaxis()
         second_row[1].set_background_color("gainsboro")
+
+        #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+
+        #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_high_vsfr, label="High vSFR", color="black")
+        #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
+        #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
 
         # THIRD PLOT: dust density as auxilary
         settings5 = self.ssfr_funev_dust_density_settings
@@ -5293,7 +5515,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # FIRST PLOT
         settings6 = self.temperature_funev_standard_settings
-        output_temp = self.plot_correlation_impl("Temperature-Funev (all cells)", self.ssfr_funev_scatter_cells, third_row[1], settings6, plot_coefficient=True, show_coefficient=True)
+        output_temp = self.plot_correlation_impl("Temperature-Funev (all cells)", self.ssfr_funev_scatter_cells, third_row[1], settings6,
+                                                 plot_coefficient=True, show_coefficient=True, coefficients=("spearman"))
 
         # SECOND PLOT
         settings7 = self.temperature_funev_radius_settings
@@ -5525,9 +5748,42 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_mask_for_conditions(self, scatter, conditions):
+
+        """
+        This function ...
+        :param scatter: 
+        :param conditions: 
+        :return: 
+        """
+
+        # Initialize mask
+        mask = np.ones_like(scatter.x_array, dtype=bool)
+
+        # Loop over the columns in the conditions
+        for colname in conditions:
+            if conditions[colname].lower is not None:
+                lower = conditions[colname].lower
+                if hasattr(lower, "unit"):
+                    if scatter.get_unit(colname) is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
+                    mask *= scatter.get_array(colname) > lower.to(scatter.get_unit(colname)).value
+                else: mask *= scatter.get_array(colname) > lower
+            if conditions[colname].upper is not None:
+                upper = conditions[colname].upper
+                if hasattr(upper, "unit"):
+                    if scatter.get_unit(colname) is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
+                    mask *= scatter.get_array(colname) < upper.to(scatter.get_unit(colname)).value
+                else: mask *= scatter.get_array(colname) < upper
+
+        # Return mask
+        return mask
+
+    # -----------------------------------------------------------------
+
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
-                              fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None):
+                              fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None,
+                              coefficients=("pearson", "spearman")):
 
         """
         This function ...
@@ -5548,6 +5804,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param fit_npoints:
         :param reference_colors:
         :param colorbar_label_position:
+        :param coefficients:
         :return:
         """
 
@@ -5555,11 +5812,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.debug("Plotting the " + name + " correlation ...")
 
         # Get mask
-        if settings.conditions is not None and len(settings.conditions) > 0:
-            mask = np.ones_like(scatter.x_array, dtype=bool)
-            for colname in settings.conditions:
-                if settings.conditions[colname].lower is not None: mask *= scatter.get_array(colname) > settings.conditions[colname].lower
-                if settings.conditions[colname].upper is not None: mask *= scatter.get_array(colname) < settings.conditions[colname].upper
+        if settings.conditions is not None and len(settings.conditions) > 0: mask = self.get_mask_for_conditions(settings.conditions)
         else: mask = None
 
         # Make the plot
@@ -5605,17 +5858,24 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             else: x = output.x
             if settings.ylog: y = np.log10(output.y)
             else: y = output.y
-            coeff, p_value = pearsonr(x, y)
 
-            # Show
-            if show_coefficient:
-                print("")
-                print("Correlation coefficient (Pearson): " + str(coeff))
-                print("Correlation p-value: " + str(p_value))
-                print("")
+            if show_coefficient: print("")
 
-            # Plot
-            if plot_coefficient: plot.text(0.5, 0.08, "r = " + tostr(coeff), transform=output.axes.transAxes, color="black", horizontalalignment="center")
+            # Pearson
+            if "pearson" in coefficients:
+                
+                coeff_r, p_pearson = pearsonr(x, y)
+                if show_coefficient: print("Correlation coefficient (Pearson): " + str(coeff_r))
+                if plot_coefficient: plot.text(0.5, 0.08, "r = " + tostr(coeff_r, round=True, decimal_places=2), transform=output.axes.transAxes, color="black", horizontalalignment="center")
+
+            if "spearman" in coefficients:
+            
+                # Spearman
+                coeff_rho, p_spearman = spearmanr(x, y)
+                if show_coefficient: print("Correlation coefficient (Spearman): " + str(coeff_rho))
+                if plot_coefficient: plot.text(0.5, 0.04, "$\\rho$ = " + tostr(coeff_rho, round=True, decimal_places=2), transform=output.axes.transAxes, color="black", horizontalalignment="center")
+
+            if show_coefficient: print("")
 
         # Make a fit and plot it
         if fit:
@@ -5894,8 +6154,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "vSFR"
 
         # Set conditions
-        radius_condition = Map()
-        radius_condition.upper = self.inner_region_max_radius.to("pc").value
+        radius_condition = Condition(upper=self.inner_region_max_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
@@ -5927,9 +6186,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #settings.aux_colname = "Dust density"
 
         # Set conditions
-        radius_conditions = Map()
-        radius_conditions.lower = self.inner_region_max_radius.to("pc").value
-        radius_conditions.upper = self.outer_region_min_radius.to("pc").value
+        radius_conditions = Condition(lower=self.inner_region_max_radius.to("pc").value, upper=self.outer_region_min_radius.to("pc").value)
         settings.conditions = {"Radius": radius_conditions}
 
         # Logscales?
@@ -5961,8 +6218,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "Dust density"
 
         # Set conditions
-        radius_condition = Map()
-        radius_condition.lower = self.inner_region_max_radius.to("pc").value
+        radius_condition = Condition(lower=self.inner_region_max_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
@@ -5994,8 +6250,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "Dust density"
 
         # Set conditions
-        radius_condition = Map()
-        radius_condition.lower = self.outer_region_min_radius.to("pc").value
+        radius_condition = Condition(lower=self.outer_region_min_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
@@ -6024,8 +6279,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.ylimits = self.funev_limits_log
 
         # Set conditions
-        height_condition = Map()
-        height_condition.upper = 0.1
+        height_condition = Map(upper=self.midplane_dust_heights)
         settings.conditions = {"Dust scale heights": height_condition}
 
         # Logscales?
@@ -6070,9 +6324,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         aux_upper_limit = prompt_real("aux_upper", "upper limit of the auxilary data to create subset", required=False)
 
         # Set conditions
-        aux_conditions = Map()
-        aux_conditions.lower = aux_lower_limit
-        aux_conditions.upper = aux_upper_limit
+        aux_conditions = Map(lower=aux_lower_limit, upper=aux_upper_limit)
         settings.conditions = {settings.aux_colname: aux_conditions}
 
         # Return
