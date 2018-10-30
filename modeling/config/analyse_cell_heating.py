@@ -50,7 +50,7 @@ definition.add_optional("lowres_map_spacing_factor", "positive_real", "factor by
 
 # Scaleheight of midplane maps
 definition.add_optional("midplane_component", "string", "disk component of which to use the scaleheight as the reference for defining the midplane height", default_disk_component, choices=disk_components)
-definition.add_optional("midplane_factor", "positive_real", "factor to be multiplied with the component scaleheight to define the height of the midplane", 0.5)
+definition.add_optional("midplane_factor", "positive_real", "factor to be multiplied with the component scaleheight to define the height of the midplane", 0.2)
 
 # For the scale of the heating map
 #definition.add_optional("map_spacing_measure", "string", "measure to be used to determined the spacing of the heating map w.r.t. to the spacing of the cell coordinates", default_spacing_measure, choices=spacing_measures)

@@ -54,6 +54,19 @@ def integer_or_string(argument):
 
 # -----------------------------------------------------------------
 
+def real_or_string(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return real(argument)
+    except ValueError: return string(argument)
+
+# -----------------------------------------------------------------
+
 def integer_or_real_or_string(argument):
 
     """

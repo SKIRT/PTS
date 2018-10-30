@@ -185,7 +185,7 @@ set_commands = OrderedDict()
 set_commands.description = "set parameters"
 
 # Radii
-set_commands[_radius_command_name] = ("set_radius_command", True, "set inner, outer, or max radius", None)
+set_commands[_properties_command_name] = ("set_property_command", True, "set properties", None)
 
 # -----------------------------------------------------------------
 
@@ -801,11 +801,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def property_names(self):
+        return ["inner_radius", "outer_radius", "max_radius", "sfr_method", "funev_adjustment", "min_ssfr", "max_ssfr", "fit_npoints", "midplane_component", "midplane_factor"]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def set_radius_definition(self):
+    def set_property_definition(self):
 
         """
-        Thisn function ...
+        This function ...
         :return:
         """
 
@@ -813,15 +819,15 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition = ConfigurationDefinition(write_config=False)
 
         # Required
-        definition.add_required("which", "string", "which radius to set", choices=self.radius_names)
-        definition.add_required("value", "length_quantity", "value for the radius")
+        definition.add_required("which", "string", "which property to set", choices=self.property_names)
+        definition.add_required("value", "integer_or_real_or_string", "value for the property")
 
         # Return the definition
         return definition
 
     # -----------------------------------------------------------------
 
-    def set_radius_command(self, command, **kwargs):
+    def set_property_command(self, command, **kwargs):
 
         """
         This function ...
@@ -831,12 +837,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get config
-        config = self.get_config_from_command(command, self.set_radius_definition, **kwargs)
+        config = self.get_config_from_command(command, self.set_property_definition, **kwargs)
 
         # Set
-        if config.which == "inner": self.set_inner_radius(config.value)
-        elif config.which == "outer": self.set_outer_radius(config.value)
-        elif config.which == "max": self.set_max_radius(config.value)
+        if config.which == "inner_radius": self.set_inner_radius(config.value)
+        elif config.which == "outer_radius": self.set_outer_radius(config.value)
+        elif config.which == "max_radius": self.set_max_radius(config.value)
+        if config.which == "sfr_method": self.set_sfr_method(config.value)
+        elif config.which == "funev_adjustment": self.set_funev_adjustment(config.value)
+        elif config.which == "min_ssfr": self.set_min_ssfr(config.value)
+        elif config.which == "max_ssfr": self.set_max_ssfr(config.value)
+        elif config.which == "fit_npoints": self.set_fit_npoints(config.value)
+        elif config.which == "midplane_component": self.set_midplane_component(config.value)
+        elif config.which == "midplane_factor": self.set_midplane_factor(config.value)
         else: raise ValueError("Invalid value for 'which'")
 
     # -----------------------------------------------------------------
@@ -3969,6 +3982,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #6 CORRELATION BETWEEN CELL sSFR and FUNEV VALUES
         elif config.which == 6: self.plot_paper6(path=config.path)
 
+        # Plot #7 Newer correlation figure
+        elif config.which == 7: self.plot_paper7(path=config.path)
+
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
 
@@ -4090,14 +4106,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def radii_filepath(self):
-        return fs.join(self.analysis_run_path, "radii.txt")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_radii_file(self):
-        return fs.is_file(self.radii_filepath)
+    def properties_filepath(self):
+        return fs.join(self.analysis_run_path, "properties.txt")
 
     # -----------------------------------------------------------------
 
@@ -4125,22 +4135,45 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_properties_file(self):
+        return fs.is_file(self.properties_filepath)
+
+    # -----------------------------------------------------------------
+
+    def save_properties(self):
+        write_dict(self.properties, self.properties_filepath)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def radii(self):
-        if not self.has_radii_file:
-            radii = dict()
-            radii["inner"] = self.default_inner_radius
-            radii["outer"] = self.default_outer_radius
-            radii["max"] = self.default_max_radius
-            write_dict(radii, self.radii_filepath)
-            return radii
-        else: return load_dict(self.radii_filepath)
+    def properties(self):
+
+        # Create
+        if not self.has_properties_file:
+
+            props = dict()
+            props["inner_radius"] = self.default_inner_radius
+            props["outer_radius"] = self.default_outer_radius
+            props["max_radius"] = self.default_max_radius
+            props["sfr_method"] = self.default_sfr_method
+            props["funev_adjustment"] = self.default_funev_adjustment
+            props["min_ssfr"] = self.default_min_ssfr
+            props["max_ssfr"] = self.default_max_ssfr
+            props["fit_npoints"] = self.default_ssfr_fit_npoints
+            props["midplane_factor"] = self.default_midplane_factor
+            props["midplane_component"] = self.default_midplane_component
+            write_dict(props, self.properties_filepath)
+            return props
+
+        # Load
+        else: return load_dict(self.properties_filepath)
 
     # -----------------------------------------------------------------
 
     @property
     def inner_region_max_radius(self):
-        return self.radii["inner"]
+        return self.properties["inner_radius"]
 
     # -----------------------------------------------------------------
 
@@ -4152,11 +4185,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        # Set
-        self.radii["inner"] = value
-
-        # Save
-        write_dict(self.radii, self.radii_filepath)
+        # Set and save
+        self.properties["inner_radius"] = value
+        self.save_properties()
 
     # -----------------------------------------------------------------
 
@@ -4168,7 +4199,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def outer_region_min_radius(self):
-        return self.radii["outer"]
+        return self.properties["outer_radius"]
 
     # -----------------------------------------------------------------
 
@@ -4180,11 +4211,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        # Set
-        self.radii["outer"] = value
-
-        # Save
-        write_dict(self.radii, self.radii_filepath)
+        # Set and save
+        self.properties["outer_radius"] = value
+        self.save_properties()
 
     # -----------------------------------------------------------------
 
@@ -4196,7 +4225,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def max_radius(self):
-        return self.radii["max"]
+        return self.properties["max_radius"]
 
     # -----------------------------------------------------------------
 
@@ -4214,11 +4243,219 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        # Set
-        self.radii["max"] = value
+        # Set and save
+        self.properties["max_radius"] = value
+        self.save_properties()
 
-        # Save
-        write_dict(self.radii, self.radii_filepath)
+    # -----------------------------------------------------------------
+
+    @property
+    def default_sfr_method(self):
+        return ke_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_funev_adjustment(self):
+        return 0.005
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_min_ssfr(self):
+        return 1e-16
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_max_ssfr(self):
+        return 5e-10
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_ssfr_fit_npoints(self):
+        return 100
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_midplane_factor(self):
+        return 0.2
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_midplane_component(self):
+        return "ionizing"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_method(self):
+        return self.properties["sfr_method"]
+
+    # -----------------------------------------------------------------
+
+    def set_sfr_method(self, method):
+
+        """
+        This function ...
+        :param method:
+        :return:
+        """
+
+        # Set and save
+        self.properties["sfr_method"] = method
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_adjustment(self):
+        return self.properties["funev_adjustment"]
+
+    # -----------------------------------------------------------------
+
+    def set_funev_adjustment(self, adjustment):
+
+        """
+        This function ...
+        :param adjustment:
+        :return:
+        """
+
+        # Set and save
+        self.properties["funev_adjustment"] = adjustment
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_ssfr(self):
+        return self.properties["min_ssfr"]
+
+    # -----------------------------------------------------------------
+
+    def set_min_ssfr(self, value):
+
+        """
+        Thisn function ...
+        :param value:
+        :return:
+        """
+
+        # Set and save
+        self.properties["min_ssfr"] = value
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ssfr(self):
+        return self.properties["max_ssfr"]
+
+    # -----------------------------------------------------------------
+
+    def set_max_ssfr(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set and save
+        self.properties["max_ssfr"] = value
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fit_npoints(self):
+        return self.properties["fit_npoints"]
+
+    # -----------------------------------------------------------------
+
+    def set_fit_npoints(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set and save
+        self.properties["fit_npoints"] = value
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_limits(self):
+        return (self.min_ssfr, self.max_ssfr,)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def midplane_component(self):
+        return self.properties["midplane_component"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def midplane_component_scaleheight(self):
+        if self.midplane_component == "old": return self.model.old_disk_scaleheight
+        elif self.midplane_component == "young": return self.model.young_scaleheight
+        elif self.midplane_component == "ionizing": return self.model.sfr_scaleheight
+        elif self.midplane_component == "dust": return self.model.dust_scaleheight
+        else: raise ValueError("Invalid midplane component: '" + self.config.midplane_component + "'")
+
+    # -----------------------------------------------------------------
+
+    def set_midplane_component(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Set and save
+        self.properties["midplane_component"] = name
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def midplane_factor(self):
+        return self.properties["midplane_factor"]
+
+    # -----------------------------------------------------------------
+
+    def set_midplane_factor(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Set
+        self.properties["midplane_factor"] = factor
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def midplane_height(self):
+        return self.midplane_factor * self.midplane_component_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @property
+    def midplane_dust_heights(self):
+        return self.midplane_height.to("pc").value / self.model.dust_scaleheight.to("pc").value
 
     # -----------------------------------------------------------------
 
@@ -4597,6 +4834,24 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         return colors
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def darker_red(self):
+        return tuple(np.array(to_rgb("red")) * 0.7)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def darker_m51_color(self):
+        return tuple(np.array(to_rgb(self.m51_color)) * 0.7)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def darker_m31_color(self):
+        return tuple(np.array(to_rgb(self.m31_color)) * 0.7)
+
+    # -----------------------------------------------------------------
     # This galaxy correlation
     # -----------------------------------------------------------------
 
@@ -4665,21 +4920,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    @property
-    def npoints_fit(self):
-        return 100
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_limits_fit(self):
-        return [1e-13, 1e-9]
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def ssfr_points_fit(self):
-        return RealRange(*self.ssfr_limits_fit).log(self.npoints_fit)
+        return RealRange(*self.ssfr_limits).log(self.fit_npoints)
 
     # -----------------------------------------------------------------
 
@@ -4691,13 +4934,148 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def funev_points_fit_m51(self):
-        return get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True)
+        fitted, slope, intercept = get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("M51 slope=", slope)
+        print("M51 intercept=", intercept)
+        return fitted
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def funev_points_fit_m31(self):
-        return get_linear_fitted_values(self.m31_valid_ssfr_values, self.m31_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True)
+        fitted, slope, intercept = get_linear_fitted_values(self.m31_valid_ssfr_values, self.m31_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("M31 slope=", slope)
+        print("M31 intercept=", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_m51_ilse(self):
+        # logfunev = 0.42 * logssfr + 4.14      # M51 PAPER -> but doesn't quite fit when plotting her points
+        log_funev_m51_ilse = 0.42 * self.log_ssfr_points_fit + 4.14
+        return 10**log_funev_m51_ilse
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_scatter_pixels(self):
+        return self.get_pixels_ssfr_funev_scatter(self.sfr_method)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_pixels(self):
+        fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_pixels.x_array, self.ssfr_funev_scatter_pixels.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Pixels slope=", slope)
+        print("Pixels intercept=", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_scatter_pixels_adjusted(self):
+
+        # Adjust
+        valid_pixels = self.ssfr_funev_scatter_pixels[self.ssfr_funev_scatter_pixels.y_name] > self.funev_adjustment # not extremely close to zero
+        valid_ssfr = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_funev_scatter_pixels.x_name])[valid_pixels]
+        valid_funev = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_funev_scatter_pixels.y_name])[valid_pixels]
+
+        # Create adjusted scatter and return
+        return Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=self.ssfr_funev_scatter_pixels.x_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_pixels_adjusted(self):
+        fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_pixels_adjusted.x_array, self.ssfr_funev_scatter_pixels_adjusted.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Pixels (adjusted) slope=", slope)
+        print("Pixels (adjusted) intercept=", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_scatter_cells(self):
+        return self.get_cells_ssfr_funev_scatter(self.sfr_method)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_cells(self):
+        fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_cells.x_array, self.ssfr_funev_scatter_cells.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Cells slope =", slope)
+        print("Cells intercept =", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_midplane(self):
+
+        # Get midplane cells
+        dust_heights = self.ssfr_funev_scatter_cells.get_array("Dust scale heights")
+        valid_mask = dust_heights < self.midplane_dust_heights
+        valid_x = np.isfinite(self.ssfr_funev_scatter_cells.x_array)
+        valid_y = np.isfinite(self.ssfr_funev_scatter_cells.y_array)
+        valid_mask = valid_mask * valid_x * valid_y
+
+        # Get values
+        fit_x = self.ssfr_funev_scatter_cells.x_array[valid_mask]
+        fit_y = self.ssfr_funev_scatter_cells.y_array[valid_mask]
+
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Midplane slope: ", slope)
+        print("Midplane intercept: ", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_pixels_label(self):
+        return self.galaxy_name + " pixels"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_pixel_scatters_adjusted(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels_adjusted
+        scatters["M31 pixels"] = self.m31_ssfr_funev_scatter
+        scatters["M51 pixels"] = self.m51_ssfr_funev_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_pixel_scatters(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels
+        scatters["M31 pixels"] = self.m31_ssfr_funev_scatter
+        scatters["M51 pixels"] = self.m51_ssfr_funev_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_pixel_colors(self):
+        colors = dict()
+        colors[self.galaxy_pixels_label] = "red"
+        colors["M31 pixels"] = self.m31_color
+        colors["M51 pixels"] = self.m51_color
+        return colors
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_limits_linear(self):
+        return (0,1,)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_limits_log(self):
+        return (0.0015,1,)
 
     # -----------------------------------------------------------------
 
@@ -4722,79 +5100,29 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         width_ratios = [0.5, 0.5]
         plot0, plot1 = figure.create_row(2, width_ratios=width_ratios, projections=["scatter_density", "scatter_density"])
 
-        # Get pixel scatter
-        import numpy as np
-        pixels_original = self.get_pixels_ssfr_funev_scatter("ke")
-        #print(len(pixels))
-        valid_pixels = pixels_original[pixels_original.y_name] > 0.005
-        valid_ssfr = np.asarray(pixels_original[pixels_original.x_name])[valid_pixels]
-        valid_funev = np.asarray(pixels_original[pixels_original.y_name])[valid_pixels]
-        pixels = Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=pixels_original.x_unit)
-        #print(len(pixels))
-
-        # Create scatters
-        m81_pixels_label = "M81 pixels"
-        m51_label = "M51 pixels"
-        m31_label = "M31 pixels"
-        scatters1 = OrderedDict()
-        scatters1[m81_pixels_label] = pixels
-        scatters1[m31_label] = self.m31_ssfr_funev_scatter
-        scatters1[m51_label] = self.m51_ssfr_funev_scatter
-
         # Make the first plot
-        ylimits = [0,1]
         xlog = True
         ylog = False
         #plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
-        output0 = plot_scatters_astrofrog(scatters1, xlimits=self.ssfr_limits_fit, ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0)
-
-        # Ilse
-        #logfunev = 0.42 * logssfr + 4.14      # M51 PAPER -> but doesn't quite fit when plotting her points
-        log_funev_m51_ilse = 0.42 * self.log_ssfr_points_fit + 4.14
-        funev_m51_ilse = 10**log_funev_m51_ilse
-
-        # M81
-
-        # original
-        funev_m81 = get_linear_fitted_values(pixels_original.x_array, pixels_original.y_array, self.ssfr_points_fit, xlog=True, ylog=True)
-
-        # clipped
-        funev_m81_clipped = get_linear_fitted_values(pixels.x_array, pixels.y_array, self.ssfr_points_fit, xlog=True, ylog=True)
-
-        # cells
-        cells = self.get_cells_ssfr_funev_scatter("ke")
-        funev_m81_cells = get_linear_fitted_values(cells.x_array, cells.y_array, self.ssfr_points_fit, xlog=True, ylog=True)
-
-        m51_color = to_rgb(output0.colors[m51_label])
-        m31_color = to_rgb(output0.colors[m31_label])
-        m81_color = to_rgb(output0.colors[m81_pixels_label])
-        #print(m51_color, m31_color, m81_color)
-        darker_m51_color = tuple(np.array(m51_color)*0.7)
-        darker_m31_color = tuple(np.array(m31_color)*0.7)
-        darker_m81_color = tuple(np.array(m81_color)*0.7)
+        output0 = plot_scatters_astrofrog(self.ssfr_funev_pixel_scatters, xlimits=self.ssfr_limits, ylimits=self.funev_limits_linear, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0, colors=self.ssfr_funev_pixel_colors)
 
         # Plot fits
-        #plot0.plot(ssfr_points, funev_m51_ilse, label="M51 (Ilse)")
-        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=darker_m51_color)
-        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=darker_m31_color)
-        #plot0.plot(ssfr_points, funev_m81, label="M81")
-        #plot0.plot(ssfr_points, funev_m81_clipped, label="M81 clipped")
-        plot0.plot(self.ssfr_points_fit, funev_m81_clipped, label="M81", color=darker_m81_color)
-        plot0.plot(self.ssfr_points_fit, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
+        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color)
+        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color)
+        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81", color=self.darker_red)
+        plot0.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
 
         # Add legend for fits
         plot0.legend(loc="lower right")
 
         # Make the second plot
-        #ylimits = [0.002,1] # for log
-        cells = self.get_cells_ssfr_funev_scatter("ke")
-        output1 = plot_scatter_astrofrog(cells, xlimits=self.ssfr_limits_fit, ylimits=ylimits, xlog=True, ylog=False, plot=plot1, color="red")
+        output1 = plot_scatter_astrofrog(self.ssfr_funev_scatter_cells, xlimits=self.ssfr_limits, ylimits=self.funev_limits_linear, xlog=True, ylog=False, plot=plot1, color="red")
         plot1.set_yaxis_right()
 
         # Plot fits
         #plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
-        plot1.plot(self.ssfr_points_fit, funev_m81_clipped, label="M81 pixels", color=darker_m81_color)
-        plot1.plot(self.ssfr_points_fit, funev_m81_cells, label="M81 cells", color=darker_m81_color, linestyle=":")
+        plot1.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81 pixels", color=self.darker_red)
+        plot1.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -4815,9 +5143,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         import mpl_scatter_density # NOQA
 
-        # Get the scatter
-        cells = self.get_cells_ssfr_funev_scatter("ke")
-
         # Create the figure
         #figsize = (35, 6,)
         figsize = (30,15)
@@ -4834,22 +5159,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         first_row = rows[0]
         second_row = rows[1]
 
-        # Set y limits
-        default_funev_limits = [0.0015, 1]
-
         # Plot all correlation
         #output_all = self.plot_correlation_impl(cells, plot0, self.ssfr_funev_distance_settings, plot_coefficient=True)
         radius_settings = self.ssfr_funev_radius_settings.copy()
         radius_settings.xlimits[0] = 1e-17
-        output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", cells, first_row[0], radius_settings,
+        output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, first_row[0], radius_settings,
                                                 plot_coefficient=True, show_coefficient=True,
                                                 add_colorbar=True, figure=figure)
 
         # Plot inner correlation
         bulge_settings = self.ssfr_funev_inner_settings.copy()
-        bulge_settings.ylimits = default_funev_limits
+        bulge_settings.ylimits = self.funev_limits_log
         bulge_settings.xlimits[0] = 1e-17
-        output_bulge = self.plot_correlation_impl("sSFR-Funev (inner region)", cells, first_row[1], bulge_settings,
+        output_bulge = self.plot_correlation_impl("sSFR-Funev (inner region)", self.ssfr_funev_scatter_cells, first_row[1], bulge_settings,
                                                   plot_coefficient=True, show_coefficient=True,
                                                   add_colorbar=True, inset_text="Inner region", figure=figure)
 
@@ -4858,89 +5180,126 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #outside_bulge_settings.color = "green"
         outside_bulge_settings.ylimits = [0.05,1]
         outside_bulge_settings.xlimits[0] = 1e-15
-        output_outside = self.plot_correlation_impl("sSFR-Funev (outside inner region)", cells, first_row[2], outside_bulge_settings,
+        output_outside = self.plot_correlation_impl("sSFR-Funev (outside inner region)", self.ssfr_funev_scatter_cells, first_row[2], outside_bulge_settings,
                                                     plot_coefficient=True, show_coefficient=True, add_colorbar=True,
                                                     inset_text="Outside inner region", figure=figure, references=self.reference_ssfr_funev_scatters,
                                                     reference_colors=self.reference_ssfr_funev_scatter_colors)
 
-        # Plot inner correlation
-        #bulge_settings = self.ssfr_funev_inner_settings.copy()
-        #bulge_settings.ylimits = default_funev_limits
-        #bulge_settings.xlimits[0] = 1e-17
-        #output_bulge = self.plot_correlation_impl(cells, second_row[0], bulge_settings, plot_coefficient=True, add_colorbar=True, inset_text="Inner region", figure=figure)
-
-        # Plot intermediate correlation
-        #intermediate_settings = self.ssfr_funev_intermediate_settings.copy()
-        #intermediate_settings.ylimits = default_funev_limits
-        #intermediate_settings.color = "green"
-        #intermediate_settings.xlimits[0] = 1e-15
-        #output_intermediate = self.plot_correlation_impl(cells, second_row[1], intermediate_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, inset_text="Intermediate region", figure=figure)
-
-        # Plot outer correlation
-        #disk_settings = self.ssfr_funev_outer_settings.copy()
-        #disk_settings.ylimits = default_funev_limits
-        #disk_settings.xlimits[0] = 1e-15
-        #output_disk = self.plot_correlation_impl(cells, second_row[2], disk_settings, plot_coefficient=True, references=self.reference_ssfr_funev_scatters, add_colorbar=True, inset_text="Outer region", figure=figure)
-
         # Plot dust scale heights
         height_settings = self.ssfr_funev_dust_heights_settings.copy()
         height_settings.xlimits[0] = 1e-17
-        output_height = self.plot_correlation_impl("sSFR-Funev (all cells)", cells, second_row[0], height_settings,
+        output_height = self.plot_correlation_impl("sSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[0], height_settings,
                                                    references=self.reference_ssfr_funev_scatters,
                                                    reference_colors=self.reference_ssfr_funev_scatter_colors,
                                                    add_colorbar=True, figure=figure)
 
-        # Make the fit
-        # Set conditions
-        #height_condition = Map()
-        #height_condition.upper = 0.1
-        #settings.conditions = {"Dust scale heights": height_condition}
-
-        dust_heights = cells.get_array("Dust scale heights")
-        valid_mask = dust_heights < 0.1
-        fit_x = output_height.x[valid_mask]
-        fit_y = output_height.y[valid_mask]
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Slope: " + str(slope))
-        print("Intercept: " + str(intercept))
-
-        # Plot
-        m51_color = to_rgb(self.m51_color)
-        m31_color = to_rgb(self.m31_color)
-        m81_color = to_rgb("red")
-        darker_m51_color = tuple(np.array(m51_color) * 0.7)
-        darker_m31_color = tuple(np.array(m31_color) * 0.7)
-        darker_m81_color = tuple(np.array(m81_color) * 0.7)
-
         # Plot fit
-        second_row[0].plot(self.ssfr_points_fit, fitted, label="Midplane", color=darker_m81_color, linestyle="solid")
-        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=darker_m31_color, linestyle="dashed")
-        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=darker_m51_color, linestyle="dashed")
-
-        # print(m51_color, m31_color, m81_color)
-
-
-        # Plot midplane heating
-        #midplane_settings = self.ssfr_funev_midplane_settings.copy()
-        #midplane_settings.xlimits[0] = 1e-17
-        #output_midplane = self.plot_correlation_impl("sSFR-Funev (midplane)", cells, second_row[1], midplane_settings,
-        #                                             show_coefficient=True, plot_coefficient=True, references=self.reference_ssfr_funev_scatters,
-        #                                             figure=figure, fit=True)
+        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red, linestyle="solid")
+        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
+        second_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
 
         # PLOT vSFR vs Funev
         #vsfr_settings = self.vsfr_funev_standard_settings
         vsfr_settings = self.vsfr_funev_radius_settings.copy()
-        output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", cells, second_row[1], vsfr_settings, show_coefficient=True, plot_coefficient=True)
+        output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[1], vsfr_settings, show_coefficient=True, plot_coefficient=True)
 
         # Plot Temperature vs. Funev
-        temperature_settings = self.temperature_funev_standard_settings.copy()
-        output_temperature = self.plot_correlation_impl("Dust temperature-Funev (all cells)", cells, second_row[2], temperature_settings,
+        temperature_settings = self.temperature_funev_radius_settings.copy()
+        output_temperature = self.plot_correlation_impl("Dust temperature-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[2], temperature_settings,
                                                         add_colorbar=True, show_coefficient=True, plot_coefficient=True, figure=figure)
 
-        # Create colorbar
-        #aux_unit = scatter.get_unit(settings.aux_colname)
-        #aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
-        #figure.figure.colorbar(output.scatter, label=aux_label)
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_paper7(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the better paper sSFR - Funev correlation plots ...")
+
+        import mpl_scatter_density  # NOQA
+
+        # Create the figure
+        figsize = (30, 20)
+        figure = MPLFigure(size=figsize)
+
+        # Create plots
+        nrows = 3
+        ncols = 3
+        projection = "scatter_density"
+        rows = figure.create_grid(nrows, ncols, projections=projection, empty=[(2,0,)])
+        first_row = rows[0]
+        second_row = rows[1]
+        third_row = rows[2]
+
+        ## FIRST ROW
+
+        # FIRST PLOT
+        settings0 = self.ssfr_funev_standard_log_settings
+        output_all = self.plot_correlation_impl("sSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, first_row[0], settings0, plot_coefficient=True, show_coefficient=True)
+        first_row[0].set_xaxis_top()
+        first_row[0].set_background_color("gainsboro")
+
+        # SECOND PLOT: with radius
+        settings1 = self.ssfr_funev_radius_settings
+        output_radius = self.plot_correlation_impl("sSFR-Funev (with radius)", self.ssfr_funev_scatter_cells, first_row[1], settings1, add_colorbar=True, figure=figure)
+        first_row[1].set_xaxis_top()
+        first_row[1].hide_yaxis()
+        first_row[1].set_background_color("gainsboro")
+
+        # THIRD PLOT: with height
+        settings2 = self.ssfr_funev_dust_heights_settings
+        output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells, first_row[2], settings2,
+                                                   add_colorbar=True, figure=figure, colorbar_label_position="right",
+                                                   references=self.reference_ssfr_funev_scatters,
+                                                   reference_colors=self.reference_ssfr_funev_scatter_colors)
+        first_row[2].set_xaxis_top()
+        first_row[2].set_yaxis_right()
+        first_row[2].set_background_color("gainsboro")
+
+        # Plot fits
+        first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
+        first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+
+        ## SECOND ROW
+
+        # FIRST PLOT
+        settings3 = self.vsfr_funev_standard_log_settings
+        output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[0], settings3, plot_coefficient=True, show_coefficient=True)
+
+        # SECOND PLOT: vSFR as auxilary
+        settings4 = self.ssfr_funev_vsfr_settings
+        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells, second_row[1], settings4, add_colorbar=True, figure=figure)
+        second_row[1].hide_xaxis()
+        second_row[1].hide_yaxis()
+        second_row[1].set_background_color("gainsboro")
+
+        # THIRD PLOT: dust density as auxilary
+        settings5 = self.ssfr_funev_dust_density_settings
+        output_dust_density = self.plot_correlation_impl("sSFR-Funev (with dust density)", self.ssfr_funev_scatter_cells, second_row[2], settings5, add_colorbar=True, figure=figure)
+        second_row[2].hide_xaxis()
+        second_row[2].set_yaxis_right()
+        second_row[2].set_background_color("gainsboro")
+
+        ## THIRD ROW
+
+        # FIRST PLOT
+        settings6 = self.temperature_funev_standard_settings
+        output_temp = self.plot_correlation_impl("Temperature-Funev (all cells)", self.ssfr_funev_scatter_cells, third_row[1], settings6, plot_coefficient=True, show_coefficient=True)
+
+        # SECOND PLOT
+        settings7 = self.temperature_funev_radius_settings
+        output_temp_radius = self.plot_correlation_impl("Temperature-Funev (with radius)", self.ssfr_funev_scatter_cells, third_row[2], settings7, add_colorbar=True, figure=figure)
+        #third_row[2].hide_yaxis()
+        third_row[2].set_yaxis_right()
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -5168,7 +5527,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
-                              fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None):
+                              fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None):
 
         """
         This function ...
@@ -5188,6 +5547,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param fit_color:
         :param fit_npoints:
         :param reference_colors:
+        :param colorbar_label_position:
         :return:
         """
 
@@ -5222,7 +5582,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             # Create colorbar
             aux_label = output.aux_name
             if output.aux_unit is not None: aux_label = aux_label + " [" + str(output.aux_unit) + "]"
-            figure.create_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label, logarithmic=settings.aux_log)
+            figure.create_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label, logarithmic=settings.aux_log, label_position=colorbar_label_position)
 
         # Add inset text
         if inset_text is not None: plot.add_text(inset_text, position="top")
@@ -5255,7 +5615,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                 print("")
 
             # Plot
-            if plot_coefficient: plot.text(0.9, 0.1, "p-value = " + tostr(p_value), transform=output.axes.transAxes, color="white")
+            if plot_coefficient: plot.text(0.5, 0.08, "r = " + tostr(coeff), transform=output.axes.transAxes, color="black", horizontalalignment="center")
 
         # Make a fit and plot it
         if fit:
@@ -5291,7 +5651,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def ssfr_funev_preset_names(self):
-        return ["standard", "standard_log", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
+        return ["standard", "standard_log", "vsfr", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
 
     # -----------------------------------------------------------------
 
@@ -5316,7 +5676,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_optional("path", "new_path", "plot to file")
 
         # Plot p value
-        definition.add_flag("p_value", "show the p value on the plot")
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
 
         # Return
         return definition
@@ -5335,8 +5695,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0, 1]
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_linear
 
         # No auxilary axis
 
@@ -5361,14 +5721,70 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0.0015, 1]
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
 
         # No auxilary axis
 
         # Logscales?
         settings.xlog = True
         settings.ylog = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_vsfr_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
+
+        # vSFR auxilary axis
+        settings.aux_colname = "vSFR"
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_dust_density_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
+
+        # vSFR auxilary axis
+        settings.aux_colname = "Dust density"
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
 
         # Return
         return settings
@@ -5387,8 +5803,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0.0015, 1]
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
 
         # Auxilary axis
         settings.aux_colname = "Distance from center"
@@ -5415,8 +5831,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0.0015, 1]
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
 
         # Auxilary axis
         settings.aux_colname = "Radius"
@@ -5443,8 +5859,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0.0015, 1]
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
 
         # Auxilary axis
         settings.aux_colname = "Dust scale heights"
@@ -5471,7 +5887,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
+        settings.xlimits = self.ssfr_limits
         settings.ylimits = [0.0015, 0.5]
 
         # vSFR auxilary axis
@@ -5604,8 +6020,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = CorrelationPlotSettings()
 
         # Axes limits
-        settings.xlimits = [1e-18, 1e-9]
-        settings.ylimits = [0.0015, 1]
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
 
         # Set conditions
         height_condition = Map()
@@ -5640,8 +6056,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Log?
         settings.xlog = True
         settings.ylog = prompt_yn("funev_log", "use log scale for the Funev axis", default=True)
-        default_ssfr_limits = (1e-18, 1e-9,)
-        default_funev_limits = (0.0015, 1,) if settings.ylog else (0, 1,)
+        default_ssfr_limits = self.ssfr_limits
+        default_funev_limits = self.funev_limits_log if settings.ylog else self.funev_limits_linear
 
         # Axes limits
         settings.xlimits = prompt_variable("xlimits", "real_pair", "x plotting interval", default=default_ssfr_limits)
@@ -5684,6 +6100,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             if config.preset == "standard": settings = self.ssfr_funev_standard_settings
             elif config.preset == "standard_log": settings = self.ssfr_funev_standard_log_settings
             elif config.preset == "distance": settings = self.ssfr_funev_distance_settings
+            elif config.preset == "vsfr": settings = self.ssfr_funev_vsfr_settings
             elif config.preset == "radius": settings = self.ssfr_funev_radius_settings
             elif config.preset == "dust_heights": settings = self.ssfr_funev_dust_heights_settings
             elif config.preset == "inner": settings = self.ssfr_funev_inner_settings
@@ -5707,7 +6124,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.p_value)
+        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient)
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:
@@ -5739,7 +6156,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_optional("path", "new_path", "plot to file")
 
         # Plot p value
-        definition.add_flag("p_value", "show the p value on the plot")
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
 
         # Return
         return definition
@@ -5759,15 +6176,40 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Logscales?
         settings.xlog = True
-        # settings.ylog = True
         settings.color = "blue"
 
         settings.x_colname = "vSFR"
 
         # Limits
         settings.xlimits = (1e-15, 1e-10,)
-        # settings.ylimits = (0.0015, 1,)
-        settings.ylimits = (0, 1,)
+        settings.ylimits = self.funev_limits_linear
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_funev_standard_log_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blue"
+
+        settings.x_colname = "vSFR"
+
+        # Limits
+        settings.xlimits = (1e-15, 1e-10,)
+        settings.ylimits = self.funev_limits_log
 
         # Return
         return settings
@@ -5829,7 +6271,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, self.vsfr_funev_standard_settings, show_coefficient=True, plot_coefficient=config.p_value)
+        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, self.vsfr_funev_standard_settings, show_coefficient=True, plot_coefficient=config.coefficient)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -5857,7 +6299,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_optional("path", "new_path", "plot to file")
 
         # Plot p value
-        definition.add_flag("p_value", "show the p value on the plot")
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
 
         # Return
         return definition
@@ -5881,12 +6323,38 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.color = "orange"
         settings.x_colname = "Dust temperature"
 
+        # Limits
+        settings.xlimits = (15, 60,)
+        settings.ylimits = self.funev_limits_log
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_radius_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = False
+        settings.ylog = True
+        settings.color = "orange"
+        settings.x_colname = "Dust temperature"
+
         # Radius auxilary axis
         settings.aux_colname = "Radius"
 
         # Limits
         settings.xlimits = (15,60,)
-        settings.ylimits = (0.0015, 1,)
+        settings.ylimits = self.funev_limits_log
 
         # Return
         return settings
@@ -5918,7 +6386,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter("salim")
 
         # Plot
-        output = self.plot_correlation_impl("Temperature-Funev", scatter, plot, self.temperature_funev_standard_settings, show_coefficient=True, plot_coefficient=config.p_value)
+        output = self.plot_correlation_impl("Temperature-Funev", scatter, plot, self.temperature_funev_standard_settings, show_coefficient=True, plot_coefficient=config.coefficient)
 
         # Create colorbar
         # aux_unit = scatter.get_unit(settings.aux_colname)
@@ -6841,12 +7309,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         plot_2d_distribution(self.vertical_heating_fraction_distribution, path=path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def midplane_height(self):
-        return 0.2 * self.model.sfr_scaleheight
 
     # -----------------------------------------------------------------
 

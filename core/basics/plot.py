@@ -1308,6 +1308,11 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def set_background_color(self, color):
+        self.axes.set_facecolor(color)
+
+    # -----------------------------------------------------------------
+
     def plot(self, x, y, **kwargs):
 
         """
@@ -2388,7 +2393,7 @@ class MPLFigure(Figure):
     # -----------------------------------------------------------------
 
     def create_colorbar_in_plot(self, plot, plotted=None, position="bottom", relwidth=0.8, relheight=0.05,
-                                cmap=None, norm=None, ticks=None, label=None, logarithmic=False):
+                                cmap=None, norm=None, ticks=None, label=None, logarithmic=False, label_position=None):
 
         """
         This function ...
@@ -2402,6 +2407,7 @@ class MPLFigure(Figure):
         :param ticks:
         :param label:
         :param logarithmic:
+        :param label_position:
         :return:
         """
 
@@ -2430,7 +2436,10 @@ class MPLFigure(Figure):
                 #print(plotted.cmap) if hasattr(plotted, "cmap") else print("nope")
                 norm = LogNorm(vmin=plotted.norm.vmin, vmax=plotted.norm.vmax)
                 cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="horizontal")
-            else: cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
+            else:
+                cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
+                #norm = Normalize(vmin=plotted.norm.vmin, vmax=plotted.norm.vmax)
+                #cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="horizontal")
         else:
             if cmap is None: raise ValueError("If plotted is not passed, colormap must be passed")
             if norm is None: raise ValueError("If plotted is not passed, normalization must be passed")
@@ -2438,8 +2447,30 @@ class MPLFigure(Figure):
 
         # Add label
         if label is not None:
-            #cb_axes.set_label(label)
-            plot.add_text(label, position=position, y_shift=0.12)
+            y_shift = 0.12
+            if label_position is None: plot.add_text(label, position=position, y_shift=y_shift)
+            elif label_position == "right":
+
+                x = left + width
+                if position == "top":
+                    y = 0.95 + y_shift
+                    alignment = "top"
+                elif position == "bottom":
+                    y = 0.05 + y_shift
+                    alignment = "bottom"
+                else: raise ValueError("Invalid position: '" + position + "'")
+                plot.text(x, y, label, horizontalalignment='right', verticalalignment=alignment, transform=plot.axes.transAxes)
+            elif label_position == "left":
+                x = left
+                if position == "top":
+                    y = 0.95 + y_shift
+                    alignment = "top"
+                elif position == "bottom":
+                    y = 0.05 + y_shift
+                    alignment = "bottom"
+                else: raise ValueError("Invalid position: '" + position + "'")
+                plot.text(x, y, label, horizontalalignment='left', verticalalignment=alignment, transform=plot.axes.transAxes)
+            else: raise ValueError("Invalid value for 'label_position'")
 
         # Set scale
         #if logarithmic:
@@ -2483,6 +2514,8 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Define hspace
         if hspace is None:
             if share_axis: hspace = 0.0
@@ -2490,6 +2523,9 @@ class MPLFigure(Figure):
 
         # Make the grid
         gs = GridSpec(size, 1, height_ratios=height_ratios, hspace=hspace)
+
+        # Set projections: same for all plots?
+        if projections is not None and not types.is_sequence(projections): projections = [projections for _ in range(size)]
 
         # Create the (sub)plots
         plots = []
@@ -2790,6 +2826,8 @@ class MPLFigure(Figure):
         :return:
         """
 
+        from ..tools import types
+
         # Define wspace
         if wspace is None:
             if share_axis: wspace = 0.0
@@ -2797,6 +2835,9 @@ class MPLFigure(Figure):
 
         # Make the grid
         gs = GridSpec(1, size, width_ratios=width_ratios, wspace=wspace)
+
+        # Set projections: same for all plots?
+        if projections is not None and not types.is_sequence(projections): projections = [projections for _ in range(size)]
 
         # Create the (sub)plots
         plots = []
@@ -3345,7 +3386,7 @@ class MPLFigure(Figure):
                     last_row_not_shared_x=None, last_row_not_shared_y=None, first_column_not_shared_x=None, first_column_not_shared_y=None,
                     last_column_not_shared_x=None, last_column_not_shared_y=None, rows_shared_x=None, rows_shared_y=None,
                     columns_shared_x=None, columns_shared_y=None, subplotspec=None, share_per_row=True, share_per_column=True,
-                    wspace=None, hspace=None):
+                    wspace=None, hspace=None, empty=None):
 
         """
         This function ...
@@ -3373,6 +3414,7 @@ class MPLFigure(Figure):
         :param share_per_column: share only the x axes per column
         :param wspace:
         :param hspace:
+        :param empty:
         :return:
         """
 
@@ -3437,16 +3479,16 @@ class MPLFigure(Figure):
         if sharex and sharey: plots = self._create_grid_shared(grid, nrows, ncols, projections=projections,
                                                                rows_shared_x=rows_shared_x, rows_shared_y=rows_shared_y,
                                                                columns_shared_x=columns_shared_x, columns_shared_y=columns_shared_y,
-                                                               share_per_row=share_per_row, share_per_column=share_per_column)
+                                                               share_per_row=share_per_row, share_per_column=share_per_column, empty=empty)
 
         # Only x axis is shared
-        elif sharex: plots = self._create_grid_shared_x(grid, nrows, ncols, projections=projections)
+        elif sharex: plots = self._create_grid_shared_x(grid, nrows, ncols, projections=projections, empty=empty)
 
         # Only y axis is shared
-        elif sharey: plots = self._create_grid_shared_y(grid, nrows, ncols, projections=projections)
+        elif sharey: plots = self._create_grid_shared_y(grid, nrows, ncols, projections=projections, empty=empty)
 
         # No axes are shared
-        else: plots = self._create_grid_not_shared(grid, nrows, ncols, projections=projections)
+        else: plots = self._create_grid_not_shared(grid, nrows, ncols, projections=projections, empty=empty)
 
         # Return the plots
         return plots
@@ -3677,7 +3719,8 @@ class MPLFigure(Figure):
     # -----------------------------------------------------------------
 
     def _create_grid_shared(self, grid, nrows, ncols, projections=None, rows_shared_x=None, rows_shared_y=None,
-                            columns_shared_x=None, columns_shared_y=None, share_per_row=True, share_per_column=True):
+                            columns_shared_x=None, columns_shared_y=None, share_per_row=True, share_per_column=True,
+                            empty=None):
 
         """
         This function ...
@@ -3691,6 +3734,7 @@ class MPLFigure(Figure):
         :param columns_shared_y:
         :param share_per_row:
         :param share_per_column:
+        :param empty:
         :return:
         """
 
@@ -3754,6 +3798,9 @@ class MPLFigure(Figure):
 
                 # Already plotted
                 if plots[row][col] is not None: continue
+
+                # No plot necessary
+                if empty is not None and (row,col,) in empty: continue
 
                 #print("Creating plot " + str(row) + " " + str(col) + " ...")
 
@@ -3856,7 +3903,7 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def _create_grid_shared_x(self, grid, nrows, ncols, projections=None):
+    def _create_grid_shared_x(self, grid, nrows, ncols, projections=None, empty=None):
 
         """
         This function ...
@@ -3864,6 +3911,7 @@ class MPLFigure(Figure):
         :param nrows:
         :param ncols:
         :param projections:
+        :param empty:
         :return:
         """
 
@@ -3875,7 +3923,7 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def _create_grid_shared_y(self, grid, nrows, ncols, projections=None):
+    def _create_grid_shared_y(self, grid, nrows, ncols, projections=None, empty=None):
 
         """
         This function ...
@@ -3883,6 +3931,7 @@ class MPLFigure(Figure):
         :param nrows:
         :param ncols:
         :param projections:
+        :param empty:
         :return:
         """
 
@@ -3894,7 +3943,7 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def _create_grid_not_shared(self, grid, nrows, ncols, projections=None):
+    def _create_grid_not_shared(self, grid, nrows, ncols, projections=None, empty=None):
 
         """
         This function ...
@@ -3902,6 +3951,7 @@ class MPLFigure(Figure):
         :param nrows:
         :param ncols:
         :param projections:
+        :param empty:
         :return:
         """
 
@@ -3915,6 +3965,9 @@ class MPLFigure(Figure):
 
             # Loop over the columns
             for col in range(ncols):
+
+                # No plot necessary
+                if empty is not None and (row, col,) in empty: continue
 
                 # Get sub plot specification
                 rect = grid[row, col]
