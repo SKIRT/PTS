@@ -668,8 +668,12 @@ class SkySubtractor(Configurable):
 
         # Make
         new = frame.copy()
-        new[self.mask] = data[self.mask]
 
+        # Replace
+        if self.config.estimation.photutils.replace_all_interpolated: new.data = data
+        else: new[self.mask] = data[self.mask]
+
+        # Replace NaNs
         nans = new.nans
         new[nans] = data[nans]
 

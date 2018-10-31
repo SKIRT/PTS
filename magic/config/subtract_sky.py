@@ -89,7 +89,8 @@ definition.sections["estimation"].sections["photutils"].add_optional("sky_interp
 definition.sections["estimation"].sections["photutils"].add_optional("noise_interpolation_method", "string", "interpolation method for the final noise frame", default_noise_interpolation_method, choices=photutils_interpolation_methods) #, suggestions=["mean", "idw"])
 definition.sections["estimation"].sections["photutils"].add_optional("polynomial_order", "positive_integer", "order of the polynomial", 3)
 definition.sections["estimation"].sections["photutils"].add_optional("polynomial_fitter", "string", "name of the fitter to be used for the polynomial", "levenberg-marquardt")
-definition.sections["estimation"].sections["photutils"].add_optional("exclude_mesh_percentile", "positive_real", "who knows (ask Nersesian)", 50.)
+definition.sections["estimation"].sections["photutils"].add_optional("exclude_mesh_percentile", "positive_real", "who knows", 50.)
+definition.sections["estimation"].sections["photutils"].add_flag("replace_all_interpolated", "replace all pixels by the interpolated version")
 
 # -----------------------------------------------------------------
 
