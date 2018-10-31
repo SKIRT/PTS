@@ -27,7 +27,7 @@ class TotalAbsorption(AbsorptionBase):
     This class ...
     """
 
-    def __init__(self, simulations, evolved, unevolved, absorption_curve_cells=None, emission_curve_cells=None, distance=None):
+    def __init__(self, simulations, evolved, unevolved, extra=None, absorption_curve_cells=None, emission_curve_cells=None, distance=None):
 
         """
         This function ...
@@ -44,6 +44,7 @@ class TotalAbsorption(AbsorptionBase):
         # Evolved and unevolved, and star formation
         self.evolved = evolved
         self.unevolved = unevolved
+        self.extra = extra
 
     # -----------------------------------------------------------------
 
@@ -56,6 +57,12 @@ class TotalAbsorption(AbsorptionBase):
     @property
     def unevolved_simulations(self):
         return self.unevolved.simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_simulations(self):
+        return self.extra.simulations
 
     # -----------------------------------------------------------------
     # STELLAR SEDs and LUMINOSITIES
@@ -75,7 +82,10 @@ class TotalAbsorption(AbsorptionBase):
 
     @lazyproperty
     def observed_stellar_sed_all(self):
-        return self.correct_observed_stellar_sed(self.evolved.observed_stellar_sed + self.unevolved.observed_stellar_sed_all)
+        sed = self.evolved.observed_stellar_sed + self.unevolved.observed_stellar_sed_all
+        if self.extra is not None: sed = sed + self.extra.observed_stellar_sed
+
+        return self.correct_observed_stellar_sed(sed)
 
     # -----------------------------------------------------------------
 
@@ -87,14 +97,22 @@ class TotalAbsorption(AbsorptionBase):
 
     @lazyproperty
     def intrinsic_stellar_sed_diffuse(self):
-        return self.evolved.intrinsic_stellar_sed + self.unevolved.intrinsic_stellar_sed_diffuse
+
+        sed = self.evolved.intrinsic_stellar_sed + self.unevolved.intrinsic_stellar_sed_diffuse
+        if self.extra is not None: sed = sed + self.extra.intrinsic_stellar_sed
+
+        return sed
         # or self.model.total_simulations.intrinsic_stellar_sed
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_stellar_sed_all(self):
-        return self.evolved.intrinsic_stellar_sed + self.unevolved.intrinsic_stellar_sed_all
+
+        sed = self.evolved.intrinsic_stellar_sed + self.unevolved.intrinsic_stellar_sed_all
+        if self.extra is not None: sed = sed + self.extra.intrinsic_stellar_sed
+
+        return sed
 
     # -----------------------------------------------------------------
 
@@ -334,7 +352,11 @@ class TotalAbsorption(AbsorptionBase):
 
     @lazyproperty
     def best_observed_stellar_sed_all(self):
-        return self.correct_observed_stellar_sed(self.evolved.best_observed_stellar_sed + self.unevolved.best_observed_stellar_sed_all)
+
+        sed = self.evolved.best_observed_stellar_sed + self.unevolved.best_observed_stellar_sed_all
+        if self.extra is not None: sed = sed + self.extra.best_observed_stellar_sed
+
+        return self.correct_observed_stellar_sed(sed)
 
     # -----------------------------------------------------------------
 
