@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import traceback
 from copy import deepcopy
 from scipy.stats import pearsonr, spearmanr
 from collections import OrderedDict
@@ -7595,8 +7596,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #print(fractions)
         #print(self.height_points_fit)
         fitted, slope, intercept = get_linear_fitted_values(heights, fractions, self.height_points_fit, xlog=False, ylog=False, return_parameters=True)
-        print("Vertical heating curve slope = ", slope)
-        print("Vertical heating curve intercept = ", intercept)
+        print("Vertical heating curve slope =", slope)
+        print("Vertical heating curve intercept =", intercept)
+        print("Height unit = ", self.vertical_heating_fraction_curve.x_unit)
         return fitted
 
     # -----------------------------------------------------------------
@@ -8833,7 +8835,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                 exec eval_command
                 # Show the result, if applicable
                 #if result is not None: print(result)
-            except Exception as e: log.error(str(e))
+            except Exception as e:
+                traceback.print_exc()
+                log.error(str(e))
 
     # -----------------------------------------------------------------
 
