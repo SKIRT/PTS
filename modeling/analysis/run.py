@@ -690,6 +690,7 @@ class AnalysisRunBase(object):
         """
         This function ...
         :param contribution:
+        :param create:
         :return:
         """
 

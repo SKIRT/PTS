@@ -462,6 +462,7 @@ class Relation(SmartTable):
         # Get unit
         from ..units.parsing import parse_unit as u
         if unit is not None: unit = u(unit, density=density, brightness=brightness)
+        else: unit = self.x_unit
 
         # Get values as array
         values = self.get_x(unit=unit, asarray=True, conversion_info=conversion_info)
@@ -495,6 +496,7 @@ class Relation(SmartTable):
         # Get unit
         from ..units.parsing import parse_unit as u
         if unit is not None: unit = u(unit, density=density, brightness=brightness)
+        else: unit = self.x_unit
 
         # Get values as array
         values = self.get_x(unit=unit, asarray=True, conversion_info=conversion_info)
@@ -570,6 +572,7 @@ class Relation(SmartTable):
         # Get unit
         from ..units.parsing import parse_unit as u
         if unit is not None: unit = u(unit, density=density, brightness=brightness)
+        else: unit = self.y_unit
 
         # Get values as array
         values = self.get_y(unit=unit, asarray=True, conversion_info=conversion_info)
@@ -603,6 +606,7 @@ class Relation(SmartTable):
         # Get unit
         from ..units.parsing import parse_unit as u
         if unit is not None: unit = u(unit, density=density, brightness=brightness)
+        else: unit = self.y_unit
 
         # Get values as array
         values = self.get_y(unit=unit, asarray=True, conversion_info=conversion_info)

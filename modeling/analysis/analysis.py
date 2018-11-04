@@ -4573,6 +4573,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot_curve(self.vertical_heating_fraction_curve, vlines=[self.midplane_height], ylimits=self.heating_fraction_interval, plot=plot1,
                    color="blue", x_color="blue", vlinestyle="dashed", vlinecolor="blue")
 
+        # Add fit to vertical curve
+        plot1.plot(self.height_points_fit, self.vertical_heating_fraction_fit_fractions, linestyle="dotted", color="black")
+
         # Save or show
         figure.tight_layout()
         if path is not None: figure.saveto(path)
@@ -5894,12 +5897,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Return the plotting output
         return output
-
-    # -----------------------------------------------------------------
-
-    @property
-    def default_sfr_method(self):
-        return ke_name
 
     # -----------------------------------------------------------------
 
@@ -7433,6 +7430,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def radial_heating_fraction_curve_min_radius(self):
+        return self.radial_heating_fraction_curve.get_min_x_value()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radial_heating_fraction_curve_max_radius(self):
+        return self.radial_heating_fraction_curve.get_max_x_value()
+
+    # -----------------------------------------------------------------
+
     def plot_radial_heating_distribution(self, path=None):
 
         """
@@ -7545,6 +7554,50 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Return curve
         return Curve.from_columns(curve_heights, fractions_heights, x_name="Height", y_name="Heating fraction", x_unit=length_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vertical_heating_fraction_curve_min_height(self):
+        return self.vertical_heating_fraction_curve.get_min_x_value()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vertical_heating_fraction_curve_max_height(self):
+        return self.vertical_heating_fraction_curve.get_max_x_value()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def vertical_heating_fraction_fit_npoints(self):
+        return 100
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def height_points_fit(self):
+        return RealRange(0., self.vertical_heating_fraction_curve_max_height.value*1.1).linear(self.vertical_heating_fraction_fit_npoints)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vertical_heating_fraction_fit_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        heights = self.vertical_heating_fraction_curve.x_array
+        fractions = self.vertical_heating_fraction_curve.y_array
+        #print(heights)
+        #print(fractions)
+        #print(self.height_points_fit)
+        fitted, slope, intercept = get_linear_fitted_values(heights, fractions, self.height_points_fit, xlog=False, ylog=False, return_parameters=True)
+        print("Vertical heating curve slope = ", slope)
+        print("Vertical heating curve intercept = ", intercept)
+        return fitted
 
     # -----------------------------------------------------------------
 

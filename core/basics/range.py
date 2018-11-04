@@ -303,7 +303,7 @@ class Range(object):
 
         if self.invert: values = np.flipud(values)
 
-        values = sorted(list(set(values)))
+        values = np.array(sorted(list(set(values))))
 
         if as_list: return list(values)
         else: return values
