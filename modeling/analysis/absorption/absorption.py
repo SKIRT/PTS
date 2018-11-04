@@ -1308,7 +1308,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         else: return None
 
     # -----------------------------------------------------------------
-    # extra
+    # YOUNG
     # -----------------------------------------------------------------
 
     @property
@@ -1490,7 +1490,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     def extra_spectral_absorption_curve_or_none(self):
         if self.has_extra_contribution_spectral_absorption: return self.extra_spectral_absorption_curve
         else: return None
-
 
     # -----------------------------------------------------------------
     # CURVES FROM SPECTRAL 3D EMISSION DATA

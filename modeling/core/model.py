@@ -295,6 +295,7 @@ class RTModel(object):
         :param observed_young_output_path: output path of simulation with young stellar contribution + dust
         :param observed_sfr_output_path: output path of simulation with SFR contribution + dust
         :param observed_unevolved_output_path: output path of simulation with young stellar and SFR contribution + dust
+        :param observed_extra_output_path: output path of simulation with extra stellar component
         :param parameters:
         :param center: the galaxy center as a sky coordinate
         :param galaxy_name: the name of the galaxy
@@ -1795,11 +1796,11 @@ class RTModel(object):
     def has_observed_unevolved_output(self):
         return self.observed_unevolved_output_path is not None and fs.is_directory(self.observed_unevolved_output_path) and not fs.is_empty(self.observed_unevolved_output_path)
 
+    # -----------------------------------------------------------------
+
     @property
     def has_observed_extra_output(self):
         return self.observed_extra_output_path is not None and fs.is_directory(self.observed_extra_output_path) and not fs.is_empty(self.observed_extra_output_path)
-
-        # -----------------------------------------------------------------
 
     # -----------------------------------------------------------------
     # FILTERS & WAVELENGTHS
