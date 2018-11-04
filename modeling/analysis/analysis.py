@@ -8807,8 +8807,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if setup: instance.setup()
 
         # Set name
-        if name is None: name = "obj"
-        cue = "$" + name + "."
+        if name is None: name = "OBJ"
+        #cue = "$" + name + "."
+        cue = "$"
 
         # Inform the user
         log.info("Entering inspection mode ...")
@@ -8817,20 +8818,22 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         while True:
 
             # Get next command, break if no command is given
-            command = prompt_string("command", "command to be executed", cue=cue)
+            command = prompt_string("command", "command to be executed (use '" + name + "' for the to be inspected object)", cue=cue)
             if not command: break
 
             # Clean
             #command = command.strip()
 
             # Create evaluation command
-            eval_command = "instance." + command
+            #eval_command = "instance." + command
+            eval_command = command.replace(name, "instance")
 
             # Evaluate
-            result = eval(eval_command)
-
-            # Show the result, if applicable
-            if result is not None: print(result)
+            try:
+                exec eval_command
+                # Show the result, if applicable
+                #if result is not None: print(result)
+            except Exception as e: log.error(str(e))
 
     # -----------------------------------------------------------------
 

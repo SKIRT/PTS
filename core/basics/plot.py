@@ -1955,11 +1955,12 @@ class MPLPlot(Plot):
         # label = label.decode("utf8").replace("_", "\_").replace(u'\xa0', u' ').replace("&", "\&")
         label = label.decode("utf8").replace(u'\xa0', u' ').replace("&", "\&")
         if "$" in label:
-            if label.count("&") != 2: raise ValueError("Label cannot contain $ unless there are two and latex is used")
-            before, inside, after = label.split("$")[0]
-            before = before.replace("_", "\_")
-            after = after.replace("_", "\_")
-            label = before + "$" + inside + "$" + after
+            if label.count("$") != 2: log.warning("Cannot handle label '" + label + "'")
+            else:
+                before, inside, after = label.split("$")[0]
+                before = before.replace("_", "\_")
+                after = after.replace("_", "\_")
+                label = before + "$" + inside + "$" + after
         else: label = label.replace("_", "\_")
         return label
 
