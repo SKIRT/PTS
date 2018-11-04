@@ -1957,7 +1957,7 @@ class MPLPlot(Plot):
         if "$" in label:
             if label.count("$") != 2: log.warning("Cannot handle label '" + label + "'")
             else:
-                before, inside, after = label.split("$")[0]
+                before, inside, after = label.split("$")
                 before = before.replace("_", "\_")
                 after = after.replace("_", "\_")
                 label = before + "$" + inside + "$" + after
