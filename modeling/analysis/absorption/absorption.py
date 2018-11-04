@@ -2566,6 +2566,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # EXTRA ABSORPTION
     # -----------------------------------------------------------------
 
+    @property
+    def has_extra(self):
+        return self.model.has_extra_component
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def extra_path(self):
         return fs.create_directory_in(self.absorption_path, extra_name)
@@ -2574,6 +2580,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def extra_absorption(self):
+        if not self.has_extra: return None
         return SimpleAbsorption(self.model.extra_simulations, absorption_curve_cells=self.extra_spectral_absorption_curve_or_none,
                                 emission_curve_cells=self.extra_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
