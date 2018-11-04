@@ -44,6 +44,7 @@ old_name = "old"
 young_name = "young"
 sfr_name = "sfr"
 unevolved_name = "unevolved"
+extra_name = "extra"
 
 # -----------------------------------------------------------------
 
@@ -129,6 +130,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
             self.config.recalculate_young = True
             self.config.recalculate_sfr = True
             self.config.recalculate_unevolved = True
+            self.config.recalculate_extra = True
 
         # Recalculate
         if self.config.recalculate_total and self.has_total_properties: fs.remove_file(self.total_properties_path)
@@ -138,6 +140,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         if self.config.recalculate_young and self.has_young_properties: fs.remove_file(self.young_properties_path)
         if self.config.recalculate_sfr and self.has_sfr_properties: fs.remove_file(self.sfr_properties_path)
         if self.config.recalculate_unevolved and self.has_unevolved_properties: fs.remove_file(self.unevolved_properties_path)
+        if self.config.recalculate_extra and self.has_extra_properties: fs.remove_file(self.extra_properties_path)
 
         # Replot?
         if self.config.replot:
@@ -148,6 +151,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
             self.config.replot_young = True
             self.config.replot_sfr = True
             self.config.replot_unevolved = True
+            self.config.replot_extra = True
 
         # Replot
         if self.config.replot_total:
@@ -157,6 +161,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         if self.config.replot_disk and self.has_disk_plot: fs.remove_file(self.disk_plot_path)
         if self.config.replot_old and self.has_old_plot: fs.remove_file(self.old_plot_path)
         if self.config.replot_young and self.has_young_plot: fs.remove_file(self.young_plot_path)
+        if self.config.replot_extra and self.has_extra_plot: fs.remove_file(self.extra_plot_path)
         if self.config.replot_sfr:
             if self.has_sfr_diffuse_plot: fs.remove_file(self.sfr_diffuse_plot_path)
             if self.has_sfr_internal_plot: fs.remove_file(self.sfr_internal_plot_path)
@@ -395,6 +400,33 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def has_unevolved_contribution_spectral_emission(self):
         return self.unevolved_contribution_data.has_spectral_emission
+
+    # -----------------------------------------------------------------
+    #   EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_spectral_absorption_filepath(self):
+        return self.extra_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_contribution_spectral_absorption(self):
+        return self.extra_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_spectral_emission_filepath(self):
+        return self.extra_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_contribution_spectral_emission(self):
+        return self.extra_contribution_data.has_spectral_emission
+
 
     # -----------------------------------------------------------------
     # 3D CELL ABSORPTION DATAs
@@ -703,6 +735,46 @@ class AbsorptionAnalyser(AnalysisRunComponent):
                                               xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
+    #   EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_absorption_name(self):
+        return "Labs_lambda_extra"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_absorption_description(self):
+        return "Absorbed spectral luminosities in each dust cell for the extra stellar populations"
+
+    # -----------------------------------------------------------------
+    @property
+    def extra_spectral_absorption_path(self):
+        return fs.join(self.absorption_path, "extra_absorption.dat")
+    # -----------------------------------------------------------------
+    @property
+    def has_extra_spectral_absorption(self):
+        return fs.is_file(self.extra_spectral_absorption_path)
+
+    # -----------------------------------------------------------------
+    @lazyfileproperty(SpectralData3D, "extra_spectral_absorption_path", True, write=True)
+    def extra_spectral_absorption_data(self):
+        """
+        Thisn function ...
+        :return:
+        """
+        # With external xyz
+        return SpectralData3D.from_table_file(self.extra_contribution_spectral_absorption_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname,
+                                              self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit,
+                                              name=self.extra_spectral_absorption_name,
+                                              description=self.extra_spectral_absorption_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+
+    # -----------------------------------------------------------------
     # 3D CELL EMISSION DATA
     #   TOTAL
     # -----------------------------------------------------------------
@@ -1007,6 +1079,50 @@ class AbsorptionAnalyser(AnalysisRunComponent):
                                               xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
+    #   EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_emission_name(self):
+        return "Lem_lambda_extra"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the extra stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_emission_path(self):
+        return fs.join(self.absorption_path, "extra_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_spectral_emission(self):
+        return fs.is_file(self.extra_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "extra_spectral_emission_path", True, write=True)
+    def extra_spectral_emission_data(self):
+        """
+        This function ...
+        :return:
+        """
+        # With external xyz
+        return SpectralData3D.from_table_file(self.extra_contribution_spectral_emission_filepath,
+                                              self.cell_x_coordinates_colname, self.cell_y_coordinates_colname,
+                                              self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit,
+                                              name=self.extra_spectral_emission_name,
+                                              description=self.extra_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+
+    # -----------------------------------------------------------------
     # CURVES FROM SPECTRAL 3D ABSORPTION DATA
     #   TOTAL
     # -----------------------------------------------------------------
@@ -1192,7 +1308,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         else: return None
 
     # -----------------------------------------------------------------
-    # YOUNG
+    # extra
     # -----------------------------------------------------------------
 
     @property
@@ -1328,6 +1444,53 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     def unevolved_spectral_absorption_curve_or_none(self):
         if self.has_unevolved_contribution_spectral_absorption: return self.unevolved_spectral_absorption_curve
         else: return None
+
+    # -----------------------------------------------------------------
+    # EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorption_luminosity_name(self):
+        return "Absorption luminosity (extra)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorption_luminosity_description(self):
+        return "Absorption luminosity in dust cells for the extra simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_absorption_curve_path(self):
+        return fs.join(self.absorption_path, "extra_curve_absorption.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_spectral_absorption_curve(self):
+        return fs.is_file(self.extra_spectral_absorption_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "extra_spectral_absorption_curve_path", True, write=False)
+    def extra_spectral_absorption_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # extra_absorption_luminosity_name
+        return self.extra_spectral_absorption_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_absorption_curve_or_none(self):
+        if self.has_extra_contribution_spectral_absorption: return self.extra_spectral_absorption_curve
+        else: return None
+
 
     # -----------------------------------------------------------------
     # CURVES FROM SPECTRAL 3D EMISSION DATA
@@ -1657,7 +1820,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def total_absorption(self):
-        return TotalAbsorption(self.model.total_simulations, self.old_absorption, self.unevolved_absorption,
+        return TotalAbsorption(self.model.total_simulations, self.old_absorption, self.unevolved_absorption, self.extra_absorption,
                                absorption_curve_cells=self.total_spectral_absorption_curve_or_none,
                                emission_curve_cells=self.total_spectral_emission_curve_or_none, distance=self.galaxy_distance)
 
@@ -1770,6 +1933,52 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def total_emission_seds_all(self):
         return self.total_absorption.emission_seds_all
+
+    # -----------------------------------------------------------------
+    #   EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_emission_luminosity_name(self):
+        return "Emission luminosity (extra)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the extra simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_emission_curve_path(self):
+        return fs.join(self.absorption_path, "extra_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_spectral_emission_curve(self):
+        return fs.is_file(self.extra_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "extra_spectral_emission_curve_path", True, write=False)
+    def extra_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.extra_spectral_emission_data.get_global_sed()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_spectral_emission_curve_or_none(self):
+        if self.has_extra_contribution_spectral_emission: return self.extra_spectral_emission_curve
+        else: return None
+
 
     # -----------------------------------------------------------------
     # BULGE ABSORPTION
@@ -2355,6 +2564,76 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return self.unevolved_absorption.emission_seds_all
 
     # -----------------------------------------------------------------
+    # EXTRA ABSORPTION
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_path(self):
+        return fs.create_directory_in(self.absorption_path, extra_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_absorption(self):
+        return SimpleAbsorption(self.model.extra_simulations, absorption_curve_cells=self.extra_spectral_absorption_curve_or_none,
+                                emission_curve_cells=self.extra_spectral_emission_curve_or_none, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_observed_stellar_sed_path(self):
+        return fs.join(self.extra_path, observed_stellar_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "extra_observed_stellar_sed_path", True)
+    def extra_observed_stellar_sed(self):
+        return self.extra_absorption.best_observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_observed_stellar_luminosity(self):
+        return self.extra_observed_stellar_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorption_sed_path(self):
+        return fs.join(self.extra_path, absorption_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "extra_absorption_sed_path", True)
+    def extra_absorption_sed(self):
+        return self.extra_absorption.best_absorption_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_emission_sed_path(self):
+        return fs.join(self.extra_path, emission_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SED, "extra_emission_sed_path", True)
+    def extra_emission_sed(self):
+        return self.extra_absorption.best_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorption_seds(self):
+        return self.extra_absorption.absorption_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_emission_seds(self):
+        return self.extra_absorption.emission_seds
+
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -2687,6 +2966,43 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         return props
 
     # -----------------------------------------------------------------
+
+    @property
+    def extra_properties_path(self):
+        return fs.join(self.absorption_path, "extra.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_properties(self):
+        return fs.is_file(self.extra_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Box, "extra_properties_path", True, write=True, fsave=save_box, fload=open_box)
+    def extra_properties(self):
+        """
+        This function ...
+        :return:
+        """
+        # Create
+        props = Box(ordered_box=True)
+        # Stellar
+        props.observed_bol = self.extra_absorption.observed_luminosity
+        props.stellar_bol = self.extra_absorption.stellar_luminosity
+        props.observed_stellar_bol = self.extra_observed_stellar_luminosity
+        # Absorption
+        props.absorbed = self.extra_absorption.best_absorption_luminosity
+        props.dust = self.extra_absorption.best_dust_luminosity
+        props.rel_absorbed = self.extra_absorption.best_absorption_fraction
+        props.rel_dust = self.extra_absorption.best_dust_fraction
+        props.absorbed_fuv = self.extra_absorption.best_fuv_absorption_luminosity
+        props.rel_absorbed_fuv = self.extra_absorption.best_fuv_absorption_fraction
+        # Return
+        return props
+
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def write(self):
@@ -2759,6 +3075,10 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     def do_write_unevolved_curve(self):
         return not self.has_unevolved_spectral_absorption_curve
 
+    @property
+    def do_write_extra_curve(self):
+        return not self.has_extra_spectral_absorption_curve
+
     # -----------------------------------------------------------------
 
     def write_absorption_curves(self):
@@ -2791,6 +3111,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Unevolved
         if self.do_write_unevolved_curve: self.write_unevolved_curve()
+
+        # Extra
+        if self.do_write_extra_curve: self.write_extra_curve()
 
     # -----------------------------------------------------------------
 
@@ -2899,6 +3222,21 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def write_extra_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the extra absorption curve ...")
+
+        # Write
+        self.extra_spectral_absorption_curve.saveto(self.extra_spectral_absorption_curve_path)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_total_specem(self):
         return self.has_total_contribution_spectral_emission
@@ -2938,6 +3276,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def has_unevolved_specem(self):
         return self.has_unevolved_contribution_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_specem(self):
+        return self.has_extra_contribution_spectral_emission
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -2984,6 +3328,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_extra_emission_curve(self):
+        return self.has_extra_specem and not self.has_extra_spectral_emission_curve
+
+    # -----------------------------------------------------------------
+
     def write_emission_curves(self):
 
         """
@@ -3014,6 +3364,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Unevolved
         if self.do_write_unevolved_emission_curve: self.write_unevolved_emission_curve()
+
+        # Extra
+        if self.do_write_extra_emission_curve: self.write_extra_emission_curve()
 
     # -----------------------------------------------------------------
 
@@ -3051,6 +3404,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         self.unevolved_spectral_emission_curve.saveto(self.unevolved_spectral_emission_curve_path)
 
     # -----------------------------------------------------------------
+
+    def write_extra_emission_curve(self):
+        self.extra_spectral_emission_curve.saveto(self.extra_spectral_emission_curve_path)
+
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def show(self):
@@ -3083,6 +3442,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Unevolved
         self.show_unevolved()
+
+        # Extra
+        self.show_extra()
 
     # -----------------------------------------------------------------
 
@@ -3191,6 +3553,21 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def show_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Show
+        print("EXTRA")
+        print("")
+        show_properties(self.extra_properties)
+        print("")
+
+    # -----------------------------------------------------------------
+
     @property
     def do_plot_total(self):
         return True
@@ -3233,6 +3610,12 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_extra(self):
+        return True
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -3263,6 +3646,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Unevolved
         if self.do_plot_unevolved: self.plot_unevolved()
+
+        # Extra
+        if self.do_plot_extra: self.plot_extra()
 
     # -----------------------------------------------------------------
 
@@ -4209,6 +4595,81 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Plot
         self.plot_absorption_emission(self.unevolved_absorption_seds_all, self.unevolved_emission_seds_all, self.absorption_emission_unevolved_all_plot_path)
+
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_plot_path(self):
+        return fs.join(self.absorption_path, "extra.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_plot(self):
+        return fs.is_file(self.extra_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Reprocessing
+        if not self.has_extra_plot: self.plot_reprocessing_extra()
+
+        # Absorption & Emission
+        if not self.has_absorption_emission_extra_plot: self.plot_absorption_emission_extra()
+
+    # -----------------------------------------------------------------
+
+    def plot_reprocessing_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        self.plot_reprocessing(self.extra_observed_stellar_sed, self.extra_absorption_sed, self.extra_emission_sed, self.extra_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_emission_extra_plot_path(self):
+        return fs.join(self.absorption_path, "ae_extra.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorption_emission_extra_plot(self):
+        return fs.is_file(self.absorption_emission_extra_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_scattered_sed(self):
+        return self.model.extra_simulations.observed_sed_scattered if self.model.extra_simulations.has_full_sed else None
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_emission_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the absorption and dust SEDs for the extra stars ...")
+
+        # Plot
+        self.plot_absorption_emission(self.extra_absorption_seds, self.extra_emission_seds, self.absorption_emission_extra_plot_path, scattered=self.extra_scattered_sed)
+
+
 
 # -----------------------------------------------------------------
 

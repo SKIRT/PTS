@@ -73,7 +73,8 @@ old = "old"
 young = "young"
 ionizing = "ionizing"
 unevolved = "unevolved"
-contributions = [total, old, young, ionizing, unevolved]
+extra = "extra"
+contributions = [total, old, young, ionizing, unevolved, extra]
 
 # -----------------------------------------------------------------
 
@@ -388,6 +389,39 @@ class AnalysisRunComponent(AnalysisComponent):
         return self.model.unevolved_simulation_data
 
     # -----------------------------------------------------------------
+    # EXTRA SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_simulation_path(self):
+        return self.analysis_run.simulation_path_for_contribution(extra)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_ski_path(self):
+        return self.analysis_run.ski_path_for_contribution(extra)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_output_path(self):
+        return self.analysis_run.output_path_for_contribution(extra)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_output(self):
+        return self.model.extra_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_data(self):
+        return self.model.extra_simulation_data
+
+
+    # -----------------------------------------------------------------
     # CELL PROPERTIES
     # -----------------------------------------------------------------
 
@@ -570,6 +604,23 @@ class AnalysisRunComponent(AnalysisComponent):
         return values
 
     # -----------------------------------------------------------------
+    #   EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_cell_stellar_density(self):
+        return self.model.extra_cell_stellar_density  # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_cell_normalized_mass(self):
+        values = self.extra_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -749,6 +800,31 @@ class AnalysisRunComponent(AnalysisComponent):
     @lazyproperty
     def properties_maps_unevolved_edgeon_path(self):
         return fs.create_directory_in(self.properties_maps_unevolved_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def properties_maps_extra_path(self):
+        return fs.create_directory_in(self.properties_maps_path, "extra")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def properties_maps_extra_earth_path(self):
+        return fs.create_directory_in(self.properties_maps_extra_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def properties_maps_extra_faceon_path(self):
+        return fs.create_directory_in(self.properties_maps_extra_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def properties_maps_extra_edgeon_path(self):
+        return fs.create_directory_in(self.properties_maps_extra_path, edgeon_name)
+
 
     # -----------------------------------------------------------------
 
@@ -2297,6 +2373,176 @@ class AnalysisRunComponent(AnalysisComponent):
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # EXTRA COMPONENT MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_extra_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :parma map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_extra_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_extra_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_extra_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_extra_map(self, map_name, orientation=earth_name):
+
+        """
+        Thisf unction ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_extra_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_extra_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_extra_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # EXTRA BOL
+    # -----------------------------------------------------------------
+
+    def has_extra_bol_map(self, orientation=earth_name):
+        return self.has_extra_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_extra_bol_map(self, orientation=earth_name):
+        return self.load_extra_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_bol_map(self, orientation=earth_name):
+        if self.has_extra_bol_map(orientation): return self.load_extra_bol_map(orientation)
+        if orientation == earth_name: return self.model.extra_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.extra_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.extra_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # EXTRA DIRECT
+    # -----------------------------------------------------------------
+
+    def has_extra_direct_map(self, orientation=earth_name):
+        return self.has_extra_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_extra_direct_map(self, orientation=earth_name):
+        return self.load_extra_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_direct_map(self, orientation=earth_name):
+        if self.has_extra_direct_map(orientation): return self.load_extra_direct_map(orientation)
+        if orientation == earth_name: return self.model.extra_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.extra_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.extra_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # EXTRA FUV
+    # -----------------------------------------------------------------
+
+    def has_extra_fuv_map(self, orientation=earth_name):
+        return self.has_extra_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_extra_fuv_map(self, orientation=earth_name):
+        return self.load_extra_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_fuv_map(self, orientation=earth_name):
+        if self.has_extra_fuv_map(orientation): return self.load_extra_fuv_map(orientation)
+        if orientation == earth_name: return self.model.extra_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.extra_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.extra_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # EXTRA INTRINSIC FUV
+    # -----------------------------------------------------------------
+
+    def has_extra_intr_fuv_map(self, orientation=earth_name):
+        return self.has_extra_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_extra_intr_fuv_map(self, orientation=earth_name):
+        return self.load_extra_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_intr_fuv_map(self, orientation=earth_name):
+        if self.has_extra_intr_fuv_map(orientation): return self.load_extra_intr_fuv_map(orientation)
+        if orientation == earth_name: return self.model.extra_intrinsic_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.extra_intrinsic_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.extra_intrinsic_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # EXTRA DUST
+    # -----------------------------------------------------------------
+
+    def has_extra_dust_map(self, orientation=earth_name):
+        return self.has_extra_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_extra_dust_map(self, orientation=earth_name):
+        return self.load_extra_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_dust_map(self, orientation=earth_name):
+        if self.has_extra_dust_map(orientation): return self.load_extra_dust_map(orientation)
+        if orientation == earth_name: return self.model.extra_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.extra_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.extra_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_extra_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric
+        if which == bol_map_name: return self.get_extra_bol_map(orientation)
+
+        # Direct
+        elif which == direct_map_name: return self.get_extra_direct_map(orientation)
+
+        # (observed) FUV
+        elif which == fuv_map_name: return self.get_extra_fuv_map(orientation)
+
+        # Intrinsic FUV
+        elif which == intr_fuv_map_name: return self.get_extra_intr_fuv_map(orientation)
+
+        # Dust luminosity
+        elif which == dust_map_name: return self.get_extra_dust_map(orientation)
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
 
     # -----------------------------------------------------------------
     # DUST MAPS
