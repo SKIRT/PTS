@@ -415,7 +415,8 @@ def prompt_choices(name, description, choices):
 
 # -----------------------------------------------------------------
 
-def prompt_variable(name, parsing_type, description, choices=None, default=None, suggestions=None, required=True, default_alias=None, convert_default=False):
+def prompt_variable(name, parsing_type, description, choices=None, default=None, suggestions=None, required=True,
+                    default_alias=None, convert_default=False, cue=None):
 
     """
     This function ....
@@ -428,6 +429,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     :param required:
     :param default_alias:
     :param convert_default:
+    :param cue:
     :return: 
     """
 
@@ -440,7 +442,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     else: definition.add_optional(name, parsing_type, description, choices=choices, suggestions=suggestions)
 
     # Create setter
-    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False, add_config_path=False)
+    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False, add_config_path=False, cue=cue)
 
     # Get the answer
     config = setter.run(definition, prompt_optional=True)
@@ -501,7 +503,7 @@ def prompt_string_list(name, description, choices=None, default=None, required=T
 
 # -----------------------------------------------------------------
 
-def prompt_string(name, description, choices=None, default=None, required=True):
+def prompt_string(name, description, choices=None, default=None, required=True, cue=None):
 
     """
     This function ...
@@ -510,10 +512,11 @@ def prompt_string(name, description, choices=None, default=None, required=True):
     :param choices:
     :param default:
     :param required:
+    :param cue:
     :return:
     """
 
-    return prompt_variable(name, "string", description, choices=choices, default=default, required=required)
+    return prompt_variable(name, "string", description, choices=choices, default=default, required=required, cue=cue)
 
 # -----------------------------------------------------------------
 
@@ -3134,7 +3137,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True, cue=None):
 
         """
         The constructor ...
@@ -3143,10 +3146,15 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         :param add_logging:
         :param add_cwd:
         :param add_config_path:
+        :param cue:
         """
 
         # Call the constructor of the base class
         super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
+
+        # Set cue
+        if cue is None: cue = "   : "
+        self.cue = cue
 
     # -----------------------------------------------------------------
 
@@ -3180,7 +3188,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         """
         This function ...
         :param prompt_optional:
-        :param options:
+        :param settings:
         :param use_default:
         :return:
         """
@@ -3192,7 +3200,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
             log.info("Press ENTER to use the default (True)")
 
             while True:
-                answer = raw_input("   : ")
+                answer = raw_input(self.cue)
                 if answer == "":
                     prompt_optional = True
                     break
@@ -3203,7 +3211,8 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
                     except ValueError: log.warning("Invalid input. Try again.")
 
         # Get the settings from an interactive prompt
-        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings, use_default=use_default)
+        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional, settings=settings,
+                                 use_default=use_default, cue=self.cue)
 
 # -----------------------------------------------------------------
 
@@ -4418,7 +4427,7 @@ def add_settings_default(config, definition):
 
 # -----------------------------------------------------------------
 
-def add_settings_interactive(config, definition, prompt_optional=True, settings=None, use_default=None):
+def add_settings_interactive(config, definition, prompt_optional=True, settings=None, use_default=None, cue="   : "):
 
     """
     This function ...
@@ -4427,6 +4436,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
     :param prompt_optional:
     :param settings:
     :param use_default:
+    :param cue:
     :return:
     """
 
@@ -4512,7 +4522,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                     value = []
                     while True:
-                        answer = raw_input("   : ")
+                        answer = raw_input(cue)
                         if answer == "": break # end of the list
                         try:
                             #single_value = real_base_type(answer)
@@ -4538,7 +4548,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                     value = []  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
-                        answer = raw_input("   : ")
+                        answer = raw_input(cue)
                         try:
                             #value = real_type(answer)
                             value = the_type
@@ -4563,7 +4573,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     try:
                         #value = real_type(answer)
                         value = the_type(answer)
@@ -4587,7 +4597,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     # Get the numbers of the choice
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     try:
                         indices = parsing.integer_list(answer)
                         value = [choices_list[index] for index in indices] # value is a list
@@ -4608,7 +4618,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     # Get the number of the choice
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     try:
                         index = parsing.integer(answer)
                         value = choices_list[index]
@@ -4716,7 +4726,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                     value = []  # to remove warning
                     while True:
-                        answer = raw_input("   : ")
+                        answer = raw_input(cue)
                         if answer == "":
                             break  # end of list
                         else:
@@ -4724,8 +4734,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                                 # single_value = real_type(answer)
                                 single_value = the_type(answer)
                                 value.append(single_value)
-                            except ValueError, e:
-                                log.warning("Invalid input: " + str(e) + ". Try again.")
+                            except ValueError as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
                 # Not a dynamic list
                 else:
@@ -4745,7 +4754,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
-                        answer = raw_input("   : ")
+                        answer = raw_input(cue)
                         if answer == "":
                             value = default
                             break
@@ -4754,8 +4763,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                                 # value = real_type(answer)
                                 value = the_type(answer)
                                 break
-                            except ValueError, e:
-                                log.warning("Invalid input: " + str(e) + ". Try again.")
+                            except ValueError as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
             # Not a list
             else:
@@ -4775,7 +4783,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     if answer == "":
                         value = default
                         break
@@ -4784,8 +4792,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                             # value = real_type(answer)
                             value = the_type(answer)
                             break
-                        except ValueError, e:
-                            log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except ValueError as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Choices are given
         #if choices_list is not None:
@@ -4806,7 +4813,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 value = default # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     # Get the numbers of the choice
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     if answer == "":
                         value = default
                         break
@@ -4830,7 +4837,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     # Get the number of the choice
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     if answer == "":
                         value = default
                         break
@@ -4946,7 +4953,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                     value = []  # to remove warning
                     while True:
-                        answer = raw_input("   : ")
+                        answer = raw_input(cue)
                         if answer == "":
                             break  # end of list
                         else:
@@ -4954,8 +4961,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                                 # single_value = real_type(answer)
                                 single_value = the_type(answer)
                                 value.append(single_value)
-                            except ValueError, e:
-                                log.warning("Invalid input: " + str(e) + ". Try again.")
+                            except ValueError as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
                 # Not dynamic list
                 else:
@@ -4975,7 +4981,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
-                        answer = raw_input("   : ")
+                        answer = raw_input(cue)
                         #print(answer)
                         if answer == "":
                             value = default
@@ -4985,8 +4991,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                                 # value = real_type(answer)
                                 value = the_type(answer)
                                 break
-                            except ValueError, e:
-                                log.warning("Invalid input: " + str(e) + ". Try again.")
+                            except ValueError as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
             # Single-value setting
             else:
@@ -5007,7 +5012,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     # Get the input
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     if answer == "":
                         value = default
                         break
@@ -5016,8 +5021,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                             # value = real_type(answer)
                             value = the_type(answer)
                             break
-                        except ValueError, e:
-                            log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except ValueError as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Choices are given
         #if choices_list is not None:
@@ -5039,7 +5043,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 while True:
 
                     # Get the numbers of the choice
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     if answer == "":
                         value = default
                         break
@@ -5065,7 +5069,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                 while True:
 
                     # Get the number of the choice
-                    answer = raw_input("   : ")
+                    answer = raw_input(cue)
                     if answer == "":
                         value = default
                         break
@@ -5142,7 +5146,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
 
         value = default  # to remove warning from IDE that value could be referenced (below) without assignment
         while True:
-            answer = raw_input("   : ")
+            answer = raw_input(cue)
             if answer == "":
                 value = default
                 break

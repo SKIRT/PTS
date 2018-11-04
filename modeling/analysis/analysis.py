@@ -8783,6 +8783,57 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def run_inspection(self, cls, config, set_path=False, set_run=False, setup=False, name=None):
+
+        """
+        This function ...
+        :param cls:
+        :param config:
+        :param set_path:
+        :param set_run:
+        :param setup:
+        :param name:
+        :return:
+        """
+
+        # Create the object
+        instance = cls(config=config)
+
+        # Set stuff
+        if set_path: instance.config.path = self.config.path
+        if set_run: instance.config.run = self.config.run
+
+        # Run setup
+        if setup: instance.setup()
+
+        # Set name
+        if name is None: name = "obj"
+        cue = "$" + name + "."
+
+        # Inform the user
+        log.info("Entering inspection mode ...")
+
+        # Enter loop
+        while True:
+
+            # Get next command, break if no command is given
+            command = prompt_string("command", "command to be executed", cue=cue)
+            if not command: break
+
+            # Clean
+            #command = command.strip()
+
+            # Create evaluation command
+            eval_command = "instance." + command
+
+            # Evaluate
+            result = eval(eval_command)
+
+            # Show the result, if applicable
+            if result is not None: print(result)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def analyse_properties_definition(self):
 
@@ -8797,6 +8848,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Add settings
         definition.import_settings(analyse_properties_definition)
         definition.remove_setting("run")
+
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
 
         # Return the definition
         return definition
@@ -8815,8 +8869,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_properties_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(PropertiesAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_properties(config=config)
+        else: self.analyse_properties(config=config)
 
     # -----------------------------------------------------------------
 
@@ -8860,6 +8917,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_absorption_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -8877,8 +8937,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_absorption_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(AbsorptionAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_absorption(config=config)
+        else: self.analyse_absorption(config=config)
         
     # -----------------------------------------------------------------
 
@@ -8922,6 +8985,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_cell_heating_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -8939,8 +9005,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_cell_heating_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(CellDustHeatingAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_cell_heating(config=config)
+        else: self.analyse_cell_heating(config=config)
 
     # -----------------------------------------------------------------
 
@@ -8987,6 +9056,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_projected_heating_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9004,8 +9076,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_projected_heating_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(ProjectedDustHeatingAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_projected_heating(config=config)
+        else: self.analyse_projected_heating(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9049,6 +9124,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_spectral_heating_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9066,8 +9144,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_spectral_heating_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(SpectralDustHeatingAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_spectral_heating(config=config)
+        else: self.analyse_spectral_heating(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9111,6 +9192,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_cell_energy_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9128,8 +9212,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_cell_energy_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(CellEnergyAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_cell_energy(config=config)
+        else: self.analyse_cell_energy(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9173,6 +9260,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_projected_energy_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9190,8 +9280,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_projected_energy_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(ProjectedEnergyAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_projected_energy(config=config)
+        else: self.analyse_projected_energy(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9235,6 +9328,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_sfr_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9252,8 +9348,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_sfr_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(SFRAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_sfr(config=config)
+        else: self.analyse_sfr(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9297,6 +9396,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_correlations_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9314,8 +9416,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_correlations_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(CorrelationsAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_correlations(config=config)
+        else: self.analyse_correlations(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9359,6 +9464,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_fluxes_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9375,9 +9483,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get config
         config = self.get_config_from_command(command, self.analyse_fluxes_definition, **kwargs)
-        
+
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(FluxesAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_fluxes(config=config)
+        else: self.analyse_fluxes(config=config)
 
     # -----------------------------------------------------------------
     
@@ -9418,6 +9529,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_images_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9435,8 +9549,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_images_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(ImagesAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_images(config=config)
+        else: self.analyse_images(config=config)
 
     # -----------------------------------------------------------------
 
@@ -9480,6 +9597,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.import_settings(analyse_residuals_definition)
         definition.remove_setting("run")
 
+        # Inspection mode?
+        definition.add_flag("inspect", "run in inspection mode")
+
         # Return the definition
         return definition
 
@@ -9497,8 +9617,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.analyse_residuals_definition, **kwargs)
 
+        # Inspect
+        if config.pop("inspect"): self.run_inspection(ResidualAnalyser, config, set_path=True, set_run=True, setup=True, name="analyser")
+
         # Analyse
-        self.analyse_residuals(config=config)
+        else: self.analyse_residuals(config=config)
 
     # -----------------------------------------------------------------
 
