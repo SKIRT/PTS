@@ -353,18 +353,6 @@ class SimpleAbsorption(AbsorptionBase):
 
     @lazyproperty
     def best_observed_stellar_sed(self):
-        import matplotlib.pyplot as plt
-        print(self.simulations.observed_sed.y_unit)
-        print(self.best_dust_sed_complete.y_unit)
-        sed_x = self.simulations.observed_sed.x_array
-        sed_y1 = self.simulations.observed_sed.y_array
-        sed_y2 = self.best_dust_sed_complete.y_array
-        plt.plot(sed_x, sed_y1, 'C0-')
-        plt.plot(sed_x, sed_y2, 'C1-')
-        plt.xscale('log')
-        plt.yscale('log')
-        #plt.savefig('/home/saviaene/M77/sed.pdf')
-        plt.show()
         return self.correct_observed_stellar_sed(self.simulations.observed_sed - self.best_dust_sed_complete)
 
     # -----------------------------------------------------------------
