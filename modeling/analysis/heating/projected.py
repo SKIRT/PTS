@@ -70,6 +70,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.internal_absorptions_faceon = None
         self.internal_absorptions_edgeon = None
 
+        # Extra
+        self.extra_absorptions_earth = None
+        self.extra_absorptions_faceon = None
+        self.extra_absorptions_edgeon = None
+
         # Maps of heating fraction
         self.map_earth = None
         self.map_faceon = None
@@ -79,6 +84,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.map_earth_diffuse = None
         self.map_faceon_diffuse = None
         self.map_edgeon_diffuse = None
+
+        # Maps of heating fraction (extra)
+        self.map_earth_extra = None
+        self.map_faceon_extra = None
+        self.map_edgeon_extra = None
 
     # -----------------------------------------------------------------
 

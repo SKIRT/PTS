@@ -35,7 +35,8 @@ old = "old"
 young = "young"
 ionizing = "ionizing"
 dust = "dust"
-disk_components = [old, young, ionizing, dust]
+extra = "extra"
+disk_components = [old, young, ionizing, extra, dust]
 
 # -----------------------------------------------------------------
 
@@ -486,6 +487,51 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
                       description=self.internal_absorptions_description, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
+    # EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorptions_name(self):
+        return "Labs_extra"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorptions_description(self):
+        return "Cell absorbed luminosities of the extra component"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_absorptions_path(self):
+        return fs.join(self.cell_heating_path, "absorptions_extra.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_absorptions(self):
+        return fs.is_file(self.extra_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "extra_absorptions_path", True, write=False)
+    def extra_absorptions(self):
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate luminosities
+        conversion_factor = self.extra_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
+        luminosities_watt = self.extra_contribution_absorption_luminosities * conversion_factor
+
+        # Create the data
+        return Data3D(self.extra_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates,
+                      self.cell_z_coordinates,
+                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
+                      description=self.extra_absorptions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
     # DIFFUSE HEATING FRACTIONS
     # -----------------------------------------------------------------
 
@@ -518,6 +564,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.young_absorption_values + self.ionizing_absorption_values
 
     # -----------------------------------------------------------------
+
+    @property
+    def extra_absorption_values(self):
+        return self.extra_absorptions.values
+
+        # -----------------------------------------------------------------
 
     @property
     def total_absorption_values_diffuse(self):
@@ -627,6 +679,56 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.total_fractions.values
 
     # -----------------------------------------------------------------
+    # EXTRA HEATING FRACTIONS
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_fractions_name(self):
+        return "Fextra_total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_fractions_description(self):
+        return "Heating fraction by the extra component (all dust)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_fractions_path(self):
+        return fs.join(self.cell_heating_path, "extra_fractions.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_fractions(self):
+        return fs.is_file(self.extra_fractions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "extra_fractions_path", True, write=False)
+    def extra_fractions(self):
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate
+        fractions = self.extra_absorption_values / self.total_absorption_values
+
+        # Create and return the data
+        return Data3D(self.extra_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates,
+                      self.cell_z_coordinates,
+                      fractions, length_unit=self.length_unit, description=self.extra_fractions_description,
+                      distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_fraction_values(self):
+        return self.extra_fractions.values
+
+    # -----------------------------------------------------------------
     # VALID CELLS
     # -----------------------------------------------------------------
 
@@ -684,6 +786,30 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def extra_fractions_unphysical_mask(self):
+        return self.extra_fractions.where_greater_than(1.)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def invalid_extra_fractions_mask(self):
+        return self.extra_fractions.invalid + self.extra_fractions_unphysical_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_fractions_mask(self):
+        return np.logical_not(self.invalid_extra_fractions_mask)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_fraction_values(self):
+        return self.extra_fraction_values[self.valid_extra_fractions_mask]
+
+    # -----------------------------------------------------------------
+
     @property
     def cell_weights(self):
         return self.cell_mass_fractions
@@ -699,6 +825,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @lazyproperty
     def valid_total_cell_weights(self):
         return self.cell_weights[self.valid_total_fractions_mask]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_cell_weights(self):
+        return self.cell_weights[self.valid_extra_fractions_mask]
 
     # -----------------------------------------------------------------
 
@@ -723,6 +855,30 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @lazyproperty
     def valid_radii(self):
         return self.total_fractions.radii[self.valid_total_fractions_mask]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_x_coordinates(self):
+        return self.extra_fractions.x[self.valid_extra_fractions_mask]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_y_coordinates(self):
+        return self.extra_fractions.y[self.valid_extra_fractions_mask]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_z_coordinates(self):
+        return self.extra_fractions.z[self.valid_extra_fractions_mask]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_extra_radii(self):
+        return self.extra_fractions.radii[self.valid_extra_fractions_mask]
 
     # -----------------------------------------------------------------
     # DISTRIBUTION DIFFUSE
@@ -801,6 +957,44 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return Distribution.from_values(self.distribution_total_name, self.valid_total_fraction_values, nbins=self.config.nbins, weights=self.valid_total_cell_weights)
 
     # -----------------------------------------------------------------
+    # DISTRIBUTION EXTRA
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_extra_name(self):
+        return "Extra heating fraction (all dust)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_extra_path(self):
+        return fs.join(self.cell_heating_path, "distribution_extra.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_extra(self):
+        return fs.is_file(self.distribution_extra_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution, "distribution_extra_path", True, write=False)
+    def distribution_extra(self):
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distribution of heating fractions of the extra component ...")
+
+        # Generate the distribution
+        # Weights are dust mass fraction
+        return Distribution.from_values(self.distribution_extra_name, self.valid_extra_fraction_values,
+                                        nbins=self.config.nbins, weights=self.valid_extra_cell_weights)
+
+
+    # -----------------------------------------------------------------
     # RADIAL DISTRIBUTION
     # -----------------------------------------------------------------
 
@@ -860,6 +1054,50 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                           nbins=self.config.nradial_bins, description=self.radial_distribution_description)
 
     # -----------------------------------------------------------------
+    # EXTRA RADIAL DISTRIBUTION
+    # -----------------------------------------------------------------
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_radial_distribution_description(self):
+        return "Radial distribution of the dust cell extra heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_radial_distribution_path(self):
+        return fs.join(self.cell_heating_path, "extra_radial_distribution.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_radial_distribution(self):
+        return fs.is_file(self.extra_radial_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution2D, "extra_radial_distribution_path", True, write=False)
+    def extra_radial_distribution(self):
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the radial distribution of heating fractions of the extra component ...")
+
+        # Generate the radial distribution
+        # name, x, y, weights=None, nbins=200, x_name=None, y_name=None, x_unit=None, y_unit=None, description=None
+        return Distribution2D.from_values(self.radial_distribution_name, self.valid_extra_radii,
+                                          self.valid_extra_fraction_values,
+                                          weights=self.valid_extra_cell_weights,
+                                          x_name=self.radial_distribution_x_name,
+                                          y_name=self.radial_distribution_y_name, x_unit=self.length_unit,
+                                          nbins=self.config.nradial_bins,
+                                          description=self.extra_radial_distribution_description)
+
+    # -----------------------------------------------------------------
     # MIDPLANE HEIGHT
     # -----------------------------------------------------------------
 
@@ -879,6 +1117,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Ionizing stellar disk
         elif self.config.midplane_component == ionizing: return self.model.sfr_scaleheight
+
+        # Extra component
+        elif self.config.midplane_component == extra: return self.model.extra_scaleheight
 
         # Dust disk
         elif self.config.midplane_component == dust: return self.model.dust_scaleheight
@@ -1441,6 +1682,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Internal
         if self.do_write_internal_absorptions: self.write_internal_absorptions()
 
+        # Extra
+        if self.do_write_extra_absorptions: self.write_extra_absorptions()
+
     # -----------------------------------------------------------------
 
     @property
@@ -1533,6 +1777,25 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_extra_absorptions(self):
+        return not self.has_extra_absorptions
+
+    # -----------------------------------------------------------------
+
+    def write_extra_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.extra_absorptions.saveto(self.extra_absorptions_path)
+
+        # -----------------------------------------------------------------
+
+
     def write_fractions(self):
 
         """
@@ -1548,6 +1811,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Total
         if self.do_write_total_fractions: self.write_total_fractions()
+
+        # Extra
+        if self.do_write_extra_fractions: self.write_extra_fractions()
 
     # -----------------------------------------------------------------
 
@@ -1587,6 +1853,24 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_extra_fractions(self):
+        return not self.has_extra_fractions
+
+    # -----------------------------------------------------------------
+
+    def write_extra_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.extra_fractions.saveto(self.extra_fractions_path)
+
+        # -----------------------------------------------------------------
+
     def write_distributions(self):
 
         """
@@ -1603,8 +1887,14 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Total
         if self.do_write_distribution_total: self.write_distribution_total()
 
+        # Extra
+        if self.do_write_distribution_extra: self.write_distribution_extra()
+
         # Radial
         if self.do_write_radial_distribution: self.write_radial_distribution()
+
+        # Extra Radial
+        if self.do_write_extra_radial_distribution: self.write_extra_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -1645,6 +1935,24 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_distribution_extra(self):
+        return not self.has_distribution_extra
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.distribution_extra.saveto(self.distribution_extra_path)
+
+        # -----------------------------------------------------------------
+
+    @property
     def do_write_radial_distribution(self):
         return not self.has_radial_distribution
 
@@ -1661,6 +1969,25 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.radial_distribution.saveto(self.radial_distribution_path)
 
     # -----------------------------------------------------------------
+
+
+    @property
+    def do_write_extra_radial_distribution(self):
+        return not self.has_extra_radial_distribution
+
+    # -----------------------------------------------------------------
+
+    def write_exta_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.extra_radial_distribution.saveto(self.extra_radial_distribution_path)
+
+        # -----------------------------------------------------------------
 
     def write_maps(self):
 
@@ -1864,11 +2191,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Total
         if self.do_plot_distribution_total: self.plot_distribution_total()
 
+        # Extra
+        if self.do_plot_distribution_extra: self.plot_distribution_extra()
+
         # Diffuse and total
         if self.do_plot_distribution_diffuse_and_total: self.plot_distribution_diffuse_and_total()
 
         # Radial
         if self.do_plot_radial_distribution: self.plot_radial_distribution()
+
+        # Extra radial
+        if self.do_plot_extra_radial_distribution: self.plot_extra_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -1929,6 +2262,37 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Plot
         plot_distribution(self.distribution_total, path=self.distribution_total_plot_path)
+
+    # -----------------------------------------------------------------
+
+
+    @property
+    def distribution_extra_plot_path(self):
+        return fs.join(self.cell_heating_path, "distribution_extra.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_extra_plot(self):
+        return fs.is_file(self.distribution_extra_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_distribution_extra(self):
+        return not self.has_distribution_extra_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_distribution_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_distribution(self.distribution_extra, path=self.distribution_extra_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2012,6 +2376,56 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         plot_2d_distribution(self.radial_distribution, x_lines=self.radial_distribution_plot_radii_pc, title=title, path=self.radial_distribution_plot_path)
 
     # -----------------------------------------------------------------
+
+    @property
+    def extra_radial_distribution_plot_path(self):
+        return fs.join(self.cell_heating_path, "extra_radial_distribution.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_radial_distribution_plot(self):
+        return fs.is_file(self.extra_radial_distribution_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_extra_radial_distribution(self):
+        return not self.has_extra_radial_distribution_plot
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_radial_distribution_plot_radii_pc(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.extra_radial_distribution_radii is None:
+            return []
+        else:
+            return [radius.to("pc").value for radius in self.config.extra_radial_distribution_radii]
+
+    # -----------------------------------------------------------------
+
+    def plot_extra_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set title
+        title = "Radial distribution of the heating fraction of the extra component"
+
+        # Create the plot file
+        plot_2d_distribution(self.extra_radial_distribution, x_lines=self.extra_radial_distribution_plot_radii_pc, title=title,
+                             path=self.extra_radial_distribution_plot_path)
+
+        # -----------------------------------------------------------------
+
 
     def plot_maps(self):
 
