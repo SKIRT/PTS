@@ -1173,7 +1173,7 @@ def plot_residual_map(frame, is_percentual=False, title=None, plot=None, path=No
 # -----------------------------------------------------------------
 
 def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-             contours_color="white", path=None, background_color=None, title=None, plot=None):
+             contours_color="white", path=None, background_color=None, title=None, plot=None, aspect="equal"):
 
     """
     This function ...
@@ -1189,6 +1189,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     :param background_color:
     :param title:
     :param plot:
+    :param aspect:
     :return:
     """
 
@@ -1197,17 +1198,18 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
 
         # Plot with contours
         return plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
-                            data_cmap=cmap, plot_data=True, nlevels=ncontours,
-                            single_colour=contours_color, path=path, background_color=background_color, title=title, plot=plot)
+                                    data_cmap=cmap, plot_data=True, nlevels=ncontours,
+                                    single_colour=contours_color, path=path, background_color=background_color, title=title,
+                                    plot=plot, aspect=aspect)
 
     # No contours
     else: return plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
-                     background_color=background_color, title=title, plot=plot)
+                     background_color=background_color, title=title, plot=plot, aspect=aspect)
 
 # -----------------------------------------------------------------
 
 def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-                    contours_color="white", path=None, background_color=None, title=None, plot=None, axes_label="Distance from center"):
+                    contours_color="white", path=None, background_color=None, title=None, plot=None, axes_label="Distance from center", aspect="equal"):
 
     """
     This function ...
@@ -1227,6 +1229,7 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
     :param title:
     :param plot:
     :param axes_label:
+    :param aspect:
     :return:
     """
 
@@ -1263,7 +1266,7 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
 
     # Plot
     output.update(plot_map(cutout, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, contours=contours, ncontours=ncontours,
-                    contours_color=contours_color, path=path, background_color=background_color, title=title, plot=plot))
+                    contours_color=contours_color, path=path, background_color=background_color, title=title, plot=plot, aspect=aspect))
 
     # Set axes
     plot.set_xlabel(axes_label + " [" + offset_unit_string + "]")
@@ -1698,6 +1701,178 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
 # GET XY DATA
 # -----------------------------------------------------------------
 
+import operator
+ops = { "+": operator.add, "-": operator.sub } # etc.
+
+# -----------------------------------------------------------------
+
+def has_add(name):
+    return "+" in name
+
+# -----------------------------------------------------------------
+
+def has_sub(name):
+    return "-" in name
+
+# -----------------------------------------------------------------
+
+def has_div(name):
+    return "/" in name
+
+# -----------------------------------------------------------------
+
+def has_mul(name):
+    return "*" in name
+
+# -----------------------------------------------------------------
+
+def has_operators(name):
+    return has_add(name) or has_sub(name) or has_div(name) or has_mul(name)
+
+# -----------------------------------------------------------------
+
+def get_x(curve, colname=None, return_label=False):
+
+    """
+    This function ...
+    :param curve:
+    :param colname:
+    :param return_label:
+    :return:
+    """
+
+    from ...core.units.unit import divide_units
+
+    # Check whether operators
+    if colname is not None and has_div(colname):
+
+        colname_a, colname_b = colname.split("/")
+        colname_a = colname_a.strip()
+        colname_b = colname_b.strip()
+
+        # Get units
+        unit_a = curve.get_unit(colname_a)
+        unit_b = curve.get_unit(colname_b)
+
+        # Get data
+        x_a = curve.get_column_array(colname_a, unit=unit_a)
+        x_b = curve.get_column_array(colname_b, unit=unit_b)
+
+        # Get unit and calculate data
+        unit = divide_units(unit_a, unit_b)
+        x = x_a / x_b
+
+        # Set label
+        x_label = colname + " [" + str(unit) + "]"
+
+        # Return
+        if return_label: return x, x_label
+        else: return x
+
+    # Just one column
+    else: return get_x_column(curve, colname=colname, return_label=return_label)
+
+# -----------------------------------------------------------------
+
+def get_x_column(curve, colname=None, return_label=False):
+
+    """
+    This function ...
+    :param curve:
+    :param colname:
+    :param return_label:
+    :return:
+    """
+
+    # Get the units
+    if colname is not None: x_unit = curve.get_unit(colname)
+    else: x_unit = curve.x_unit
+
+    # Get the data
+    if colname is not None: x = curve.get_column_array(colname, unit=x_unit)
+    else: x = curve.get_x(asarray=True, unit=x_unit)
+
+    # Get the labels
+    x_label = curve.x_name if colname is None else colname
+    if x_unit is not None: x_label += " [" + str(x_unit) + "]"
+
+    # Return
+    if return_label: return x, x_label
+    else: return x
+
+# -----------------------------------------------------------------
+
+def get_y(curve, colname=None, return_label=False):
+
+    """
+    This function ...
+    :param curve:
+    :param colname:
+    :param return_label:
+    :return:
+    """
+
+    from ...core.units.unit import divide_units
+
+    # Check whether operators
+    if colname is not None and has_div(colname):
+
+        colname_a, colname_b = colname.split("/")
+        colname_a = colname_a.strip()
+        colname_b = colname_b.strip()
+
+        # Get units
+        unit_a = curve.get_unit(colname_a)
+        unit_b = curve.get_unit(colname_b)
+
+        # Get data
+        y_a = curve.get_column_array(colname_a, unit=unit_a)
+        y_b = curve.get_column_array(colname_b, unit=unit_b)
+
+        # Get unit and data
+        unit = divide_units(unit_a, unit_b)
+        y = y_a / y_b
+
+        # Set label
+        y_label = colname + " [" + str(unit) + "]"
+
+        # Return
+        if return_label: return y, y_label
+        else: return y
+
+    # Just one column
+    else: return get_y_column(curve, colname=colname, return_label=return_label)
+
+# -----------------------------------------------------------------
+
+def get_y_column(curve, colname=None, return_label=False):
+
+    """
+    This function ...
+    :param curve:
+    :param colname:
+    :param return_label:
+    :return:
+    """
+
+    # Get the units
+    if colname is not None: y_unit = curve.get_unit(colname)
+    else: y_unit = curve.y_unit
+
+    # Get the data
+    if colname is not None: y = curve.get_column_array(colname, unit=y_unit)
+    else: y = curve.get_y(asarray=True, unit=y_unit)
+
+    # Get the labels
+    y_label = curve.y_name if colname is None else colname
+    if y_unit is not None: y_label += " [" + str(y_unit) + "]"
+
+    # Return
+    if return_label: return y, y_label
+    else: return y
+
+# -----------------------------------------------------------------
+
 def get_xy(curve, return_labels=False, x_colname=None, y_colname=None):
 
     """
@@ -1709,27 +1884,11 @@ def get_xy(curve, return_labels=False, x_colname=None, y_colname=None):
     :return:
     """
 
-    # Get the units
-    # X
-    if x_colname is not None: x_unit = curve.get_unit(x_colname)
-    else: x_unit = curve.x_unit
-    # Y
-    if y_colname is not None: y_unit = curve.get_unit(y_colname)
-    else: y_unit = curve.y_unit
+    # Get x
+    x, x_label = get_x(curve, colname=x_colname, return_label=True)
 
-    # Get the data
-    # X
-    if x_colname is not None: x = curve.get_column_array(x_colname, unit=x_unit)
-    else: x = curve.get_x(asarray=True, unit=x_unit)
-    # Y
-    if y_colname is not None: y = curve.get_column_array(y_colname, unit=y_unit)
-    else: y = curve.get_y(asarray=True, unit=y_unit)
-
-    # Get the labels
-    x_label = curve.x_name if x_colname is None else x_colname
-    y_label = curve.y_name if y_colname is None else y_colname
-    if x_unit is not None: x_label += " [" + str(x_unit) + "]"
-    if y_unit is not None: y_label += " [" + str(y_unit) + "]"
+    # Get y
+    y, y_label = get_y(curve, colname=y_colname, return_label=True)
 
     # Return
     if return_labels: return x, y, x_label, y_label
@@ -1963,7 +2122,8 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
                            colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
-                           aux_name=None, aux_unit=None, aux_log=False, valid_points=None, x_colname=None, y_colname=None):
+                           aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, valid_points=None, x_colname=None,
+                           y_colname=None, legend_location=None):
 
     """
     This function ...
@@ -1985,9 +2145,11 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param aux_name:
     :param aux_unit:
     :param aux_log:
+    :param aux_limits:
     :param valid_points:
     :param x_colname:
     :param y_colname:
+    :param legend_location:
     :return:
     """
 
@@ -2009,10 +2171,17 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
         y = y[valid_points]
         if aux is not None: aux = aux[valid_points]
 
+    if aux is not None:
+        aux_min = np.nanmin(aux)
+        aux_max = np.nanmax(aux)
+        print("aux min:", aux_min)
+        print("aux max:", aux_max)
+
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
                              xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
-                             color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log)
+                             color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log,
+                             aux_limits=aux_limits, legend_location=legend_location)
 
 # -----------------------------------------------------------------
 
@@ -2052,7 +2221,7 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
 # -----------------------------------------------------------------
 
 def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
-                            show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None):
+                            show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None, legend_location=None):
 
     """
     This function ...
@@ -2069,6 +2238,7 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
     :param axes:
     :param plot:
     :param dpi:
+    :param legend_location:
     :return:
     """
 
@@ -2078,7 +2248,7 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
     # Plot
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
                              xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, colors=colors,
-                             axes=axes, plot=plot, dpi=dpi)
+                             axes=axes, plot=plot, dpi=dpi, legend_location=legend_location)
 
 # -----------------------------------------------------------------
 # PLOTTING DENSITY
@@ -2222,6 +2392,7 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
     output.original_ylimits = original_ylimits
 
     # Add the data
+    has_multiple_labels = False
     if types.is_dictionary(x):
 
         # Checks
@@ -2232,6 +2403,8 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
         #colormaps = iter(["Greys"] + distinguishable_colormaps)
         colormaps = iter(sequential_colormaps) # go from light to dark
         colors = iter(pretty_colours)
+
+        has_multiple_labels = len(x) > 1
 
         # Loop over the curves
         for name in x:
@@ -2272,16 +2445,20 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
 
     # Add vertical lines
     if vlines is not None:
-        for vline in vlines:
+        for k, vline in enumerate(vlines):
             #if xlog: vline = np.log10(vline)
-            if vlinecolor is not None: plot.axvline(x=vline, color=vlinecolor, linestyle=vlinestyle)
+            if vlinecolor is not None:
+                if types.is_sequence(vlinecolor): plot.axvline(x=vline, color=vlinecolor[k], linestyle=vlinestyle)
+                else: plot.axvline(x=vline, color=vlinecolor, linestyle=vlinestyle)
             else: plot.axvline(x=vline, linestyle=vlinestyle)
 
     # Add horizontal lines
     if hlines is not None:
-        for hline in hlines:
+        for l, hline in enumerate(hlines):
             #if ylog: hline = np.log10(hline)
-            if hlinecolor is not None: plot.axhline(y=hline, color=hlinecolor, linestyle=hlinestyle)
+            if hlinecolor is not None:
+                if types.is_sequence(hlinecolor): plot.axhline(y=hline, color=hlinecolor[l], linestyle=hlinestyle)
+                else: plot.axhline(y=hline, color=hlinecolor, linestyle=hlinestyle)
             else: plot.axhline(y=hline, linestyle=hlinestyle)
 
     # Set scales
@@ -2305,7 +2482,7 @@ def plot_xy(x, y, title=None, path=None, transparent=False, x_label=None, y_labe
     if y_color is not None: axes.tick_params("y", colors=y_color)
 
     # Create legend
-    if legend: plot.legend()
+    if legend and has_multiple_labels: plot.legend()
 
     # Axes were not provided: we are supposed to create the whole figure thingy and close it
     if not only_axes:
@@ -2748,7 +2925,7 @@ def vmax_function(array):
 
 def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
                       xlimits=None, ylimits=None, show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None, color=None,
-                      cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, density_log=False):
+                      cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, density_log=False, legend_location=None):
 
     """
     This function is a scatter density plotting function, using Astrofrog's matplotlib scatter density package
@@ -2775,10 +2952,13 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :param aux_unit:
     :param aux_log:
     :param density_log:
+    :param legend_location:
     :return:
     """
 
     import mpl_scatter_density  # NOQA
+
+    if legend_location is None: legend_location = "upper left"
 
     # Output
     from ...core.basics.map import Map
@@ -2899,7 +3079,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             output.scatters[name] = scatter
 
         # Create and add legend for the different datasets
-        legend = Legend(axes, for_legend.values(), for_legend.keys(), loc="upper left")
+        legend = Legend(axes, for_legend.values(), for_legend.keys(), loc=legend_location)
         axes.add_artist(legend)
 
     # Single data set
@@ -2922,15 +3102,26 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             if cmap is None: cmap = "inferno"
             aux = aux[valid]
 
+            # Set interval
+            if aux_limits is not None:
+                min_aux = aux_limits[0]
+                max_aux = aux_limits[1]
+            else:
+                min_aux = np.nanmin(aux)
+                max_aux = np.nanmax(aux)
+
             # Set norm
             if aux_log:
                 from astropy.visualization import LogStretch
                 from astropy.visualization.mpl_normalize import ImageNormalize
-                norm = ImageNormalize(vmin=np.nanmin(aux), vmax=np.nanmax(aux), stretch=LogStretch())
+                norm = ImageNormalize(vmin=min_aux, vmax=max_aux, stretch=LogStretch())
             else: norm = None
 
+            # Set aux limits
+            output.aux_limits = (min_aux, max_aux,)
+
             # Plot
-            scatter = axes.scatter_density(x, y, dpi=dpi, vmin=0., vmax=vmax_function, c=aux, cmap=cmap, norm=norm)
+            scatter = axes.scatter_density(x, y, dpi=dpi, vmin=min_aux, vmax=max_aux, c=aux, cmap=cmap, norm=norm)
 
             # Set colormap and other
             output.cmap = cmap

@@ -220,6 +220,7 @@ curve_name = "curve"
 ssfr_funev_name = "ssfr_funev"
 vsfr_funev_name = "vsfr_funev"
 temperature_funev_name = "temp_funev"
+density_funev_name = "density_funev"
 
 plot_heating_commands = OrderedDict()
 plot_heating_commands.description = "make plots of the heating fraction"
@@ -237,6 +238,7 @@ plot_correlations_commands.description = "make plots of the correlations"
 plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, "plot the sSFR to Funev scatter", None)
 plot_correlations_commands[vsfr_funev_name] = ("plot_vsfr_funev_command", True, "plot the vSFR to Funev scatter", None)
 plot_correlations_commands[temperature_funev_name] = ("plot_temperature_funev_command", True, "plot the dust temperature to Funev scatter", None)
+plot_correlations_commands[density_funev_name] = ("plot_density_funev_command", True, "plot the stellar mass density to Funev scatter", None)
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -510,6 +512,7 @@ class CorrelationPlotSettings(object):
         # Auxilary axis
         self.aux_colname = kwargs.pop("aux_colname", None)
         self.aux_log = kwargs.pop("aux_log", False)
+        self.aux_limits = kwargs.pop("aux_limits", None)
 
     # -----------------------------------------------------------------
 
@@ -536,7 +539,7 @@ class CorrelationPlotSettings(object):
 
         return CorrelationPlotSettings(x_colname=self.x_colname, y_colname=self.y_colname, xlimits=self.xlimits, ylimits=self.ylimits,
                                        xlog=self.xlog, ylog=self.ylog, conditions=deepcopy(self.conditions),
-                                       color=self.color, aux_colname=self.aux_colname, aux_log=self.aux_log)
+                                       color=self.color, aux_colname=self.aux_colname, aux_log=self.aux_log, aux_limits=self.aux_limits)
 
 # -----------------------------------------------------------------
 
@@ -4664,9 +4667,47 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         for plot in first_row: plot.axes.set(adjustable='box-forced')
         for plot in second_row: plot.axes.set(adjustable='box-forced')
 
+        # Create colorbar
+        #total_width = first_row[0].width + first_row[1].width + first_row[2].width
+        #total_height = first_row[0].height + second_row[0].height
+        #cb_width = 0.05 * total_width
+        #cb = figure.add_colorbar(second_row[0].x_min+total_width, second_row[1].y_min, cb_width, total_height, "inferno", "vertical", self.heating_fraction_interval)
+        #cmap = cb.cmap
+
+        # ADD COLORBAR AXES
+        last_plot = second_row[2]
+        # colorbar_plot = figure.add_plot(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0)
+        cb = figure.add_colorbar(1.01, last_plot.bounding_box.y0, 0.02,
+                                 first_plot.bounding_box.y1 - last_plot.bounding_box.y0, "inferno", "vertical",
+                                 self.heating_fraction_interval)
+        cmap = cb.cmap
+
+        # Create colorbar
+        #from matplotlib.colors import Normalize
+        #norm = Normalize(vmin=self.heating_fraction_interval[0], vmax=self.heating_fraction_interval[1])
+        #cb = figure.create_vertical_colorbar_in_plot(first_row[0], cmap="inferno", norm=norm, x_shift=-0.2)
+        #cmap = cb.cmap
+
+        # Get average heating fraction at each wavelength
+        fuv_fraction = curve.value_for_wavelength(self.fuv_wavelength)
+        nuv_fraction = curve.value_for_wavelength(self.nuv_wavelength)
+        u_fraction = curve.value_for_wavelength(self.sdss_u_wavelength)
+        g_fraction = curve.value_for_wavelength(self.sdss_g_wavelength)
+        r_fraction = curve.value_for_wavelength(self.sdss_r_wavelength)
+
+        # Get colours
+        fuv_color = cmap(fuv_fraction)
+        nuv_color = cmap(nuv_fraction)
+        u_color = cmap(u_fraction)
+        g_color = cmap(g_fraction)
+        r_color = cmap(r_fraction)
+        linecolors = [fuv_color, nuv_color, u_color, g_color, r_color]
+
         # Plot curve
         plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
-                   xlog=True, y_label=self.heating_fraction_name, plot=first_row[0], vlines=filter_wavelengths)
+                   xlog=True, y_label=self.heating_fraction_name, plot=first_row[0], vlines=filter_wavelengths,
+                   vlinestyle="dashed", color="dimgray", vlinecolor=linecolors)
+        first_row[0].set_xticks()
 
         # Zoom from the normal galaxy truncation
         zoom = 1.1
@@ -4676,27 +4717,34 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Assume center pixel is the center of the map (galaxy)
         cmap = "inferno"
         offset_step = q("5 kpc")
-        plot_map_offset(fuv_map, fuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[1])
+
+        # GALEX FUV
+        plot_map_offset(fuv_map, fuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[1], aspect="auto")
         first_row[1].hide_yaxis()
         first_row[1].set_xaxis_position("top")
+        first_row[1].add_text("GALEX FUV")
 
-        plot_map_offset(nuv_map, nuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[2])
+        # GALEX NUV
+        plot_map_offset(nuv_map, nuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[2], aspect="auto")
         first_row[2].set_xaxis_position("top")
         first_row[2].set_yaxis_position("right")
+        first_row[2].add_text("GALEX NUV")
 
-        plot_map_offset(u_map, u_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[0])
+        # SDSS u
+        plot_map_offset(u_map, u_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[0], aspect="auto")
+        second_row[0].add_text("SDSS u")
 
-        plot_map_offset(g_map, g_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[1])
+        # SDSS g
+        plot_map_offset(g_map, g_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[1], aspect="auto")
         second_row[1].hide_yaxis()
+        second_row[1].add_text("SDSS g")
 
-        plot_map_offset(r_map, r_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[2])
+        # SDSS r
+        plot_map_offset(r_map, r_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[2], aspect="auto")
         second_row[2].set_yaxis_position("right")
+        second_row[2].add_text("SDSS r")
 
-        # ADD COLORBAR AXES
-        last_plot = second_row[2]
-        #colorbar_plot = figure.add_plot(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0)
-        cb = figure.add_colorbar(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0, "inferno", "vertical", self.heating_fraction_interval)
-
+        # Set tight layout
         figure.tight_layout()
 
         # Save or show
@@ -5124,8 +5172,64 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Fit
         fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Midplane slope: ", slope)
-        print("Midplane intercept: ", intercept)
+        print("Midplane slope:", slope)
+        print("Midplane intercept:", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_inner(self):
+
+        # Get inner region cells
+        fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", upper=self.inner_region_max_radius)
+
+        # Fit
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Inner region slope:", slope)
+        print("Inner region intercept:", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_intermediate(self):
+        
+        # Get intermediate region cells
+        fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", lower=self.inner_region_max_radius, upper=self.outer_region_min_radius)
+
+        # Fit
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Intermediate region slope:", slope)
+        print("Intermediate region intercept:", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_outer(self):
+
+        # Get outer region cells
+        fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", lower=self.outer_region_min_radius, upper=self.max_radius)
+
+        # Fit
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Outer region slope:", slope)
+        print("Outer region intercept:", intercept)
+        return fitted
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_outside_inner(self):
+
+        # Get region cells
+        fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", lower=self.inner_region_max_radius, upper=self.max_radius)
+
+        # Fit
+        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
+        print("Outside inner region slope:", slope)
+        print("Outside inner region intercept:", intercept)
         return fitted
 
     # -----------------------------------------------------------------
@@ -5441,7 +5545,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         nrows = 3
         ncols = 3
         projection = "scatter_density"
-        rows = figure.create_grid(nrows, ncols, projections=projection, empty=[(2,0,)])
+        rows = figure.create_grid(nrows, ncols, projections=projection, empty=[(2,0,)], wspace=0, hspace=0)
         first_row = rows[0]
         second_row = rows[1]
         third_row = rows[2]
@@ -5454,10 +5558,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                                 plot_coefficient=True, show_coefficient=True, coefficients=("spearman"))
         first_row[0].set_xaxis_top()
         first_row[0].set_background_color("gainsboro")
+        first_row[0].add_text("(a)", horizontal_position="left", vertical_position="top", fontsize=14)
+
+        # Plot fits
         #first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
         first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
-        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
-        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
+        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51 (pixels)", color=self.darker_m51_color, linestyle="dashed")
+        first_row[0].plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31 (pixels)", color=self.darker_m31_color, linestyle="dashed")
+        first_row[0].legend(loc="center right")
 
         # SECOND PLOT: with radius
         settings1 = self.ssfr_funev_radius_settings
@@ -5465,28 +5573,42 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         first_row[1].set_xaxis_top()
         first_row[1].hide_yaxis()
         first_row[1].set_background_color("gainsboro")
+        first_row[1].add_text("(b)", horizontal_position="left", vertical_position="top", fontsize=14)
 
+        # Plot inner radius line
         inner_radius_ssfr_values, inner_radius_funev_values = self.ssfr_funev_points_at_inner_radius
-        first_row[1].plot(inner_radius_ssfr_values, inner_radius_funev_values, label="Inner", color="white")
+        #first_row[1].plot(inner_radius_ssfr_values, inner_radius_funev_values, label="Inner", color="white")
+        first_row[1].plot(inner_radius_ssfr_values, inner_radius_funev_values, color="white") # no label
 
+        # Plot outer radius line
         outer_radius_ssfr_values, outer_radius_funev_values = self.ssfr_funev_points_at_outer_radius
-        first_row[1].plot(outer_radius_ssfr_values, outer_radius_funev_values, label="Outer", color="white")
+        #first_row[1].plot(outer_radius_ssfr_values, outer_radius_funev_values, label="Outer", color="white")
+        first_row[1].plot(outer_radius_ssfr_values, outer_radius_funev_values, color="white") # no label
+
+        # Plot fits for different regions
+        first_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_inner, label="Inner region", color="lime", linestyle="dashed")
+        #first_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_intermediate, label="Intermediate region", color=self.darker_red, linestyle="dashed")
+        #first_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_outer, label="Outer region", color=self.darker_red, linestyle="dashed")
+        first_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_outside_inner, label="Outside inner region", color="lime", linestyle="dotted")
+        first_row[1].legend(loc="center right")
 
         # THIRD PLOT: with height
         settings2 = self.ssfr_funev_dust_heights_settings
         output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells, first_row[2], settings2,
                                                    add_colorbar=True, figure=figure, colorbar_label_position="right",
                                                    references=self.reference_ssfr_funev_scatters,
-                                                   reference_colors=self.reference_ssfr_funev_scatter_colors)
+                                                   reference_colors=self.reference_ssfr_funev_scatter_colors, legend_location="upper center")
         first_row[2].set_xaxis_top()
         first_row[2].set_yaxis_right()
         first_row[2].set_background_color("gainsboro")
 
         # Plot fits
-        #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
-        #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+        first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_midplane, label="Midplane", color=self.darker_red)
+        first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
         #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
         #first_row[2].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
+        first_row[2].legend(loc="center right")
+        first_row[2].add_text("(c)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         ## SECOND ROW
 
@@ -5494,26 +5616,33 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings3 = self.vsfr_funev_standard_log_settings
         output_vsfr = self.plot_correlation_impl("vSFR-Funev (all cells)", self.ssfr_funev_scatter_cells, second_row[0], settings3,
                                                  plot_coefficient=True, show_coefficient=True, coefficients=("spearman"))
+        second_row[0].add_text("(d)", horizontal_position="left", vertical_position="top", fontsize=14)
+
 
         # SECOND PLOT: vSFR as auxilary
-        settings4 = self.ssfr_funev_vsfr_settings
-        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells, second_row[1], settings4, add_colorbar=True, figure=figure)
+        settings4 = self.ssfr_funev_vsfr_settings.copy()
+        settings4.aux_limits = [1e-18, 1e-11]
+        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells, second_row[1],
+                                                     settings4, add_colorbar=True, figure=figure)
         second_row[1].hide_xaxis()
         second_row[1].hide_yaxis()
         second_row[1].set_background_color("gainsboro")
+        second_row[1].add_text("(e)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
-
         #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_high_vsfr, label="High vSFR", color="black")
         #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
         #second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
 
         # THIRD PLOT: dust density as auxilary
         settings5 = self.ssfr_funev_dust_density_settings
-        output_dust_density = self.plot_correlation_impl("sSFR-Funev (with dust density)", self.ssfr_funev_scatter_cells, second_row[2], settings5, add_colorbar=True, figure=figure)
+        colorbar_ticks5 = [1e-12, 1e-10, 1e-8, 1e-6, 1e-4, 1e-2]
+        output_dust_density = self.plot_correlation_impl("sSFR-Funev (with dust density)", self.ssfr_funev_scatter_cells, second_row[2],
+                                                         settings5, add_colorbar=True, figure=figure, colorbar_ticks=colorbar_ticks5)
         second_row[2].hide_xaxis()
         second_row[2].set_yaxis_right()
         second_row[2].set_background_color("gainsboro")
+        second_row[2].add_text("(f)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         ## THIRD ROW
 
@@ -5521,12 +5650,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings6 = self.temperature_funev_standard_settings
         output_temp = self.plot_correlation_impl("Temperature-Funev (all cells)", self.ssfr_funev_scatter_cells, third_row[1], settings6,
                                                  plot_coefficient=True, show_coefficient=True, coefficients=("spearman"))
+        third_row[1].add_text("(g)", horizontal_position="right", vertical_position="top", fontsize=14)
 
         # SECOND PLOT
         settings7 = self.temperature_funev_radius_settings
         output_temp_radius = self.plot_correlation_impl("Temperature-Funev (with radius)", self.ssfr_funev_scatter_cells, third_row[2], settings7, add_colorbar=True, figure=figure)
         #third_row[2].hide_yaxis()
         third_row[2].set_yaxis_right()
+        third_row[2].add_text("(h)", horizontal_position="right", vertical_position="top", fontsize=14)
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -5787,7 +5918,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
                               fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None,
-                              coefficients=("pearson", "spearman")):
+                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None):
 
         """
         This function ...
@@ -5809,6 +5940,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param reference_colors:
         :param colorbar_label_position:
         :param coefficients:
+        :param colorbar_ticks:
+        :param legend_location:
         :return:
         """
 
@@ -5816,19 +5949,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.debug("Plotting the " + name + " correlation ...")
 
         # Get mask
-        if settings.conditions is not None and len(settings.conditions) > 0: mask = self.get_mask_for_conditions(settings.conditions)
+        if settings.conditions is not None and len(settings.conditions) > 0: mask = self.get_mask_for_conditions(scatter, settings.conditions)
         else: mask = None
 
         # Make the plot
         output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                         xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
-                                        aux_colname=settings.aux_colname, aux_log=settings.aux_log,
+                                        aux_colname=settings.aux_colname, aux_log=settings.aux_log, aux_limits=settings.aux_limits,
                                         valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname)
 
         # Plot references?
         if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                                                                xlog=settings.xlog, ylog=settings.ylog, plot=output.plot,
-                                                                               colors=reference_colors)
+                                                                               colors=reference_colors, legend_location=legend_location)
 
         # Add colorbar for auxilary axis?
         if settings.aux_colname is not None and add_colorbar:
@@ -5838,11 +5971,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
             # Create colorbar
             aux_label = output.aux_name
-            if output.aux_unit is not None: aux_label = aux_label + " [" + str(output.aux_unit) + "]"
-            figure.create_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label, logarithmic=settings.aux_log, label_position=colorbar_label_position)
+            if output.aux_unit is not None: aux_label = aux_label + " [" + tostr(output.aux_unit, latex=True) + "]"
+            figure.create_horizontal_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label,
+                                                      logarithmic=settings.aux_log, label_position=colorbar_label_position,
+                                                      limits=output.aux_limits, ticks=colorbar_ticks)
 
         # Add inset text
-        if inset_text is not None: plot.add_text(inset_text, position="top")
+        if inset_text is not None: plot.add_text(inset_text, vertical_position="top")
 
         # Set nice ticks
         if settings.xlog:
@@ -6633,15 +6768,103 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot = figure.create_one_plot(projection="scatter_density")
 
         # Load the data
-        scatter = self.get_cells_ssfr_funev_scatter("salim")
+        scatter = self.get_cells_ssfr_funev_scatter(self.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("Temperature-Funev", scatter, plot, self.temperature_funev_standard_settings, show_coefficient=True, plot_coefficient=config.coefficient)
+        output = self.plot_correlation_impl("Temperature-Funev", scatter, plot,
+                                            self.temperature_funev_standard_settings, show_coefficient=True,
+                                            plot_coefficient=config.coefficient)
 
         # Create colorbar
         # aux_unit = scatter.get_unit(settings.aux_colname)
         # aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
         # figure.figure.colorbar(output.scatter, label=aux_label)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_density_funev_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def density_funev_standard_settings(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blueviolet"
+        settings.x_colname = "vSFR / sSFR" # = stellar density
+
+        # Radius auxilary axis
+        #settings.aux_colname = "Radius"
+
+        # Limits
+        #settings.xlimits = (15, 60,)
+        settings.ylimits = self.funev_limits_log
+
+        # Return
+        return settings
+        
+    # -----------------------------------------------------------------
+
+    def plot_density_funev_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_density_funev_definition, **kwargs)
+
+        # Create the figure
+        figsize = (12,6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(self.sfr_method)
+
+        # Plot
+        output = self.plot_correlation_impl("Stellar density-Funev", scatter, plot,
+                                            self.density_funev_standard_settings, show_coefficient=True,
+                                            plot_coefficient=config.coefficient)
 
         # Save or show
         if config.path is not None: figure.saveto(config.path)

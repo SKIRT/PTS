@@ -1386,34 +1386,48 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def add_text(self, text, position="top", x_shift=0, y_shift=0):
+    def add_text(self, text, vertical_position="top", horizontal_position="center", x_shift=0, y_shift=0, fontsize=None):
 
         """
         This function ...
         :param text:
-        :param position:
+        :param vertical_position:
+        :param horizontal_position:
         :param x_shift:
         :param y_shift:
+        :param fontsize:
         :return:
         """
 
-        # Set position
-        #x = self.x_min + 0.5 * self.width
-        x = 0.5 + x_shift
-        if position == "top":
+        # Set x position
+        if horizontal_position == "left":
+            x = 0.05 + x_shift
+            halignment = "left"
+        elif horizontal_position == "right":
+            x = 0.95 + x_shift
+            halignment = "right"
+        elif horizontal_position == "center":
+            x = 0.5 + x_shift
+            halignment = "center"
+        else: raise ValueError("Invalid horizontal position: '" + horizontal_position + "'")
+
+        # Set y position
+        if vertical_position == "top":
             #y = self.y_min + 0.9 * self.height
             y = 0.95 + y_shift
-            alignment = "top"
-        elif position == "bottom":
+            valignment = "top"
+        elif vertical_position == "bottom":
             #y = self.y_min + 0.1 * self.height
             y = 0.05 + y_shift
-            alignment = "bottom"
-        else: raise ValueError("Invalid position: '" + position + "'")
-
-        #print("adding text", x, y, text)
+            valignment = "bottom"
+        elif vertical_position == "center":
+            y = 0.5 + y_shift
+            valignment = "center"
+        else: raise ValueError("Invalid vertical position: '" + vertical_position + "'")
 
         # Create
-        return self.text(x, y, text, horizontalalignment='center', verticalalignment=alignment, transform=self.axes.transAxes)
+        if fontsize is not None: return self.text(x, y, text, horizontalalignment=halignment, verticalalignment=valignment, transform=self.axes.transAxes, fontsize=fontsize)
+        else: return self.text(x, y, text, horizontalalignment=halignment, verticalalignment=valignment, transform=self.axes.transAxes)
 
     # -----------------------------------------------------------------
 
@@ -2375,12 +2389,30 @@ class MPLFigure(Figure):
         :return:
         """
 
+        # Create axes
+        axes = self.create_axes(left, bottom, width, height)
+
+        # Create cb
+        return self.create_colorbar(axes, cmap, orientation, interval, logscale=logscale, ticks=ticks)
+
+    # -----------------------------------------------------------------
+
+    def create_colorbar(self, axes, cmap, orientation, interval, logscale=False, ticks=None):
+
+        """
+        This function ...
+        :param axes:
+        :param cmap:
+        :param orientation:
+        :param interval:
+        :param logscale:
+        :param ticks:
+        :return:
+        """
+
         # Create norm
         if logscale: norm = LogNorm(vmin=interval[0], vmax=interval[1])
         else: norm = Normalize(vmin=interval[0], vmax=interval[1])
-
-        # Create axes
-        axes = self.create_axes(left, bottom, width, height)
 
         # Create colorbar
         cb = ColorbarBase(axes, cmap=cmap, norm=norm, orientation=orientation)
@@ -2393,8 +2425,70 @@ class MPLFigure(Figure):
 
     # -----------------------------------------------------------------
 
-    def create_colorbar_in_plot(self, plot, plotted=None, position="bottom", relwidth=0.8, relheight=0.05,
-                                cmap=None, norm=None, ticks=None, label=None, logarithmic=False, label_position=None):
+    def create_vertical_colorbar_in_plot(self, plot, plotted=None, position="right", relwidth=0.05, relheight=0.8,
+                                         cmap=None, norm=None, ticks=None, label=None, logarithmic=False, x_shift=0,
+                                         y_shift=0):
+
+        """
+        This function ...
+        :param plot:
+        :param plotted:
+        :param position:
+        :param relwidth:
+        :param relheight:
+        :param cmap:
+        :param norm:
+        :param ticks:
+        :param label:
+        :param logarithmic:
+        :param x_shift:
+        :param y_shift:
+        :return:
+        """
+
+        # Centered in height
+        bottomtop_margin = 0.5 * (1 - relheight)
+        bottom = plot.y_min + (bottomtop_margin + y_shift) * plot.height
+
+        # Width
+        if position == "left": left = plot.x_min + (0.1 + x_shift) * plot.width
+        elif position == "right": left = plot.x_min + (0.9 - relwidth + x_shift) * plot.width
+        else: raise ValueError("Invalid position: '" + position + "'")
+
+        # Set size
+        width = plot.width * relwidth
+        height = plot.height * relheight
+
+        # Create axes for colorbar
+        cb_axes = self.create_axes(left, bottom, width, height)
+
+        # Create
+        if plotted is not None:
+            if logarithmic:  # something went wrong when from logarithmic auxilary axis scatter density plot (Astrofrog implementation)
+                norm = LogNorm(vmin=plotted.norm.vmin, vmax=plotted.norm.vmax)
+                cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="vertical")
+            else: cb = colorbar_factory(cb_axes, plotted, orientation="vertical")
+        else:
+            if cmap is None: raise ValueError("If plotted is not passed, colormap must be passed")
+            if norm is None: raise ValueError("If plotted is not passed, normalization must be passed")
+            cb = ColorbarBase(cb_axes, cmap=cmap, norm=norm, orientation="vertical")
+
+        # Add label
+        if label is not None:
+            x_shift = 0.12
+            plot.add_text(label, vertical_position=position, x_shift=x_shift, rotation=-45)
+
+        # Set ticks
+        if ticks is not None: cb.set_ticks(ticks)
+
+        # Return
+        return cb
+
+    # -----------------------------------------------------------------
+
+    def create_horizontal_colorbar_in_plot(self, plot, plotted=None, position="bottom", relwidth=0.8, relheight=0.05,
+                                            cmap=None, norm=None, ticks=None, label=None, logarithmic=False, label_position=None,
+                                            limits=None):
 
         """
         This function ...
@@ -2409,16 +2503,17 @@ class MPLFigure(Figure):
         :param label:
         :param logarithmic:
         :param label_position:
+        :param limits:
         :return:
         """
 
         ## Set anchor
 
-        # centered in width
+        # Centered in width
         leftright_margin = 0.5 * (1 - relwidth)
         left = plot.x_min + leftright_margin * plot.width
 
-        # height
+        # Height
         if position == "bottom": bottom = plot.y_min + 0.1 * plot.height
         elif position == "top": bottom = plot.y_min + (0.9 - relheight) * plot.height
         else: raise ValueError("Invalid position: '" + position + "'")
@@ -2435,23 +2530,32 @@ class MPLFigure(Figure):
             if logarithmic: # something went wrong when from logarithmic auxilary axis scatter density plot (Astrofrog implementation)
                 #cmap = "inferno"
                 #print(plotted.cmap) if hasattr(plotted, "cmap") else print("nope")
+                print("log colorbar", plotted.norm.vmin, plotted.norm.vmax)
                 norm = LogNorm(vmin=plotted.norm.vmin, vmax=plotted.norm.vmax)
                 cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="horizontal")
-            else:
+            elif plotted.norm.vmin is not None and plotted.norm.vmax is not None:
+                print("linear colorbar", plotted.norm.vmin, plotted.norm.vmax)
                 cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
                 #norm = Normalize(vmin=plotted.norm.vmin, vmax=plotted.norm.vmax)
                 #cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="horizontal")
+            elif limits is not None:
+                print("LIMITS", limits)
+                norm = Normalize(vmin=limits[0], vmax=limits[1])
+                cb = ColorbarBase(cb_axes, cmap=plotted.cmap, norm=norm, orientation="horizontal")
+            else:
+                log.warning("Limits of linear scale are not defined")
+                cb = colorbar_factory(cb_axes, plotted, orientation="horizontal")
         else:
             if cmap is None: raise ValueError("If plotted is not passed, colormap must be passed")
             if norm is None: raise ValueError("If plotted is not passed, normalization must be passed")
+            print("colorbar", norm.vmin, norm.vmax)
             cb = ColorbarBase(cb_axes, cmap=cmap, norm=norm, orientation="horizontal")
 
         # Add label
         if label is not None:
             y_shift = 0.12
-            if label_position is None: plot.add_text(label, position=position, y_shift=y_shift)
+            if label_position is None: plot.add_text(label, vertical_position=position, y_shift=y_shift)
             elif label_position == "right":
-
                 x = left + width
                 if position == "top":
                     y = 0.95 + y_shift

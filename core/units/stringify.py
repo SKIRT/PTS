@@ -59,9 +59,13 @@ def represent_unit(unit, **kwargs):
     """
 
     add_physical_type = kwargs.pop("add_physical_type", False)
+    latex = kwargs.pop("latex", False)
 
-    string = str(unit)
+    # Create string
+    if latex: string = unit.to_string('latex')[1:-1]
+    else: string = str(unit)
 
+    # Replacements
     for key in output_replacements:
         string = string.replace(key, output_replacements[key])
 

@@ -1074,8 +1074,20 @@ class WavelengthCurve(Curve):
     # -----------------------------------------------------------------
 
     @property
+    def has_unit(self):
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def wavelength_unit(self):
         return self.x_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wavelength_unit(self):
+        return self.wavelength_unit is not None
 
     # -----------------------------------------------------------------
 
@@ -1159,11 +1171,13 @@ class WavelengthCurve(Curve):
 
         if interpolate:
             interpolated = interp1d(self.wavelengths(unit="micron", asarray=True), self.values(self.unit, asarray=True), kind='linear')
-            value = interpolated(wavelength.to("micron").value) * self.unit
+            value = interpolated(wavelength.to("micron").value)
+            if self.has_unit: value = value * self.unit
         else:
             from ..tools import sequences
             index = sequences.find_closest_index(self.wavelengths(unit="micron", add_unit=False), wavelength.to("micron").value)
-            value = self[self.value_name][index] * self.unit
+            value = self[self.value_name][index]
+            if self.has_unit: value = value * self.unit
 
         # Convert unit if necessary
         if unit is not None:
@@ -1178,8 +1192,9 @@ class WavelengthCurve(Curve):
             value = value.to(unit, **conversion_info)
 
         # Remove unit if requested
-        if not add_unit: value = value.value
+        if not add_unit and self.has_unit: value = value.value
 
+        # Return
         return value
 
     # -----------------------------------------------------------------
