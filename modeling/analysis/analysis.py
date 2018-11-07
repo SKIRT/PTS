@@ -19,6 +19,8 @@ from copy import deepcopy
 from scipy.stats import pearsonr, spearmanr
 from collections import OrderedDict
 from matplotlib.colors import to_hex, to_rgb
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method

@@ -128,7 +128,12 @@ class AbsorptionBase(object):
     # -----------------------------------------------------------------
 
     def correct_observed_stellar_sed(self, sed, extrapolate=True):
-        if extrapolate: sed = sed.extrapolated_from(self.observed_stellar_sed_extrapolate_from, regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True, replace_nan=0.)
+        if extrapolate:
+            import numpy as np
+            idx = max(np.where((sed.y_array > 0) * (sed.x_array < 15.))[0])
+            sed = sed.extrapolated_from(sed.x_array[idx] * u("micron"),
+                                        regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True,
+                                        replace_nan=0.)
         else: sed = sed.copy()
         sed.set_negatives_to_zero()
         sed = sed.extended_to_right(self.maximum_wavelength, logscale=True, points=self.wavelengths)

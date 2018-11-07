@@ -42,6 +42,7 @@ class AbsorptionTable(SmartTable):
     _column_info["old"] = (float, "W", "absorbed bolometric luminosity of the old stellar population")
     _column_info["young"] = (float, "W", "absorbed bolometric luminosity of the young stellar population")
     _column_info["ionizing"] = (float, "W", "absorbed bolometric luminosity of the ionizing stellar population")
+    _column_info["extra"] = (float, "W", "absorbed bolometric luminosity of the extra component")
 
     # -----------------------------------------------------------------
 
@@ -62,7 +63,7 @@ class AbsorptionTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_columns(cls, x, y, z, total, old, young, ionizing):
+    def from_columns(cls, x, y, z, total, old, young, ionizing, extra):
 
         """
         This function ...
@@ -79,7 +80,7 @@ class AbsorptionTable(SmartTable):
         new = cls()
         new._setup()
 
-        new.remove_columns(["x", "y", "z", "total", "old", "young", "ionizing"])
+        new.remove_columns(["x", "y", "z", "total", "old", "young", "ionizing", "extra"])
 
         if not isinstance(x, Column): x = Column(data=x)
         if not isinstance(y, Column): y = Column(data=y)
@@ -88,6 +89,7 @@ class AbsorptionTable(SmartTable):
         if not isinstance(old, Column): old = Column(data=old)
         if not isinstance(young, Column): young = Column(data=young)
         if not isinstance(ionizing, Column): ionizing = Column(data=ionizing)
+        if not isinstance(extra, Column): extra = Column(data=extra)
 
         new.add_columns([x, y, z], copy=False, names=["x", "y", "z"])
         #new.rename_column("X coordinate of cell center", "x")
@@ -120,12 +122,17 @@ class AbsorptionTable(SmartTable):
         #new.rename_column(ionizing.name, "ionizing")
         new["ionizing"].unit = "W"
 
+        new.add_column(ionizing, name="extra")
+        # new.rename_column("Absorbed bolometric luminosity", "extra")
+        # new.rename_column(extra.name, "extra")
+        new["extra"].unit = "W"
+
         # Return the new table
         return new
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, x, y, z, total, old, young, ionizing):
+    def add_entry(self, x, y, z, total, old, young, ionizing, extra):
 
         """
         This function ...
@@ -139,7 +146,7 @@ class AbsorptionTable(SmartTable):
         :return:
         """
 
-        values = [x, y, z, total, old, young, ionizing]
+        values = [x, y, z, total, old, young, ionizing, extra]
         self.add_row(values)
 
     # -----------------------------------------------------------------
@@ -287,6 +294,21 @@ class AbsorptionTable(SmartTable):
 
         if asarray: return arrays.plain_array(self["ionizing"], unit=unit, array_unit=self["ionizing"].unit)
         else: return arrays.array_as_list(self["ionizing"], unit=unit, add_unit=add_unit, array_unit=self["ionizing"].unit)
+
+    # -----------------------------------------------------------------
+
+    def extra(self, unit="W", add_unit=True, asarray=False):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :param asarray:
+        :return:
+        """
+
+        if asarray: return arrays.plain_array(self["extra"], unit=unit, array_unit=self["extra"].unit)
+        else: return arrays.array_as_list(self["extra"], unit=unit, add_unit=add_unit, array_unit=self["extra"].unit)
 
     # -----------------------------------------------------------------
 
