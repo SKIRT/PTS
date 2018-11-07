@@ -135,7 +135,7 @@ class SkySubtractor(Configurable):
         self.set_statistics()
 
         # 7. Create distributions
-        self.create_distributions()
+        if self.config.distributions: self.create_distributions()
 
         # 8. Write
         if self.config.write: self.write()
@@ -488,7 +488,7 @@ class SkySubtractor(Configurable):
         try:
             bkg = Background2D(cutout, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
                                bkg_estimator=bkg_estimator, mask=mask_cutout, filter_threshold=None, #exclude_mesh_method="threshold", (option does not exist anymore)
-                               exclude_mesh_percentile=self.config.estimation.photutils.exclude_mesh_percentile) # used to be exclude_mesh_percentile
+                               exclude_percentile=self.config.estimation.photutils.exclude_mesh_percentile) # used to be exclude_mesh_percentile
         except ValueError:
 
             plotting.plot_box(cutout)
@@ -670,7 +670,7 @@ class SkySubtractor(Configurable):
         new = frame.copy()
 
         # Replace
-        if self.config.estimation.photutils.replace_all_interpolated: new.data = data
+        if self.config.estimation.photutils.replace_all_interpolated: new._data = data
         else: new[self.mask] = data[self.mask]
 
         # Replace NaNs
@@ -766,34 +766,6 @@ class SkySubtractor(Configurable):
 
         # Inform the user
         log.info("Creating distributions ...")
-
-        # Create a masked array
-        #masked = np.ma.masked_array(self.frame, mask=self.mask)
-        #masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
-
-        # Create a figure
-        #fig = plt.figure()
-
-        #min_value = self.mean - 4.0 * self.stddev
-        #max_value = self.mean + 4.0 * self.stddev
-
-        #value_range = (min_value, max_value)
-
-        # Plot the histograms
-        # b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
-        #plt.subplot(211)
-        #plt.hist(masked.compressed(), 200, range=value_range, alpha=0.5, normed=1, facecolor='g', histtype='stepfilled',
-        #         label='not clipped')
-        #if self.config.histogram.log_scale: plt.semilogy()
-
-        #plt.subplot(212)
-        #plt.hist(masked_clipped.compressed(), 200, range=value_range, alpha=0.5, normed=1, facecolor='g',
-        #         histtype='stepfilled', label='clipped')
-        #if self.config.histogram.log_scale: plt.semilogy()
-
-        # Save the figure
-        #plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
-        #plt.close()
 
         # Create original distribution
         self.create_original_distribution()
@@ -1004,6 +976,12 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def photutils(self):
+        return self.config.estimation.method == "photutils"
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -1015,10 +993,10 @@ class SkySubtractor(Configurable):
         log.info("Plotting ...")
 
         # Plot histograms
-        self.plot_histograms()
+        if self.config.distributions: self.plot_histograms()
 
         # Plot photutils mesh
-        if self.config.estimation.method == "photutils": self.plot_photutils_mesh()
+        if self.photutils: self.plot_photutils_mesh()
 
     # -----------------------------------------------------------------
 

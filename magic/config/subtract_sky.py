@@ -111,3 +111,8 @@ definition.add_optional("mask_value", "real", "value to replace masked pixels", 
 definition.add_optional("eliminate", "file_path", "file with regions that mark emission that needs to be eliminated before estimating the sky")
 
 # -----------------------------------------------------------------
+
+# Create distributions
+definition.add_flag("distributions", "create distributions", False)
+
+# -----------------------------------------------------------------
