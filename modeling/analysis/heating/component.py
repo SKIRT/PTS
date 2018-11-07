@@ -516,6 +516,139 @@ class DustHeatingAnalysisComponent(AnalysisRunComponent):
         return self.ionizing_contribution_data.seds[faceon_name]["total"]
 
     # -----------------------------------------------------------------
+    # EXTRA SIMULATION
+    #   ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_absorption_filepath(self):
+        # return self.extra_contribution_data.absorption_path
+        if self.extra_contribution_data.has_absorption:
+            return self.extra_contribution_data.absorption_path
+        elif self.extra_contribution_data.has_isrf:
+            return self.extra_contribution_data.isrf_path
+        else:
+            raise IOError("No absorption path")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_data(self):
+        if self.extra_contribution_data.has_absorption:
+            return self.extra_contribution_data.absorption
+        elif self.extra_contribution_data.has_isrf:
+            return self.extra_contribution_data.isrf
+        else:
+            raise IOError("No absorption data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_column_names(self):
+        return fs.get_column_names(self.extra_contribution_absorption_filepath, capitalize=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_column_units(self):
+        return fs.get_column_units(self.extra_contribution_absorption_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_column_name(self):
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        # return sequences.find_single_in_both(abs_colnames, self.extra_contribution_absorption_data.colnames)
+        return sequences.find_single_in_both(abs_colnames, self.extra_contribution_absorption_column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_column_index(self):
+        return self.extra_contribution_absorption_column_names.index(self.extra_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_unit(self):
+        # return self.extra_contribution_absorption_data.column_unit(self.extra_contribution_absorption_column_name)
+        return u(self.extra_contribution_absorption_column_units[self.extra_contribution_absorption_column_index])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_absorption_luminosities(self):
+        # return np.asarray(self.extra_contribution_absorption_data[self.extra_contribution_absorption_column_name])
+        return fs.get_column(self.extra_contribution_absorption_filepath,
+                             self.extra_contribution_absorption_column_index, float, method="pandas")
+
+    # -----------------------------------------------------------------
+    #   SPECTRAL ABSORPTION & EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_spectral_absorption_filepath(self):
+        return self.extra_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_contribution_spectral_absorption(self):
+        return self.extra_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_spectral_emission_filepath(self):
+        return self.extra_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_extra_contribution_spectral_emission(self):
+        return self.extra_contribution_data.has_spectral_emission
+
+    # -----------------------------------------------------------------
+    #   LOGFILES
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_logfile_path(self):
+        return self.extra_contribution_output.logfiles[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extra_contribution_logfile(self):
+        return LogFile.from_file(self.extra_contribution_logfile_path)
+
+    # -----------------------------------------------------------------
+    #   DATACUBES & SEDs
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_total_datacube(self):
+        return self.extra_contribution_data.images[earth_name]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_total_faceon_datacube(self):
+        return self.extra_contribution_data.images[faceon_name]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_total_sed(self):
+        return self.extra_contribution_data.seds[earth_name]["total"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extra_contribution_total_faceon_sed(self):
+        return self.extra_contribution_data.seds[faceon_name]["total"]
+
+    # -----------------------------------------------------------------
     # UNEVOLVED SIMULATION
     #   ABSORPTION
     # -----------------------------------------------------------------
