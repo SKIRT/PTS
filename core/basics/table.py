@@ -1205,10 +1205,56 @@ class SmartTable(Table):
         :return:
         """
 
-        #print(path)
-
         # Check the path
         if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
+
+        # FITS
+        if path.endswith(".fits"): return cls.from_fits_file(path)
+
+        # Other: assume ascii
+        else: return cls.from_ascii_file(path, format=format, method=method)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_fits_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get filename
+        filename = fs.strip_extension(fs.name(path))
+
+        # Open table
+        table = super(SmartTable, cls).read(path, format="fits")
+
+        # Initialize
+        initialize_table(table, table_name=filename)
+
+        # Re-order the columns
+        reorder_columns(table)
+
+        # Set the path
+        table.path = path
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ascii_file(cls, path, format=None, method="lines"):
+
+        """
+        This function ...
+        :param path:
+        :param format:
+        :param method:
+        :return:
+        """
 
         # Get filename
         filename = fs.strip_extension(fs.name(path))

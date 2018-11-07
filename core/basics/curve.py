@@ -1060,10 +1060,20 @@ class WavelengthCurve(Curve):
         # Check if setup has been performed
         if len(self.colnames) == 0: self._setup()
 
+        # X name?
+        if self.y_name in self.colnames: return self.y_name
+
+        # Search
         for index in reversed(range(len(self.colnames))):
             name = self.colnames[index]
             if name == "Error+" or name == "Error-": continue
             return self.colnames[index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_name(self):
+        return self.x_name
 
     # -----------------------------------------------------------------
 
@@ -1099,7 +1109,7 @@ class WavelengthCurve(Curve):
         :return:
         """
 
-        return self.get_value("Wavelength", index)
+        return self.get_value(self.wavelength_name, index)
 
     # -----------------------------------------------------------------
 
@@ -1111,7 +1121,7 @@ class WavelengthCurve(Curve):
         :return:
         """
 
-        return self.get_value("Wavelength", index)
+        return self.get_value(self.wavelength_name, index)
 
     # -----------------------------------------------------------------
 
@@ -1224,13 +1234,13 @@ class WavelengthCurve(Curve):
 
     @property
     def min_wavelength(self):
-        return self.get_value("Wavelength", 0)
+        return self.get_value(self.wavelength_name, 0)
 
     # -----------------------------------------------------------------
 
     @property
     def max_wavelength(self):
-        return self.get_value("Wavelength", -1)
+        return self.get_value(self.wavelength_name, -1)
 
     # -----------------------------------------------------------------
 
@@ -1263,8 +1273,8 @@ class WavelengthCurve(Curve):
         else: mask = None
 
         # Create and return
-        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"), mask=mask)
-        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"), mask=mask)
+        if asarray: return arrays.plain_array(self[self.wavelength_name], unit=unit, array_unit=self.column_unit(self.wavelength_name), mask=mask)
+        else: return arrays.array_as_list(self[self.wavelength_name], unit=unit, add_unit=add_unit, array_unit=self.column_unit(self.wavelength_name), mask=mask)
 
     # -----------------------------------------------------------------
 
@@ -1316,8 +1326,8 @@ class WavelengthCurve(Curve):
         else: mask = None
 
         # Create and return
-        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"), equivalencies=spectral(), mask=mask)
-        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"), equivalencies=spectral(), mask=mask)
+        if asarray: return arrays.plain_array(self[self.wavelength_name], unit=unit, array_unit=self.column_unit(self.wavelength_name), equivalencies=spectral(), mask=mask)
+        else: return arrays.array_as_list(self[self.wavelength_name], unit=unit, add_unit=add_unit, array_unit=self.column_unit(self.wavelength_name), equivalencies=spectral(), mask=mask)
 
     # -----------------------------------------------------------------
 
@@ -1352,6 +1362,9 @@ class WavelengthCurve(Curve):
 
         #print(self.colnames)
         #print(self.column_info)
+
+        #print(self.value_name)
+        #print(unit, self.column_unit(self.value_name))
 
         # Create and return
         if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name),

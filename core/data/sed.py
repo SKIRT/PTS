@@ -383,6 +383,28 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_table_file(cls, path, **kwargs):
+
+        """
+        This function ...
+        :param path:
+        :param kwargs:
+        :return:
+        """
+
+        # Load the curve using the base class implementation
+        sed = super(SED, cls).from_file(path, **kwargs)
+
+        # Assume first and second column are wavelengths and photometry
+        sed.x_name = sed.colnames[0]
+        sed.y_name = sed.colnames[1]
+
+        # Return
+        return sed
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path, **kwargs):
 
         """
@@ -491,6 +513,7 @@ class SED(WavelengthCurve):
         if len(self.colnames) == 0: self._setup()
 
         if "Photometry" in self.colnames: return "Photometry"
+        elif self.y_name in self.colnames: return self.y_name
         else:
 
             # Last column that is not errors? # -> BUT IF THERE IS EXTRA COLUMNS? -> currently would still crash
@@ -1171,6 +1194,7 @@ class ObservedSED(FilterCurve):
         if len(self.colnames) == 0: self._setup()
 
         if "Photometry" in self.colnames: return "Photometry"
+        elif self.y_name in self.colnames: return self.y_name
         else:
 
             # Last column that is not errors? # -> BUT IF THERE IS EXTRA COLUMNS? -> currently would still crash

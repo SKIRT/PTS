@@ -90,6 +90,7 @@ def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pd
     if unit is None: unit = sed.unit
     plotter.config.wavelength_unit = wavelength_unit
     plotter.config.unit = unit
+    #print(plotter.config.unit)
 
     # Set distance?
     if distance is not None: plotter.config.distance = distance
@@ -1343,6 +1344,7 @@ class SEDPlotter(Configurable):
             fill = self.model_options[model_label].fill
 
             # Get fluxes, wavelengths and errors
+            #print(self.config.unit)
             fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info, asarray=True)
             wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False, asarray=True)
 
@@ -2969,7 +2971,8 @@ class SEDPlotter(Configurable):
             self.residual_plots[last_residual_plot_index].set_xticks(fontsize=self.config.plot.ticks_fontsize)
 
         # Set x label of the last residual plot
-        xlabel = r"Wavelength $\lambda\,[\mu \mathrm{m}]$"
+        #xlabel = r"Wavelength $\lambda\,[\mu \mathrm{m}]$"
+        xlabel = r"Wavelength $\lambda\,[\mathrm{" + str(self.config.wavelength_unit) + "}]$".replace("\mathrm{um}", "\mu \mathrm{m}")
         #print(xlabel)
         if len(self.residual_plots) > 0: self.residual_plots[len(self.residual_plots)-1].set_xlabel(xlabel, fontsize='large')
         else: self.main_plot.set_xlabel(xlabel, fontsize='large')
