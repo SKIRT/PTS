@@ -712,39 +712,151 @@ class Curve(Relation):
 
     # -----------------------------------------------------------------
 
+    @property
+    def x_values(self):
+        return self.get_x(unit=self.x_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_values(self):
+        return self.get_y(unit=self.y_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    def get_x_mask(self, lower=None, upper=None, close=None, rtol=1.e-5, atol=1.e-8):
+
+        """
+        This function returns a mask of the rows where x meets certain conditions
+        :param lower:
+        :param upper:
+        :param close:
+        :param rtol
+        :param atol:
+        :return:
+        """
+
+        # Initialize mask
+        mask = np.ones_like(self.x_array, dtype=bool)
+
+        # Lower limit
+        if lower is not None:
+
+            if hasattr(lower, "unit"): lower = lower.to(self.x_unit).value
+            mask *= self.x_array > lower
+
+        # Upper limit
+        if upper is not None:
+
+            if hasattr(upper, "unit"): upper = upper.to(self.x_unit).value
+            mask *= self.x_array < upper
+
+        # Close
+        if close is not None:
+
+            if hasattr(close, "unit"): close = close.to(self.x_unit).value
+            mask *= np.isclose(self.x_array, close, rtol=rtol, atol=atol)
+
+        # Return
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def get_y_mask(self, lower=None, upper=None, close=None, rtol=1.e-5, atol=1.e-8):
+
+        """
+        This function returns a mask of the rows where y meets certain conditions
+        :param lower:
+        :param upper:
+        :param close:
+        :param rtol:
+        :param atol:
+        :return:
+        """
+
+        # Initialize mask
+        mask = np.ones_like(self.y_array, dtype=bool)
+
+        # Lower limit
+        if lower is not None:
+
+            if hasattr(lower, "unit"): lower = lower.to(self.y_unit).value
+            mask *= self.y_array > lower
+
+        # Upper limit
+        if upper is not None:
+
+            if hasattr(upper, "unit"): upper = upper.to(self.y_unit).value
+            mask *= self.y_array < upper
+
+        # Close
+        if close is not None:
+
+            if hasattr(close, "unit"): close = close.to(self.y_unit).value
+            mask *= np.isclose(self.y_array, close, rtol=rtol, atol=atol)
+
+        # Return
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def get_zero_mask(self):
+        return self.y_values == 0
+
+    # -----------------------------------------------------------------
+
     def get_zero_indices(self):
-        values = self.get_y(unit=self.y_unit, asarray=True)
-        return np.where(values == 0)
+        return np.where(self.get_zero_mask())[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonzero_mask(self):
+        return self.y_values != 0
 
     # -----------------------------------------------------------------
 
     def get_nonzero_indices(self):
-        values = self.get_y(unit=self.y_unit, asarray=True)
-        return np.nonzero(values)
+        return np.nonzero(self.y_values)
+
+    # -----------------------------------------------------------------
+
+    def get_positive_mask(self):
+        return self.y_values > 0
 
     # -----------------------------------------------------------------
 
     def get_positive_indices(self):
-        values = self.get_y(unit=self.y_unit, asarray=True)
-        return np.where(values > 0)[0]
+        return np.where(self.get_positive_mask())[0]
+
+    # -----------------------------------------------------------------
+
+    def get_negative_mask(self):
+        return self.y_values < 0
 
     # -----------------------------------------------------------------
 
     def get_negative_indices(self):
-        values = self.get_y(unit=self.y_unit, asarray=True)
-        return np.where(values < 0)[0]
+        return np.where(self.get_negative_mask())[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonnegative_mask(self):
+        return self.y_values >= 0
 
     # -----------------------------------------------------------------
 
     def get_nonnegative_indices(self):
-        values = self.get_y(unit=self.y_unit, asarray=True)
-        return np.where(values >= 0)[0]
+        return np.where(self.get_nonnegative_mask())[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonpositive_mask(self):
+        return self.y_values <= 0
 
     # -----------------------------------------------------------------
 
     def get_nonpositive_indices(self):
-        values = self.get_y(unit=self.y_unit, asarray=True)
-        return np.where(values <= 0)[0]
+        return np.where(self.get_nonpositive_mask())[0]
 
     # -----------------------------------------------------------------
 
@@ -1373,6 +1485,57 @@ class WavelengthCurve(Curve):
         else: return arrays.array_as_list(self[self.value_name], unit=unit, add_unit=add_unit,
                                           array_unit=self.column_unit(self.value_name), conversion_info=conversion_info,
                                           density=density, brightness=brightness, mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def get_positive_wavelength_mask(self, lower=None, upper=None):
+
+        """
+        This function ...
+        :param lower:
+        :param upper:
+        :return:
+        """
+
+        # Get mask
+        return self.get_positive_mask() * self.get_x_mask(lower=lower, upper=upper)
+
+    # -----------------------------------------------------------------
+
+    def get_positive_wavelength_indices(self, lower=None, upper=None):
+
+        """
+        This function ...
+        :param lower:
+        :param upper:
+        :return:
+        """
+
+        return np.where(self.get_positive_wavelength_mask(lower=lower, upper=upper))[0]
+
+    # -----------------------------------------------------------------
+
+    def get_min_positive_wavelength(self, lower=None, upper=None):
+
+        """
+        This function returns the minimum wavelength for which the photometry is positive, with additional (optional) conditions
+        :return:
+        """
+
+        # Return the min index
+        return min(self.get_positive_wavelength_indices(lower=lower, upper=upper))
+
+    # -----------------------------------------------------------------
+
+    def get_max_positive_wavelength(self, lower=None, upper=None):
+
+        """
+        This function returns the maximum wavelength for which the photometry is positive, with additional (optional) conditions
+        :return:
+        """
+
+        # Return the max index
+        return max(self.get_positive_wavelength_indices(lower=lower, upper=upper))
 
 # -----------------------------------------------------------------
 

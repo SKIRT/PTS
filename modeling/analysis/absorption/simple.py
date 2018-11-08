@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from abc import ABCMeta
 from collections import OrderedDict
 
@@ -109,14 +110,12 @@ class AbsorptionBase(object):
 
     @lazyproperty
     def observed_stellar_sed_extrapolate_from(self):
-        #return q("100 micron")
         return q("15 micron")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_stellar_sed_fit_from(self):
-        #return q("20 micron")
         return q("4 micron")
 
     # -----------------------------------------------------------------
@@ -128,17 +127,21 @@ class AbsorptionBase(object):
     # -----------------------------------------------------------------
 
     def correct_observed_stellar_sed(self, sed, extrapolate=True):
+
+        # Extrapolate?
         if extrapolate:
-            import numpy as np
-            idx = max(np.where((sed.y_array > 0) * (sed.x_array < 15.))[0])
-            sed = sed.extrapolated_from(sed.x_array[idx] * u("micron"),
-                                        regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True,
-                                        replace_nan=0.)
+            # Get maximum wavelength below 15 micron for which above zero
+            start_wavelength = sed.get_max_positive_wavelength(upper=self.observed_stellar_sed_extrapolate_from)
+            sed = sed.extrapolated_from(start_wavelength, regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True, replace_nan=0.)
         else: sed = sed.copy()
+
+        # Extend and replace invalid values
         sed.set_negatives_to_zero()
         sed = sed.extended_to_right(self.maximum_wavelength, logscale=True, points=self.wavelengths)
         sed.replace_zeros_by_lowest(0.01) # replace by one hundreth of the minimum value (except zero)
         sed.distance = self.distance
+
+        # Return the correct SED
         return sed
 
     # -----------------------------------------------------------------

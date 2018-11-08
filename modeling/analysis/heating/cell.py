@@ -92,6 +92,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_extra(self):
+        return self.has_extra
+
+    # -----------------------------------------------------------------
+
     def set_recreate_maps(self):
 
         """
@@ -1079,6 +1085,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyfileproperty(Distribution2D, "extra_radial_distribution_path", True, write=False)
     def extra_radial_distribution(self):
+
         """
         Thisf unction ...
         :return:
@@ -1088,7 +1095,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the radial distribution of heating fractions of the extra component ...")
 
         # Generate the radial distribution
-        # name, x, y, weights=None, nbins=200, x_name=None, y_name=None, x_unit=None, y_unit=None, description=None
         return Distribution2D.from_values(self.radial_distribution_name, self.valid_extra_radii,
                                           self.valid_extra_fraction_values,
                                           weights=self.valid_extra_cell_weights,
@@ -1652,6 +1658,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Write the distributions
         self.write_distributions()
 
+        # Write the radial distributions
+        self.write_radial_distributions()
+
         # Write maps
         self.write_maps()
 
@@ -1779,7 +1788,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_write_extra_absorptions(self):
-        return not self.has_extra_absorptions
+        return self.do_extra and not self.has_extra_absorptions
 
     # -----------------------------------------------------------------
 
@@ -1793,8 +1802,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Save
         self.extra_absorptions.saveto(self.extra_absorptions_path)
 
-        # -----------------------------------------------------------------
-
+    # -----------------------------------------------------------------
 
     def write_fractions(self):
 
@@ -1869,7 +1877,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Save
         self.extra_fractions.saveto(self.extra_fractions_path)
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def write_distributions(self):
 
@@ -1889,12 +1897,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Extra
         if self.do_write_distribution_extra: self.write_distribution_extra()
-
-        # Radial
-        if self.do_write_radial_distribution: self.write_radial_distribution()
-
-        # Extra Radial
-        if self.do_write_extra_radial_distribution: self.write_extra_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -1936,7 +1938,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_write_distribution_extra(self):
-        return not self.has_distribution_extra
+        return self.do_extra and not self.has_distribution_extra
 
     # -----------------------------------------------------------------
 
@@ -1950,11 +1952,29 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Save
         self.distribution_extra.saveto(self.distribution_extra_path)
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     @property
     def do_write_radial_distribution(self):
         return not self.has_radial_distribution
+
+    # -----------------------------------------------------------------
+
+    def write_radial_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the radial distributions of the heating fraction ...")
+
+        # Radial
+        if self.do_write_radial_distribution: self.write_radial_distribution()
+
+        # Extra radial
+        if self.do_write_extra_radial_distribution: self.write_extra_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -1970,14 +1990,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-
     @property
     def do_write_extra_radial_distribution(self):
-        return not self.has_extra_radial_distribution
+        return self.do_extra and not self.has_extra_radial_distribution
 
     # -----------------------------------------------------------------
 
-    def write_exta_radial_distribution(self):
+    def write_extra_radial_distribution(self):
 
         """
         This function ...
@@ -1987,7 +2006,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Save
         self.extra_radial_distribution.saveto(self.extra_radial_distribution_path)
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def write_maps(self):
 
@@ -2170,6 +2189,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Distributions
         self.plot_distributions()
 
+        # Radial distributions
+        self.plot_radial_distributions()
+
         # Maps
         self.plot_maps()
 
@@ -2196,12 +2218,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Diffuse and total
         if self.do_plot_distribution_diffuse_and_total: self.plot_distribution_diffuse_and_total()
-
-        # Radial
-        if self.do_plot_radial_distribution: self.plot_radial_distribution()
-
-        # Extra radial
-        if self.do_plot_extra_radial_distribution: self.plot_extra_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -2280,7 +2296,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_plot_distribution_extra(self):
-        return not self.has_distribution_extra_plot
+        return self.do_extra and not self.has_distribution_extra_plot
 
     # -----------------------------------------------------------------
 
@@ -2328,6 +2344,24 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Plot
         plot_distributions(distributions, path=self.distribution_diffuse_and_total_plot_path, alpha=0.5)
+
+    # -----------------------------------------------------------------
+
+    def plot_radial_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the radial distributions ...")
+
+        # Radial
+        if self.do_plot_radial_distribution: self.plot_radial_distribution()
+
+        # Extra radial
+        if self.do_plot_extra_radial_distribution: self.plot_extra_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -2395,21 +2429,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def extra_radial_distribution_plot_radii_pc(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.config.extra_radial_distribution_radii is None:
-            return []
-        else:
-            return [radius.to("pc").value for radius in self.config.extra_radial_distribution_radii]
-
-    # -----------------------------------------------------------------
-
     def plot_extra_radial_distribution(self):
 
         """
@@ -2421,11 +2440,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         title = "Radial distribution of the heating fraction of the extra component"
 
         # Create the plot file
-        plot_2d_distribution(self.extra_radial_distribution, x_lines=self.extra_radial_distribution_plot_radii_pc, title=title,
-                             path=self.extra_radial_distribution_plot_path)
+        plot_2d_distribution(self.extra_radial_distribution, x_lines=self.radial_distribution_plot_radii_pc, title=title, path=self.extra_radial_distribution_plot_path)
 
-        # -----------------------------------------------------------------
-
+    # -----------------------------------------------------------------
 
     def plot_maps(self):
 

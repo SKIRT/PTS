@@ -213,6 +213,12 @@ class AnalysisRunComponent(AnalysisComponent):
         return "Z coordinate of cell center"
 
     # -----------------------------------------------------------------
+
+    @property
+    def has_extra(self):
+        return self.model.has_extra_component
+
+    # -----------------------------------------------------------------
     # TOTAL SIMULATION
     # -----------------------------------------------------------------
 
