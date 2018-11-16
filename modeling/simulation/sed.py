@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ...core.simulation.simulation import createsimulations
+from ...core.simulation.simulation import StaticSkirtSimulation
 from ...core.tools.utils import lazyproperty, memoize_method
 from ...core.tools import filesystem as fs
 from ...core.simulation.definition import SingleSimulationDefinition
@@ -141,6 +141,18 @@ class ComponentSED(object):
     # -----------------------------------------------------------------
 
     @property
+    def simulation_prefix(self):
+        return self.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_name(self):
+        return self.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_wavelength_grid(self):
         return self.wavelength_grid is not None
 
@@ -172,7 +184,7 @@ class ComponentSED(object):
         """
 
         # Simulation already performed?
-        if self.has_simulation: return createsimulations(self.out_path, single=True)
+        if self.has_simulation: return StaticSkirtSimulation(prefix=self.simulation_prefix, inpath=self.input_paths, outpath=self.out_path, ski_path=self.ski_path, name=self.simulation_name)
 
         # Run the simulation
         return self.run_simulation()

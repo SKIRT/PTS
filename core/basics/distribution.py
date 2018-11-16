@@ -1297,84 +1297,42 @@ class Distribution(Curve):
 
     @property
     def nedges(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.edges)
 
     # -----------------------------------------------------------------
 
     @property
     def first_edge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edges[0]
 
     # -----------------------------------------------------------------
 
     @property
     def second_edge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edges[1]
 
     # -----------------------------------------------------------------
 
     @property
     def last_edge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edges[-1]
 
     # -----------------------------------------------------------------
 
     @property
     def second_last_edge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edges[-2]
 
     # -----------------------------------------------------------------
 
     @property
     def min_edge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.first_edge
 
     # -----------------------------------------------------------------
 
     @property
     def max_edge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.last_edge
 
     # -----------------------------------------------------------------

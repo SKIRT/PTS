@@ -60,7 +60,9 @@ def createsimulations(source="", single=False, name=None, cls=None):
     for source in sourcelist:
 
         if isinstance(source, systypes.StringTypes):
+
             if source == "" or "/" in source:
+
                 dirpath = os.path.realpath(os.path.expanduser(source))
                 logfiles = arch.listdir(dirpath, "_log.txt")
 
@@ -96,7 +98,7 @@ def createsimulations(source="", single=False, name=None, cls=None):
     if single:
 
         if len(simulations) == 0: raise ValueError("No simulations were found matching the source '" + str(source) + "'")
-        elif len(simulations) > 1: raise ValueError("Multiple simulations were found for source '" + str(source) + "': " + ", ".join([simulation.prefix + " in " + simulation.output_path for simulation in simulations]))
+        elif len(simulations) > 1: raise ValueError("Multiple simulations were found for source '" + str(source) + "': " + ", ".join([simulation.prefix() + " in " + simulation.output_path for simulation in simulations]))
         else:
 
             simulation = simulations[0]

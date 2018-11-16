@@ -302,204 +302,102 @@ class RTMod(InteractiveConfigurable):
 
     @property
     def galaxy_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_name
 
     # -----------------------------------------------------------------
 
     @property
     def modeling_configuration(self):
-
-        """
-        This fin
-        :return:
-        """
-
         return self.environment.modeling_configuration
 
     # -----------------------------------------------------------------
 
     @property
     def modeling_history(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.history
 
     # -----------------------------------------------------------------
 
     @property
     def modeling_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_history.commands
 
     # -----------------------------------------------------------------
 
     @property
     def unique_modeling_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_history.unique_commands
 
     # -----------------------------------------------------------------
 
     @property
     def finished_modeling_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_history.finished_commands
 
     # -----------------------------------------------------------------
 
     @property
     def modeling_status(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.status
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_properties
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_info
 
     # -----------------------------------------------------------------
 
     @property
     def maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_collection
 
     # -----------------------------------------------------------------
 
     @property
     def static_maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.static_maps_collection
 
     # -----------------------------------------------------------------
 
     @property
     def maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_selection
 
     # -----------------------------------------------------------------
 
     @property
     def static_maps_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.static_maps_selection
 
     # -----------------------------------------------------------------
 
     @property
     def model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.model_suite
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_context(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.fitting_context
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.fitting_runs
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_run_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_runs.names
 
     # -----------------------------------------------------------------
