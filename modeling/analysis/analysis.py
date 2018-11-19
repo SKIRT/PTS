@@ -19,8 +19,6 @@ from copy import deepcopy
 from scipy.stats import pearsonr, spearmanr
 from collections import OrderedDict
 from matplotlib.colors import to_hex, to_rgb
-import matplotlib.pyplot as plt
-plt.switch_backend('agg')
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
@@ -4011,6 +4009,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot #7 Newer correlation figure
         elif config.which == 7: self.plot_paper7(path=config.path)
 
+        # Plot #8 NEW SEDS plot
+        elif config.which == 8: self.plot_paper8(path=config.path)
+
         # Invalid
         else: raise ValueError("Invalid plot index: " + str(config.which))
 
@@ -5660,6 +5661,119 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #third_row[2].hide_yaxis()
         third_row[2].set_yaxis_right()
         third_row[2].add_text("(h)", horizontal_position="right", vertical_position="top", fontsize=14)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_paper8(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the paper SEDs plot (NEW VERSION) ...")
+
+        # Set limits
+        unit = u("Lsun", density=True)
+        min_wavelength = q("0.05 micron")
+        max_wavelength = q("2000 micron")
+        min_flux = PhotometricQuantity(10 ** 6.5, unit)
+        max_flux = PhotometricQuantity(10 ** 10, unit)
+
+        # Create figure
+        figsize = (20, 12,)
+        figure = MPLFigure(size=figsize)
+
+        # Create 2 plots
+        #main_plots, residual_plots = figure.create_row_of_sed_plots(2, nresiduals=[1, 0])
+
+        # Plot first panel
+        seds1 = OrderedDict()
+
+        # Define seperate filter tuples
+        fitting_filters = tuple(self.fitting_run.fitting_filters)
+        hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
+
+        # Set options
+        plot_options1 = dict()
+        plot_options1["Total"] = {"residuals": True, "residual_color": "darkgrey"}
+        plot_options1["Old"] = {"residuals": False}
+        plot_options1["Young"] = {"residuals": False}
+        plot_options1["Ionizing"] = {"residuals": False}
+        plot_options1["Mock fluxes"] = {"only_residuals": True, "as_reference": False}
+        plot_options1["Observation (other)"] = {"as_reference": False, "color": "g",
+                                                "join_residuals": "Observation (fitting)"}
+        plot_options1["Summed"] = {"ghost": True}
+        # plot_options1["Summed_nosfr"] = {"ghost": True, "residuals": False}
+        # plot_options1["Summed_nosfr_mir"] = {"ghost": True, "residuals": False, "linestyle": ":", "color": "deeppink"}
+
+        # Add component simulation SEDs
+        total_sed = self.get_simulation_sed(total)
+        old_sed = self.get_simulation_sed(old)
+        young_sed = self.get_simulation_sed(young)
+        sfr_sed = self.get_simulation_sed(sfr)
+        # summed_sed = old_sed + young_sed + sfr_sed
+        # summed_sed_no_sfr = old_sed + young_sed
+        # summed_sed_no_sfr_mir = summed_sed_no_sfr.splice(min_wavelength=q("15 micron"), max_wavelength=q("150 micron"))
+
+        # Add simulated SEDs
+        seds1["Total"] = total_sed
+        seds1["Old"] = old_sed
+        seds1["Young"] = young_sed
+        seds1["Ionizing"] = sfr_sed
+        
+        # Add mock fluxes
+        seds1["Mock fluxes"] = self.mock_fluxes
+
+        # Add observed fluxes
+        seds1["Observation (fitting)"] = self.get_reference_sed(clipped_name, additional_error=0.1,
+                                                                filters=fitting_filters)  # 10 % additional errorbars
+        seds1["Observation (other)"] = self.get_reference_sed(clipped_name, additional_error=0.1,
+                                                              filters=hfi_and_2mass_filters)
+
+        # Plot FIRST
+        plot_seds(seds1, figure=figure,
+                  min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
+                  distance=self.galaxy_distance, options=plot_options1, tex=False, unit=unit,
+                  residual_reference="observations", smooth_residuals=True, observations_legend_ncols=1,
+                  instruments_legend_ncols=3,
+                  only_residuals_legend=True, observations_residuals_legend_location="lower left")
+
+        # # Second panel
+        # seds2 = OrderedDict()
+        #
+        # # Add SEDs
+        # seds2["Observed stellar"] = self.get_observed_stellar_sed("total")
+        # seds2["Absorbed"] = self.get_dust_absorption_sed("total")
+        # seds2["Dust"] = self.get_dust_emission_sed("total")
+        # seds2["Scattered"] = self.get_scattered_sed("total")
+        # seds2["Internal dust (SFR)"] = self.get_dust_emission_sed("sfr", dust_contribution="internal")
+        #
+        # # Set options
+        # plot_options2 = dict()
+        # plot_options2["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar"}
+        # plot_options2["Dust"] = {"above": "Observed stellar"}
+        # plot_options2["Internal dust (SFR)"] = {"above": "Observed stellar", "color": "lightgrey",
+        #                                         "fill": False}  # color does not work yet
+        #
+        # # Plot SECOND
+        # plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False,  # don't show yet
+        #           min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
+        #           distance=self.galaxy_distance, options=plot_options2, tex=False, unit=unit, yaxis_position="right")
+        #
+        # # Hide some tick labels
+        # # figure.figure.canvas.draw() # GETTING TICK LABELS ONLY WORKS IF WE DRAW FIRST
+        # # NO LONGER NECESSARY
+        #
+        # # DOESN'T DO ANYTHING??
+        # # residual_plots[0][-1].hide_last_xtick_label()
+        # # main_plots[1].hide_first_xtick_label()
 
         # Save or show
         if path is not None: figure.saveto(path)

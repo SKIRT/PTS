@@ -25,3 +25,8 @@ definition.add_flag("interactive", "use interactive mode", True)
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
 
 # -----------------------------------------------------------------
+
+# Set plotting backend
+definition.add_optional("mpl_backend", "string", "set the matplotlib backend")
+
+# -----------------------------------------------------------------

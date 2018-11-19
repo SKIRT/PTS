@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from collections import OrderedDict, defaultdict
+import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import InteractiveConfigurable, InvalidCommandError
@@ -297,6 +298,9 @@ class RTMod(InteractiveConfigurable):
 
         # Load the modeling environment
         self.environment = GalaxyModelingEnvironment(self.config.path)
+
+        # Set Matplotlib's backend
+        if self.config.mpl_backend is not None: plt.switch_backend(self.config.mpl_backend)
 
     # -----------------------------------------------------------------
 
