@@ -332,11 +332,32 @@ class SEDPlotter(Configurable):
         self.legends = []
         self.legends_residuals = []
 
-        # OLD
+        ## OLD
         self._old_legend_system = True
         self.for_legend_patches = None
         self.for_legend_parameters = None
         self.extra_legend = None
+
+        ## NEW
+
+        # FOR INSTRUMENTS LEGEND
+        self.instruments_legend_patches = []
+        self.instruments_legend_labels = []
+
+        # FOR OBSERVATIONS LEGEND
+        self.observations_legend_patches = []
+        self.observations_legend_labels = []
+
+        # FOR MODELS LEGEND
+        self.models_legend_patches = []
+        self.models_legend_labels = []
+
+        # Used labels
+        self.used_labels = []
+
+        # Remember colors for each observation
+        self.observation_colors = dict()
+        self.observation_markers = None
 
     # -----------------------------------------------------------------
 
@@ -1938,49 +1959,18 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_more_observations_with_models(self):
+    def _plot_observations(self):
 
         """
         This function ...
         :return:
         """
 
-        self._old_legend_system = False
-
-        # Debuggging
-        log.debug("Plotting multiple observed SEDs with models ...")
+        # Markers for the unique labels
+        self.observation_markers = filled_markers[:len(self.unique_observation_point_labels)]
 
         # Make iterable from distinct colors
         different_colors = iter(dark_pretty_colors)
-
-        # Markers for the unique labels
-        markers = filled_markers[:len(self.unique_observation_point_labels)]
-
-        # Used labels
-        used_labels = []
-
-        line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
-        line_styles_models_no_residuals = ["-"] * len(self.models)
-
-        # 3 LEGENDS
-        #instruments_legend = None
-        #observations_legend = None
-        #models_legend = None
-
-        # FOR INSTRUMENTS LEGEND
-        instruments_legend_patches = []
-        instruments_legend_labels = []
-
-        # FOR OBSERVATIONS LEGEND
-        observations_legend_patches = []
-        observations_legend_labels = []
-
-        # FOR MODELS LEGEND
-        models_legend_patches = []
-        models_legend_labels = []
-
-        # Remember colors for each observation
-        observation_colors = dict()
 
         # Loop over the different observed SEDs
         observation_index = 0
@@ -2004,7 +1994,7 @@ class SEDPlotter(Configurable):
 
             # Create color range
             if observation_color is None: observation_color = color_hex[next(different_colors)]
-            observation_colors[label] = observation_color
+            self.observation_colors[label] = observation_color
 
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
@@ -2025,7 +2015,7 @@ class SEDPlotter(Configurable):
                     continue
 
                 # Get marker
-                marker = markers[self.unique_observation_point_labels.index(labels[k])]
+                marker = self.observation_markers[self.unique_observation_point_labels.index(labels[k])]
 
                 # Set zero error if other observations also have errors (BECAUSE CALLING MATPLOTLIB'S ERRORBAR AND AFTER THAT PLOT DOESN'T WORK APPARENTLY!!)
                 error = errors[k]
@@ -2036,53 +2026,64 @@ class SEDPlotter(Configurable):
                 if not only_residuals:
 
                     # Plot the data point
-                    patch, new_label = self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], error, marker, observation_color, return_new=True)
+                    patch, new_label = self.plot_wavelength(self.main_plot, labels[k], self.used_labels, wavelengths[k],
+                                                            fluxes[k], error, marker, observation_color,
+                                                            return_new=True)
 
                     # Add the patch and label
                     if patch is not None and new_label:
-
                         # Remove color
                         # Remove the color -> make a new patch?
-                        patch = lines.Line2D([], [], marker=marker, markersize=7, label=labels[k], linewidth=0, markeredgecolor="black", markerfacecolor="white", markeredgewidth=1)
+                        patch = lines.Line2D([], [], marker=marker, markersize=7, label=labels[k], linewidth=0,
+                                             markeredgecolor="black", markerfacecolor="white", markeredgewidth=1)
 
                         # Add the patch and label
-                        instruments_legend_patches.append(patch)
-                        instruments_legend_labels.append(labels[k])
+                        self.instruments_legend_patches.append(patch)
+                        self.instruments_legend_labels.append(labels[k])
 
                 # Observations as reference: plot at 0.0 (all in one panel)
                 if self.config.residual_reference == observations_reference:
 
-                    #print(label, observation_index, wavelengths[k])
+                    # print(label, observation_index, wavelengths[k])
                     if as_reference or self.observation_options[label].join_residuals:
 
                         # Get the residual plot
-                        #print(observation_reference_index, len(self.residual_plots))
-                        if as_reference: residual_plot = self.residual_plots[observation_reference_index]
+                        # print(observation_reference_index, len(self.residual_plots))
+                        if as_reference:
+                            residual_plot = self.residual_plots[observation_reference_index]
                         else:
                             join_with_label = self.observation_options[label].join_residuals
-                            residual_plot = self.residual_plots[self.observation_labels_as_reference.index(join_with_label)]
-                        #print(residual_plot)
+                            residual_plot = self.residual_plots[
+                                self.observation_labels_as_reference.index(join_with_label)]
+                        # print(residual_plot)
 
                         # Plot measurement points on residual plot
                         value = 0.0
-                        #if errors[k] is not None:
+                        # if errors[k] is not None:
 
                         if errors[k] is not None:
 
                             # Process and plot errorbar
                             error = errors[k] / fluxes[k] * 100.
 
-                            #print(label, wavelengths[k], observation_color, observation_index, residual_plot._plot)
+                            # print(label, wavelengths[k], observation_color, observation_index, residual_plot._plot)
 
-                            #yerr, lolims, uplims = process_errorbar(error)
-                            yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                            # yerr, lolims, uplims = process_errorbar(error)
+                            yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75,
+                                                                              uplim_value=75)
 
-                            residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
+                            residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7,
+                                                   color=observation_color, markeredgecolor='black',
+                                                   ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims,
+                                                   capsize=2)
 
                         else:
-                            #residual_plot.scatter(wavelengths[k], value, marker=marker, s=7, c=observation_color, edgecolors="black")
+                            # residual_plot.scatter(wavelengths[k], value, marker=marker, s=7, c=observation_color, edgecolors="black")
                             yerr = [[0], [0]]
-                            residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
+                            residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7,
+                                                   color=observation_color, markeredgecolor='black',
+                                                   ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims,
+                                                   capsize=2)
 
                 # Models as reference: plot points at the relative difference with the models (one panel for each model)
                 elif self.config.residual_reference == models_reference:
@@ -2095,7 +2096,7 @@ class SEDPlotter(Configurable):
                     for model_label in self.models:
 
                         # Get entry
-                        #sed, plot_residuals, ghost = self.models[model_label]
+                        # sed, plot_residuals, ghost = self.models[model_label]
                         sed = self.models[model_label]
                         plot_residuals = self.model_options[model_label].residuals
                         ghost = self.model_options[model_label].ghost
@@ -2113,32 +2114,43 @@ class SEDPlotter(Configurable):
                             residual_plot_index += 1
                             continue
 
-                        #print(model_label, sed.unit, sed.unit.physical_type)
-                        model_value = sed.photometry_at(actual_wavelength, self.config.unit, add_unit=False, conversion_info=self.conversion_info, interpolate=self.config.interpolate_models_for_residuals)
-                        rel_residual = (fluxes[k] - model_value) / model_value * 100.  # NORMALIZE TO MODEL VALUE
+                        # print(model_label, sed.unit, sed.unit.physical_type)
+                        model_value = sed.photometry_at(actual_wavelength, self.config.unit, add_unit=False,
+                                                        conversion_info=self.conversion_info,
+                                                        interpolate=self.config.interpolate_models_for_residuals)
+                        try:
+                            rel_residual = (fluxes[k] - model_value) / model_value * 100.  # NORMALIZE TO MODEL VALUE
+                        except ZeroDivisionError:
+                            residual_plot_index += 1
+                            continue
 
                         # Get the residual plot for this model
                         residual_plot = self.residual_plots[residual_plot_index]
 
                         # value = 0.0
-                        if errors[k] is None: errorbar = ErrorBar.zero()
-                        else: errorbar = errors[k]
+                        if errors[k] is None:
+                            errorbar = ErrorBar.zero()
+                        else:
+                            errorbar = errors[k]
 
                         error = errorbar / model_value * 100.  # NORMALIZE TO MODEL VALUE
 
-                        #yerr, lolims, uplims = process_errorbar(error)
-                        yerr, lolims, uplims = process_errorbar_for_value(fluxes[k], error, lolim_abs_value=-75, uplim_value=75)
+                        # yerr, lolims, uplims = process_errorbar(error)
+                        yerr, lolims, uplims = process_errorbar_for_value(fluxes[k], error, lolim_abs_value=-75,
+                                                                          uplim_value=75)
 
                         # Plot on residual axes
                         residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker,
-                                               markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color,
+                                               markersize=7, color=observation_color, markeredgecolor='black',
+                                               ecolor=observation_color,
                                                capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
                         # Next residual plot
                         residual_plot_index += 1
 
                 # Invalid
-                else: raise RuntimeError("Invalid value for 'residual_reference'")
+                else:
+                    raise RuntimeError("Invalid value for 'residual_reference'")
 
             # IF OBSERVATIONS ARE THE REFERENCE FOR THE RESIDUAL AXES
             if self.config.residual_reference == observations_reference:
@@ -2147,19 +2159,19 @@ class SEDPlotter(Configurable):
 
                     # JOINED WITH OTHER
                     if label in self.observation_labels_with_joined:
-
-                        #print("WITH JOINED")
+                        # print("WITH JOINED")
 
                         joined_observation = self.joined_observations[label]
-                        #print(joined_observation)
-                        #print(joined_observation.wavelength_unit, joined_observation.unit)
+                        # print(joined_observation)
+                        # print(joined_observation.wavelength_unit, joined_observation.unit)
 
                         wavelengths = joined_observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                        fluxes = joined_observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
-                        #instruments = joined_observation.instruments()
+                        fluxes = joined_observation.photometry(unit=self.config.unit, add_unit=False,
+                                                               conversion_info=self.conversion_info)
+                        # instruments = joined_observation.instruments()
                         bands = joined_observation.bands()
 
-                        #print(joined_sed)
+                        # print(joined_sed)
 
                     # Get the residual plot
                     residual_plot = self.residual_plots[observation_reference_index]
@@ -2169,7 +2181,7 @@ class SEDPlotter(Configurable):
                     for model_label in self.models:
 
                         # Get entry
-                        #sed, plot_residuals, ghost = self.models[model_label]
+                        # sed, plot_residuals, ghost = self.models[model_label]
                         sed = self.models[model_label]
                         plot_residuals = self.model_options[model_label].residuals
                         ghost = self.model_options[model_label].ghost
@@ -2179,35 +2191,48 @@ class SEDPlotter(Configurable):
 
                         if not plot_residuals: continue
 
-                        model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info, asarray=True)
-                        sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False, asarray=True)
+                        model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False,
+                                                      conversion_info=self.conversion_info, asarray=True)
+                        sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False,
+                                                          asarray=True)
 
                         # FIRST SMOOTH THE OBSERVATION, THEN GET THE 'CONTINUOUS' RESIDUAL LINE
                         if self.config.smooth_residuals:
 
                             logwavelengths = np.log10(wavelengths)
-                            #gradient = np.gradient(logwavelengths)
+                            # gradient = np.gradient(logwavelengths)
                             diffs = np.ediff1d(logwavelengths)
-                            #print(len(gradient), len(wavelengths))
-                            #print(diffs)
-                            #print(len(diffs))
+                            # print(len(gradient), len(wavelengths))
+                            # print(diffs)
+                            # print(len(diffs))
                             reldiffs = diffs / logwavelengths[:-1]
-                            #for grad, band in zip(gradient, bands): print(band, grad)
-                            for first_band, first_wavelength, second_band, second_wavelength, reld in zip(bands[:-1], wavelengths[:-1], bands[1:], wavelengths[1:], reldiffs):
-                                #print(first_band + " vs " + second_band + ": " + str(reld))
+                            # for grad, band in zip(gradient, bands): print(band, grad)
+                            for first_band, first_wavelength, second_band, second_wavelength, reld in zip(bands[:-1],
+                                                                                                          wavelengths[
+                                                                                                          :-1],
+                                                                                                          bands[1:],
+                                                                                                          wavelengths[
+                                                                                                          1:],
+                                                                                                          reldiffs):
+                                # print(first_band + " vs " + second_band + ": " + str(reld))
                                 if abs(reld) < 0.01:
-                                    log.warning("The " + str(first_band) + " and " + second_band + " wavelengths are very close (" + str(first_wavelength) + " and " + str(second_wavelength) + ", closeness = " + str(abs(reld)) + "), but not necessarily their photometric value: this may give artefacts in the residual curve")
+                                    log.warning("The " + str(
+                                        first_band) + " and " + second_band + " wavelengths are very close (" + str(
+                                        first_wavelength) + " and " + str(second_wavelength) + ", closeness = " + str(
+                                        abs(
+                                            reld)) + "), but not necessarily their photometric value: this may give artefacts in the residual curve")
 
                             # Create spline (interpolate in log-log space)
                             logfluxes = np.log10(fluxes)
                             logsed_wavelengths = np.log10(sed_wavelengths)
                             logsmooth_fluxes = spline(logwavelengths, logfluxes, logsed_wavelengths)
-                            smooth_fluxes = 10**logsmooth_fluxes
+                            smooth_fluxes = 10 ** logsmooth_fluxes
 
                             min_obs_wavelength = wavelengths[0]
                             max_obs_wavelength = wavelengths[-1]
-                            within_observations_mask = (sed_wavelengths > min_obs_wavelength) * (sed_wavelengths < max_obs_wavelength)
-                            #print(within_observations_mask)
+                            within_observations_mask = (sed_wavelengths > min_obs_wavelength) * (
+                                        sed_wavelengths < max_obs_wavelength)
+                            # print(within_observations_mask)
 
                             # Mask
                             wavelengths_residuals = sed_wavelengths[within_observations_mask]
@@ -2215,11 +2240,13 @@ class SEDPlotter(Configurable):
                             model_fluxes = model_fluxes[within_observations_mask]
 
                             # Plot the model SED as a line (with errors if present)
-                            if self.config.show_smooth: self.draw_model(self.main_plot, wavelengths_residuals, smooth_fluxes, "-", linecolor="lightgrey", adjust_extrema=False)
+                            if self.config.show_smooth: self.draw_model(self.main_plot, wavelengths_residuals,
+                                                                        smooth_fluxes, "-", linecolor="lightgrey",
+                                                                        adjust_extrema=False)
 
                             # Calculate residuals
                             residuals = - (smooth_fluxes - model_fluxes) / smooth_fluxes * 100.
-                            
+
                         # INTERPOLATE THE SED WHERE THE FLUX POINTS ARE TO COMPARE
                         else:
 
@@ -2228,7 +2255,9 @@ class SEDPlotter(Configurable):
                             min_sed_wavelength = min(sed_wavelengths)
                             max_sed_wavelength = max(sed_wavelengths)
 
-                            wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
+                            wavelengths_fluxes_residuals = sorted(
+                                [(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if
+                                 min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
                             wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
                             fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                             residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
@@ -2236,51 +2265,72 @@ class SEDPlotter(Configurable):
                         # SMOOTH?
                         # THIS DOES NOT WORK WELL: RESIDUAL POINTS ARE NOT SMOOTH IN SE: THEY VARY BELOW AND ABOVE the expected:
                         # THE INTERPOLATION GIVES MANY ARTEFACTS (over-fitting polynomial behaviour)
-                        #if self.config.smooth_residuals:
+                        # if self.config.smooth_residuals:
                         #    residuals = spline(wavelengths_residuals, residuals, sed_wavelengths)
                         #    wavelengths_residuals = sed_wavelengths
 
                         # Determine color
-                        if residual_color is not None: color = residual_color
-                        elif model_color is not None: color = model_color
-                        elif ghost: color = "lightgrey"
-                        else: color = "black"
+                        if residual_color is not None:
+                            color = residual_color
+                        elif model_color is not None:
+                            color = model_color
+                        elif ghost:
+                            color = "lightgrey"
+                        else:
+                            color = "black"
 
                         # Determine linestyle
-                        if model_linestyle is not None: linestyle = model_linestyle
-                        elif ghost: linestyle = "-"
-                        else: linestyle = line_styles[counter]
+                        if model_linestyle is not None:
+                            linestyle = model_linestyle
+                        elif ghost:
+                            linestyle = "-"
+                        else:
+                            linestyle = line_styles[counter]
 
                         # Plot
-                        if ghost: residual_plot.plot(wavelengths_residuals, residuals, ls=linestyle, color=color)
+                        if ghost:
+                            residual_plot.plot(wavelengths_residuals, residuals, ls=linestyle, color=color)
                         else:
-                            residual_plot.plot(wavelengths_residuals, residuals, ls=linestyle, color=color, label=model_label.replace("_", "\_"))
+                            residual_plot.plot(wavelengths_residuals, residuals, ls=linestyle, color=color,
+                                               label=model_label.replace("_", "\_"))
                             counter += 1
 
                     # PLOT RESIDUALS WITH OTHER OBSERVATIONS
-                    #for other_observation_label in self.observations:
-                        #if other_observation_label == label: continue
-                        #print("Will plot residuals comparing with " + other_observation_label + " observed SED: but only after all observations have been plotted on the main plot")
+                    # for other_observation_label in self.observations:
+                    # if other_observation_label == label: continue
+                    # print("Will plot residuals comparing with " + other_observation_label + " observed SED: but only after all observations have been plotted on the main plot")
 
             # Create rectangle for this observation
             if not (only_residuals and self.config.only_residuals_legend):
                 rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
-                observations_legend_patches.append(rectangle)
-                observations_legend_labels.append(label.replace("_", "\_"))
+                self.observations_legend_patches.append(rectangle)
+                self.observations_legend_labels.append(label.replace("_", "\_"))
 
             # Increment the observation index
             observation_index += 1
             if as_reference: observation_reference_index += 1
 
-        ## END OF LOOP OVER OBSERVATIONS
+    # -----------------------------------------------------------------
+
+    def _plot_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        line_styles_models_no_residuals = ["-"] * len(self.models)
 
         # Add model SEDs
         counter = 0
         counter_no_residuals = 0
         for model_label in self.models:
 
+            # print(model_label)
+
             # Get entry
-            #sed, plot_residuals, ghost = self.models[model_label]
+            # sed, plot_residuals, ghost = self.models[model_label]
             sed = self.models[model_label]
             plot_residuals = self.model_options[model_label].residuals
             ghost = self.model_options[model_label].ghost
@@ -2288,47 +2338,67 @@ class SEDPlotter(Configurable):
             model_linestyle = self.model_options[model_label].linestyle
 
             # Determine color
-            if model_color is not None: linecolor = model_color
-            elif ghost: linecolor = "lightgrey"
-            elif plot_residuals: linecolor = "black"
-            else: linecolor = line_colors_models_no_residuals[counter_no_residuals]
+            if model_color is not None:
+                linecolor = model_color
+            elif ghost:
+                linecolor = "lightgrey"
+            elif plot_residuals:
+                linecolor = "black"
+            else:
+                linecolor = line_colors_models_no_residuals[counter_no_residuals]
 
             # Determine linestyle
-            if model_linestyle is not None: linestyle = model_linestyle
-            elif ghost: linestyle = "-"
-            elif plot_residuals: linestyle = line_styles[counter]
-            else: linestyle = line_styles_models_no_residuals[counter_no_residuals]
+            if model_linestyle is not None:
+                linestyle = model_linestyle
+            elif ghost:
+                linestyle = "-"
+            elif plot_residuals:
+                linestyle = line_styles[counter]
+            else:
+                linestyle = line_styles_models_no_residuals[counter_no_residuals]
 
             # Get fluxes, wavelengths and errors
             fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
             wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-            errors = sed.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info) if sed.has_errors else None
+            errors = sed.errors(unit=self.config.unit, add_unit=False,
+                                conversion_info=self.conversion_info) if sed.has_errors else None
 
             if ghost:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, adjust_extrema=False, errors=errors)
+                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor,
+                                adjust_extrema=False, errors=errors)
 
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label.replace("_", "\_"), adjust_extrema=False, errors=errors)
+                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor,
+                                label=model_label.replace("_", "\_"), adjust_extrema=False, errors=errors)
                 counter += 1
 
             else:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label, adjust_extrema=False, errors=errors)
+                self.draw_model(self.main_plot, wavelengths, fluxes, linestyle, linecolor=linecolor, label=model_label,
+                                adjust_extrema=False, errors=errors)
                 counter_no_residuals += 1
 
             if not ghost:
-
                 # Create patch
                 patch = lines.Line2D([], [], label=model_label, color=linecolor, linestyle=linestyle)
 
                 # Add the patch and label
-                models_legend_patches.append(patch)
-                models_legend_labels.append(model_label)
+                self.models_legend_patches.append(patch)
+                self.models_legend_labels.append(model_label)
+
+    # -----------------------------------------------------------------
+
+    def _plot_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # LOOP OVER OBSERVATIONS AGAIN IF WE HAVE TO PLOT THEIR RESIDUALS AGAINST THE REFERENCE (IF OBSERVATION IS REFERENCE)
         if self.config.residual_reference == observations_reference:
@@ -2338,9 +2408,9 @@ class SEDPlotter(Configurable):
             for label in self.observations:
 
                 # Get options
-                #only_residuals = self.observation_options[label].only_residuals
+                # only_residuals = self.observation_options[label].only_residuals
                 as_reference = self.observation_options[label].as_reference
-                #print(label, as_reference, observation_reference_index)
+                # print(label, as_reference, observation_reference_index)
                 if not as_reference: continue
 
                 # Get the observed SED and its values
@@ -2350,15 +2420,18 @@ class SEDPlotter(Configurable):
                 if label in self.observation_labels_with_joined:
 
                     joined_observation = self.joined_observations[label]
-                    reference_wavelengths = joined_observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                    reference_fluxes = joined_observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    reference_wavelengths = joined_observation.wavelengths(unit=self.config.wavelength_unit,
+                                                                           add_unit=False)
+                    reference_fluxes = joined_observation.photometry(unit=self.config.unit, add_unit=False,
+                                                                     conversion_info=self.conversion_info)
                     reference_instruments = joined_observation.instruments()
                     reference_bands = joined_observation.bands()
 
                 else:
 
                     reference_wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                    reference_fluxes = observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    reference_fluxes = observation.photometry(unit=self.config.unit, add_unit=False,
+                                                              conversion_info=self.conversion_info)
                     reference_instruments = observation.instruments()
                     reference_bands = observation.bands()
 
@@ -2373,15 +2446,17 @@ class SEDPlotter(Configurable):
                     if other_label == label: continue
 
                     # Get the color defined for this observation
-                    points_color = observation_colors[other_label]
+                    points_color = self.observation_colors[other_label]
 
                     # Get the other observed SED and its values
                     other_observation = self.observations[other_label]
                     wavelengths = other_observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                    fluxes = other_observation.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    fluxes = other_observation.photometry(unit=self.config.unit, add_unit=False,
+                                                          conversion_info=self.conversion_info)
                     instruments = other_observation.instruments()
                     bands = other_observation.bands()
-                    errors = other_observation.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    errors = other_observation.errors(unit=self.config.unit, add_unit=False,
+                                                      conversion_info=self.conversion_info)
 
                     # Get labels and descriptions for the filters
                     labels, descriptions = get_labels_and_descriptions(instruments, bands)
@@ -2391,10 +2466,11 @@ class SEDPlotter(Configurable):
                     for k in range(len(wavelengths)):
 
                         # Get marker
-                        marker = markers[self.unique_observation_point_labels.index(labels[k])]
+                        marker = self.observation_markers[self.unique_observation_point_labels.index(labels[k])]
 
                         # Find reference flux
-                        reference_flux = find_reference_flux(instruments[k], bands[k], wavelengths[k], reference_instruments,
+                        reference_flux = find_reference_flux(instruments[k], bands[k], wavelengths[k],
+                                                             reference_instruments,
                                                              reference_bands, reference_wavelengths, reference_fluxes)
 
                         # print(fluxes[k], reference_flux)
@@ -2413,26 +2489,35 @@ class SEDPlotter(Configurable):
                             value = (fluxes[k] - reference_flux) / reference_flux * 100.
                             error = ErrorBar.zero()
 
-                        else: value = error = None
+                        else:
+                            value = error = None
 
                         # Plot residual point
-                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75,
+                                                                          uplim_value=75)
                         residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7,
-                                                color=points_color, markeredgecolor='black', ecolor=points_color,
-                                                capthick=2, lolims=lolims, uplims=uplims, capsize=2)
+                                               color=points_color, markeredgecolor='black', ecolor=points_color,
+                                               capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
-        # CREATE THE LEGENDS
+    # -----------------------------------------------------------------
+
+    def _create_legends(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # INTRUMENTS
-        instruments_legend = self.main_plot.create_legend(instruments_legend_patches, instruments_legend_labels, **self.instruments_legend_properties)
+        instruments_legend = self.main_plot.create_legend(self.instruments_legend_patches, self.instruments_legend_labels, **self.instruments_legend_properties)
 
         # OBSERVATIONS
-        observations_legend = self.main_plot.create_legend(observations_legend_patches, observations_legend_labels, **self.observations_legend_properties)
+        observations_legend = self.main_plot.create_legend(self.observations_legend_patches, self.observations_legend_labels, **self.observations_legend_properties)
         # Extra legend: the different observations
-        #observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
+        # observations_legend = self.main_plot.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
 
         # MODELS
-        models_legend = self.main_plot.create_legend(models_legend_patches, models_legend_labels, **self.models_legend_properties)
+        models_legend = self.main_plot.create_legend(self.models_legend_patches, self.models_legend_labels, **self.models_legend_properties)
 
         # Add the legends
         self.legends.append(instruments_legend)
@@ -2447,21 +2532,45 @@ class SEDPlotter(Configurable):
 
             # Loop over the observations for only residuals
             for label in self.observation_labels_only_residuals:
-
-                rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_colors[label])
+                rectangle = patches.Rectangle((0, 0), 1, 1, fc=self.observation_colors[label])
                 legend_patches.append(rectangle)
                 legend_labels.append(label.replace("_", "\_"))
 
             # Create legend for each residual axis
             for residual_plot in self.residual_plots:
-
-                #residual_plot = self.residual_plots[self.observation_labels_as_reference.index()]
+                # residual_plot = self.residual_plots[self.observation_labels_as_reference.index()]
 
                 # Create legend
                 legend = residual_plot.create_legend(legend_patches, legend_labels, **self.observations_residuals_legend_properties)
 
                 # Add legend
                 self.legends_residuals.append(legend)
+
+    # -----------------------------------------------------------------
+
+    def plot_more_observations_with_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._old_legend_system = False
+
+        # Debuggging
+        log.debug("Plotting multiple observed SEDs with models ...")
+
+        # Plot the observations
+        self._plot_observations()
+
+        # Plot the models
+        self._plot_models()
+
+        # Plot the residusl
+        self._plot_residuals()
+
+        # CREATE THE LEGENDS
+        self._create_legends()
 
     # -----------------------------------------------------------------
 

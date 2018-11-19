@@ -418,8 +418,8 @@ class SED(WavelengthCurve):
         sed = super(SED, cls).from_file(path, **kwargs)
 
         # Set x name and y name
-        sed.x_name = "Wavelength"
-        sed.y_name = "Photometry"
+        sed.x_name = sed.colnames[0]
+        sed.y_name = sed.colnames[1]
 
         # Return the relation
         return sed
