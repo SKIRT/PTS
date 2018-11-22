@@ -45,16 +45,14 @@ def linear_regression(x, y):
 
 # -----------------------------------------------------------------
 
-def get_linear_fitted_values(x, y, new_x, xlog=False, ylog=False, return_parameters=False):
+def get_linear_fit_parameters(x, y, xlog=False, ylog=False):
 
     """
     This function ...
     :param x:
     :param y:
-    :param new_x:
     :param xlog:
     :param ylog:
-    :param return_parameters:
     :return:
     """
 
@@ -69,14 +67,54 @@ def get_linear_fitted_values(x, y, new_x, xlog=False, ylog=False, return_paramet
 
     # Perform fit
     slope, intercept = linear_regression(x, y)
-    #print("parameters", slope, intercept)
+
+    # Return
+    return slope, intercept
+
+# -----------------------------------------------------------------
+
+def get_linear_values(x, slope, intercept, xlog=False, ylog=False):
+
+    """
+    Thins function ...
+    :param x:
+    :param slope:
+    :param intercept:
+    :param xlog:
+    :param ylog:
+    :return:
+    """
 
     # Calculate new values
-    if xlog: new_x = np.log10(new_x)
-    new = slope * new_x + intercept
+    if xlog: x = np.log10(x)
+    y = slope * x + intercept
 
     # Convert?
-    if ylog: new = 10**new
+    if ylog: y = 10 ** y
+
+    # Return
+    return y
+
+# -----------------------------------------------------------------
+
+def get_linear_fitted_values(x, y, new_x, xlog=False, ylog=False, return_parameters=False):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param new_x:
+    :param xlog:
+    :param ylog:
+    :param return_parameters:
+    :return:
+    """
+
+    # Get the parameters
+    slope, intercept = get_linear_fit_parameters(x, y, xlog=xlog, ylog=ylog)
+
+    # Get the values
+    new = get_linear_values(new_x, slope, intercept, xlog=xlog, ylog=ylog)
 
     # Return
     if return_parameters: return new, slope, intercept

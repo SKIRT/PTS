@@ -42,6 +42,8 @@ locations = sequences.get_lists_combinations(["upper", "center", "lower"], ["lef
 # Create configuration definition
 definition = ConfigurationDefinition()
 
+#definition.add_flag("old", "old plotting methods", False)
+
 # SEDs from file
 definition.add_positional_optional("seds", "filepath_list_or_string_filepath_dictionary", "SED files to be plotted")
 definition.add_flag("multi", "look for multiple SEDs per file", False)
@@ -64,7 +66,8 @@ definition.add_optional("unit", "photometric_unit", "photometric unit", "Jy", co
 
 # Residual reference
 definition.add_optional("residual_reference", "string", "reference for the residuals", default_residual_reference, choices=residual_references)
-definition.add_flag("models_residuals", "plot residuals for only model SEDs", False)
+definition.add_flag("observations_residuals", "plot residuals between observed SEDs", True)
+definition.add_flag("models_residuals", "plot residuals between model SEDs", False)
 
 # Minimum and maximum reference
 definition.add_optional("minmax_wavelength_reference", "string", "reference for determining the minimum and maximum of the wavelength axis (default is both models and observations)", choices=residual_references)
@@ -149,6 +152,12 @@ definition.add_optional("yaxis_position", "string", "position of y axis ticks an
 # Legends positions
 definition.add_section("legends", "legend options")
 
+# Add?
+definition.sections["legends"].add_flag("instruments", "add instruments legend", True)
+definition.sections["legends"].add_flag("observations", "add observations legend", True)
+definition.sections["legends"].add_flag("models", "add models legend", True)
+definition.sections["legends"].add_flag("residuals", "add residuals legends", True)
+
 # LOC
 definition.sections["legends"].add_optional("instruments_location", "string", "location of instruments legend", default_instruments_loc, choices=locations)
 definition.sections["legends"].add_optional("observations_location", "string", "location of observations legend", default_observations_loc, choices=locations)
@@ -156,7 +165,7 @@ definition.sections["legends"].add_optional("models_location", "string", "locati
 
 # Residuals
 definition.sections["legends"].add_optional("observations_residuals_location", "string", "location of observations legend on residuals panels", default_observations_loc, choices=locations)
-definition.sections["legends"].add_optional("models_residuals_location", "string", "location of models legend on residuals panels", default_observations_loc, choices=locations)
+definition.sections["legends"].add_optional("models_residuals_location", "string", "location of models legend on residuals panels", default_models_loc, choices=locations)
 
 # NCOL
 definition.sections["legends"].add_optional("instruments_ncols", "positive_integer", "number of columns for instruments legend", 2)
@@ -171,5 +180,9 @@ definition.sections["legends"].add_optional("models_residuals_ncols", "positive_
 
 # For
 definition.add_flag("only_residuals_legend", "for SEDs for which only_residuals is enabled, show only in a seperate legend on the appropriate residuals panel, instead of in the list on the main panel")
+
+# -----------------------------------------------------------------
+
+definition.add_optional("single_observation_cmap", "string", "colormap for if only one observation", default="rainbow")
 
 # -----------------------------------------------------------------

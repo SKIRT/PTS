@@ -23,7 +23,7 @@ from matplotlib.colors import to_hex, to_rgb
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
 from .component import AnalysisRunComponent
-from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real, prompt_variable, open_box
+from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real, prompt_variable, open_box, prompt_choice
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
 from ...core.tools import formatting as fmt
@@ -94,7 +94,9 @@ from ..core.data import Data3D
 from ...core.tools import numbers
 from ...core.basics.curve import Curve
 from ...core.tools.serialization import load_dict, write_dict
-from ...magic.tools.fitting import linear_regression, get_linear_fitted_values
+from ...magic.tools.fitting import get_linear_fitted_values, get_linear_values
+from ...core.basics.plot import dark_pretty_colors
+from ...core.basics.table import SmartTable
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -140,7 +142,8 @@ _attenuation_command_name = "attenuation"
 _map_command_name = "map"
 _images_command_name = "images"
 _cubes_command_name = "cubes"
-_paper_command_name = "paper"
+_special_command_name = "special"
+_test_command_name = "test"
 
 # Evaluate
 _evaluate_command_name = "evaluate"
@@ -249,7 +252,8 @@ plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot 
 plot_commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
 plot_commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot the mock fluxes", None)
 plot_commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
-plot_commands[_paper_command_name] = ("plot_paper_command", True, "make plots for the RT modeling paper", None)
+plot_commands[_special_command_name] = ("plot_special_command", True, "make special plots", None)
+plot_commands[_test_command_name] = ("plot_test_command", True, "make test plots", None)
 plot_commands[_heating_command_name] = plot_heating_commands
 plot_commands[_absorption_command_name] = plot_absorption_commands
 plot_commands[_correlations_command_name] = plot_correlations_commands
@@ -3955,7 +3959,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def plot_paper_definition(self):
+    def plot_test_definition(self):
 
         """
         This function ...
@@ -3966,7 +3970,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition = ConfigurationDefinition(write_config=False)
 
         # Which plot
-        definition.add_required("which", "positive_integer", "index of the plot to make")
+        definition.add_required("which", "integer", "index of the plot to make")
 
         # Path for plot file
         definition.add_optional("path", "new_path", "save plot to file")
@@ -3976,7 +3980,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper_command(self, command, **kwargs):
+    def plot_test_command(self, command, **kwargs):
 
         """
         This function ...
@@ -3986,38 +3990,292 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get config
-        config = self.get_config_from_command(command, self.plot_paper_definition, **kwargs)
+        config = self.get_config_from_command(command, self.plot_test_definition, **kwargs)
 
-        # Plot #1: SEDs
-        if config.which == 1: self.plot_paper1(path=config.path)
+        # Test fill_between plotting
+        if config.which == 1: self.plot_test1(path=config.path)
 
-        # Plot #2: HEATING
-        elif config.which == 2: self.plot_paper2(path=config.path)
+        # Test plotting one observed SED
+        elif config.which == 2: self.plot_test2(path=config.path)
 
-        # Plot #3: HEATING CURVES (RADIAL AND VERTICAL)
-        elif config.which == 3: self.plot_paper3(path=config.path)
+        # Test plotting multiple observed SEDs, no overlap
+        elif config.which == 3: self.plot_test3(path=config.path)
 
-        # Plot #4: SPECTRAL HEATING
-        elif config.which == 4: self.plot_paper4(path=config.path)
+        # Test plotting multiple observed SEDs, overlapping
+        elif config.which == 4: self.plot_test4(path=config.path)
 
-        # Plot #5: CORRELATION BETWEEN sSFR and FUNEV VALUES
-        elif config.which == 5: self.plot_paper5(path=config.path)
+        # Test plotting one model SED
+        elif config.which == 5: self.plot_test5(path=config.path)
 
-        # Plot #6 CORRELATION BETWEEN CELL sSFR and FUNEV VALUES
-        elif config.which == 6: self.plot_paper6(path=config.path)
+        # Test plotting multiple model SEDs
+        elif config.which == 6: self.plot_test6(path=config.path)
 
-        # Plot #7 Newer correlation figure
-        elif config.which == 7: self.plot_paper7(path=config.path)
+        # Test plotting one observed and multiple model SEDs
+        elif config.which == 7: self.plot_test7(path=config.path)
 
-        # Plot #8 NEW SEDS plot
-        elif config.which == 8: self.plot_paper8(path=config.path)
+        # Test plotting multiple model SEDs
+        elif config.which == 8: self.plot_test8(path=config.path)
 
         # Invalid
-        else: raise ValueError("Invalid plot index: " + str(config.which))
+        else: raise ValueError("Invalid value for 'which'")
 
     # -----------------------------------------------------------------
 
-    def plot_paper1(self, path=None):
+    def plot_test1(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Extrapolate dust seds
+        total_dust_sed = self.get_dust_emission_sed("total")
+        internal_dust_sed = self.get_dust_emission_sed("sfr", dust_contribution="internal")
+        total_dust_sed = total_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True, ylog=True, replace_nan=0.)
+        internal_dust_sed = internal_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True, ylog=True, replace_nan=0.)
+
+        total_observed_stellar_sed = self.get_observed_stellar_sed("total")
+        total_observed_stellar_sed = total_observed_stellar_sed.extrapolated_from(q("50 micron"), regression_from_x=q("10 micron"), xlog=True, ylog=True, replace_nan=0.)
+
+        #sed = sed.extended_to_right(self.maximum_wavelength, logscale=True, points=self.wavelengths)
+        #sed.replace_zeros_by_lowest(0.01) # replace by one hundreth of the minimum value (except zero)
+
+        #print(total_dust_sed.y_array)
+        #print(internal_dust_sed.y_array)
+
+        #plot_curve(total_dust_sed, ylog=True, xlog=True)
+        #plot_curve(internal_dust_sed, ylog=True, xlog=True)
+        #plot_curve(total_observed_stellar_sed, xlog=True, ylog=True)
+
+        total_observed_stellar_sed.distance = self.galaxy_distance
+        total_dust_sed.distance = self.galaxy_distance
+        summed = total_observed_stellar_sed + total_dust_sed
+        observed_stellar = summed - total_dust_sed
+
+        #output = plot_curves([observed_stellar, summed], xlog=True, ylog=True, show=False)
+        #figure = output.figure
+        #plot = output.plot
+
+        figure = MPLFigure()
+        plot = figure.create_one_plot()
+        plot.set_xscale("log")
+        plot.set_ylim(-16,-11)
+        plot.axes.fill_between(observed_stellar.x_array, np.log10(observed_stellar.y_array), np.log10(summed.y_array), facecolor="blue", alpha=0.5)
+
+        # Show
+        figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_test2(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Define seperate filter tuples
+        fitting_filters = tuple(self.fitting_run.fitting_filters)
+
+        # Get SED
+        fitting = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters)  # 10 % additional errorbars
+
+        # Plot
+        plot_sed(fitting)
+
+    # -----------------------------------------------------------------
+
+    def plot_test3(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Define seperate filter tuples
+        fitting_filters = tuple(self.fitting_run.fitting_filters)
+        hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
+
+        # Add observed fluxes
+        fitting = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters)  # 10 % additional errorbars
+        other = self.get_reference_sed(clipped_name, additional_error=0.1, filters=hfi_and_2mass_filters)
+        seds = OrderedDict()
+        seds["Observation (fitting)"] = fitting
+        seds["Observation (other)"] = other
+
+        # Plot
+        plot_seds(seds)
+
+    # -----------------------------------------------------------------
+
+    def plot_test4(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get SEDs
+        reference = self.get_reference_sed(clipped_name, additional_error=0.1)
+        model = self.mock_fluxes
+
+        seds = OrderedDict()
+        seds["Observation"] = reference
+        seds["Model"] = model
+
+        # Plot
+        plot_seds(seds)
+
+    # -----------------------------------------------------------------
+
+    def plot_test5(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        total_sed = self.get_simulation_sed(total)
+        plot_sed(total_sed)
+
+    # -----------------------------------------------------------------
+
+    def plot_test6(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        total_sed = self.get_simulation_sed(total)
+
+        total_dust_sed = self.get_dust_emission_sed("total")
+        internal_dust_sed = self.get_dust_emission_sed("sfr", dust_contribution="internal")
+        total_dust_sed = total_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True,
+                                                          ylog=True, replace_nan=0.)
+        internal_dust_sed = internal_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"),
+                                                                xlog=True, ylog=True, replace_nan=0.)
+
+        total_observed_stellar_sed = self.get_observed_stellar_sed("total")
+        total_observed_stellar_sed = total_observed_stellar_sed.extrapolated_from(q("50 micron"),
+                                                                                  regression_from_x=q("10 micron"),
+                                                                                  xlog=True, ylog=True, replace_nan=0.)
+
+        seds = OrderedDict()
+        seds["total"] = total_sed
+        seds["stellar"] = total_observed_stellar_sed
+
+        plot_seds(seds, show_models_residuals=True)
+
+    # -----------------------------------------------------------------
+
+    def plot_test7(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+    
+    def plot_test8(self, path=None):
+        
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+        
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_special_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Which plot
+        definition.add_positional_optional("which", "integer_or_string", "name or index of the plot to make")
+
+        # Path for plot file
+        definition.add_optional("path", "new_path", "save plot to file")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def special_plot_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        descriptions = OrderedDict()
+
+        # Set
+        descriptions["colors"] = "show the different default PTS plotting colors"
+        descriptions["seds"] = "make a two-panel plot with a comparion between observation and simulation on the left and the reprocessing by dust on the right"
+        descriptions["heating"] = "make a three-panel plot with the face-on map of the heating fraction, relative difference with midplane map, and the distribution of heating fractions"
+        descriptions["heating_curves"] = "plot the radial and vertical heating fraction profiles"
+        descriptions["spectral_heating"] = "make a plot with face-on heating maps for different absorption bands, and a curve of the heating fraction as a function of wavelength in the first panel"
+        descriptions["ssfr_funev_pixels"] = "make a plot of the sSFR-Funev correlation for the model pixels"
+        descriptions["ssfr_funev_cells"] = "make a plot of the sSFR-Funev correlation for the dust cells"
+        descriptions["correlations"] = "plot various correlations"
+        descriptions["seds_combo"] = "make a single-panel plot that combines the comparison between observation and simulation and the absorption and re-emission by dust"
+        descriptions["heating_curve"] = "make a three-panel plot with the face-on heating map, the heating fraction distribution, and the radial heating curve"
+        descriptions["ssfr_funev_log"] = "plot the sSFR-Funev correlation for pixels and cells with Funev on a logarithmic scale"
+
+        # Return
+        return descriptions
+
+    # -----------------------------------------------------------------
+
+    def plot_special_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_special_definition, **kwargs)
+
+        # Plot not specified
+        if config.which is None: which = prompt_choice("which", "which plot to make", self.special_plot_descriptions)
+        else: which = config.which
+
+        # Get index
+        if types.is_string_type(which): index = self.special_plot_descriptions.keys().index(which)
+        elif types.is_integer_type(which): index = which
+        else: raise ValueError("Invalid type for 'which': must be integer or string")
+
+        # Get the correct method
+        func = getattr(self, "plot_special"+str(index))
+
+        # Call the plotting method
+        func(path=config.path)
+
+    # -----------------------------------------------------------------
+
+    def plot_special0(self, path=None):
 
         """
         This function ...
@@ -4026,7 +4284,45 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper SEDs plot ...")
+        log.info("Creating the colors plot ...")
+
+        # Create figure
+        figsize = (10, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot()
+
+        # Set colors
+        line_colors = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        for color in dark_pretty_colors:
+            if color not in line_colors: line_colors.append(color)
+
+        # Plot lines
+        x = np.linspace(0, 10)
+        for index, color in enumerate(line_colors):
+            y = x + index
+            plot.plot(x, y, color=color, label=color)
+
+        # Show legend with color names
+        plot.legend()
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_special1(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the SEDs plot ...")
 
         # Set limits
         unit = u("Lsun", density=True)
@@ -4129,6 +4425,89 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Save or show
         if path is not None: figure.saveto(path)
         else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fits_filepath(self):
+        return fs.join(self.analysis_run_path, "fits.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fits_file(self):
+        return fs.is_file(self.fits_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fits_table(self):
+        if self.has_fits_file: return SmartTable.from_file(self.fits_filepath)
+        else:
+            tab = SmartTable.from_columns([], [], [], names=["Name", "Slope", "Intercept"], dtypes=[str, float, float], dtype=[str, float, float])
+            tab.saveto(self.fits_filepath)
+            return tab
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fits_names(self):
+        return self.fits_table.get_column_values("Name")
+
+    # -----------------------------------------------------------------
+
+    def get_fits_parameters(self, name):
+        index = self.fits_table.find_index(name)
+        slope = self.fits_table["Slope"][index]
+        intercept = self.fits_table["Intercept"][index]
+        return slope, intercept
+
+    # -----------------------------------------------------------------
+
+    def has_fit(self, name):
+        return name in self.fits_names
+
+    # -----------------------------------------------------------------
+
+    def get_fitted_linear(self, name, x_array, y_array, new_x, xlog=False, ylog=False, description=None):
+
+        """
+        This function ...
+        :param name:
+        :param x_array:
+        :param y_array:
+        :param new_x:
+        :param xlog:
+        :param ylog:
+        :param description:
+        :return:
+        """
+
+        # Has fit parameters?
+        if self.has_fit:
+
+            # Get parameters
+            slope, intercept = self.get_fits_parameters(name)
+
+            # Calculate the fitted
+            fitted = get_linear_values(new_x, slope, intercept, xlog=xlog, ylog=ylog)
+
+        # Doesn't have parameters yet
+        else:
+
+            # Perform the fit
+            fitted, slope, intercept = get_linear_fitted_values(x_array, y_array, new_x, xlog=xlog, ylog=ylog, return_parameters=True)
+
+            # Set label
+            if description is not None: label = description
+            else: label = name.capitalize()
+
+            # Show the parameters
+            print(label + " slope =", slope)
+            print(label + " intercept =", intercept)
+
+        # Return
+        return fitted
 
     # -----------------------------------------------------------------
 
@@ -4486,7 +4865,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper2(self, path=None):
+    def plot_special2(self, path=None):
 
         """
         This function ...
@@ -4495,7 +4874,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper bolometric heating plot ...")
+        log.info("Creating the bolometric heating plot ...")
 
         # Create figure
         figsize = (20, 6,)
@@ -4553,7 +4932,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper3(self, path=None):
+    def plot_special3(self, path=None):
         
         """
         This function ...
@@ -4562,7 +4941,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper radial and vertical heating curves ...")
+        log.info("Creating the radial and vertical heating curves plot ...")
 
         # Create figure
         figsize = (9, 6,)
@@ -4626,7 +5005,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper4(self, path=None):
+    def plot_special4(self, path=None):
 
         """
         This function ...
@@ -4635,7 +5014,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper spectral heating plot ...")
+        log.info("Creating the spectral heating plot ...")
 
         # Get curve
         curve = self.get_spectral_absorption_fraction_curve(cells_name)
@@ -5009,19 +5388,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def funev_points_fit_m51(self):
-        fitted, slope, intercept = get_linear_fitted_values(self.m51_valid_ssfr_values, self.m51_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("M51 slope=", slope)
-        print("M51 intercept=", intercept)
-        return fitted
+        return self.get_fitted_linear("m51", self.m51_valid_ssfr_values, self.m51_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (M51 pixels)")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def funev_points_fit_m31(self):
-        fitted, slope, intercept = get_linear_fitted_values(self.m31_valid_ssfr_values, self.m31_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("M31 slope=", slope)
-        print("M31 intercept=", intercept)
-        return fitted
+        return self.get_fitted_linear("m31", self.m31_valid_ssfr_values, self.m31_valid_funev_values, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (M31 pixels)")
 
     # -----------------------------------------------------------------
 
@@ -5041,10 +5414,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def funev_points_fit_pixels(self):
-        fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_pixels.x_array, self.ssfr_funev_scatter_pixels.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Pixels slope=", slope)
-        print("Pixels intercept=", intercept)
-        return fitted
+        return self.get_fitted_linear("pixels", self.ssfr_funev_scatter_pixels.x_array, self.ssfr_funev_scatter_pixels.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels)")
 
     # -----------------------------------------------------------------
 
@@ -5063,10 +5433,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def funev_points_fit_pixels_adjusted(self):
-        fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_pixels_adjusted.x_array, self.ssfr_funev_scatter_pixels_adjusted.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Pixels (adjusted) slope=", slope)
-        print("Pixels (adjusted) intercept=", intercept)
-        return fitted
+        return self.get_fitted_linear("pixels_adjusted", self.ssfr_funev_scatter_pixels_adjusted.x_array, self.ssfr_funev_scatter_pixels_adjusted.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted)")
 
     # -----------------------------------------------------------------
 
@@ -5160,10 +5527,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def funev_points_fit_cells(self):
-        fitted, slope, intercept = get_linear_fitted_values(self.ssfr_funev_scatter_cells.x_array, self.ssfr_funev_scatter_cells.y_array, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Cells slope =", slope)
-        print("Cells intercept =", intercept)
-        return fitted
+        return self.get_fitted_linear("cells", self.ssfr_funev_scatter_cells.x_array, self.ssfr_funev_scatter_cells.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (cells)")
 
     # -----------------------------------------------------------------
 
@@ -5174,10 +5538,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Dust scale heights", upper=self.midplane_dust_heights)
 
         # Fit
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Midplane slope:", slope)
-        print("Midplane intercept:", intercept)
-        return fitted
+        return self.get_fitted_linear("midplane", fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (midplane)")
 
     # -----------------------------------------------------------------
 
@@ -5188,10 +5549,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", upper=self.inner_region_max_radius)
 
         # Fit
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Inner region slope:", slope)
-        print("Inner region intercept:", intercept)
-        return fitted
+        return self.get_fitted_linear("inner", fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (inner region)")
 
     # -----------------------------------------------------------------
 
@@ -5202,10 +5560,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", lower=self.inner_region_max_radius, upper=self.outer_region_min_radius)
 
         # Fit
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Intermediate region slope:", slope)
-        print("Intermediate region intercept:", intercept)
-        return fitted
+        return self.get_fitted_linear("intermediate", fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (intermediate region)")
 
     # -----------------------------------------------------------------
 
@@ -5216,10 +5571,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", lower=self.outer_region_min_radius, upper=self.max_radius)
 
         # Fit
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Outer region slope:", slope)
-        print("Outer region intercept:", intercept)
-        return fitted
+        return self.get_fitted_linear("outer", fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (outer region")
 
     # -----------------------------------------------------------------
 
@@ -5230,10 +5582,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("Radius", lower=self.inner_region_max_radius, upper=self.max_radius)
 
         # Fit
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("Outside inner region slope:", slope)
-        print("Outside inner region intercept:", intercept)
-        return fitted
+        return self.get_fitted_linear("outside_inner", fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (outside inner region)")
 
     # -----------------------------------------------------------------
 
@@ -5244,10 +5593,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fit_x, fit_y = self.get_ssfr_funev_array_for_bounds("vSFR", lower=1e-11)
 
         # Fit
-        fitted, slope, intercept = get_linear_fitted_values(fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, return_parameters=True)
-        print("High vSFR slope: ", slope)
-        print("High vSFR intercept: ", intercept)
-        return fitted
+        return self.get_fitted_linear("high_vsfr", fit_x, fit_y, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (high vSFR)")
 
     # -----------------------------------------------------------------
 
@@ -5299,7 +5645,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper5(self, path=None):
+    def plot_special5(self, path=None):
 
         """
         This function ...
@@ -5308,7 +5654,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper sSFR - Funev pixel correlation plot ...")
+        log.info("Creating the sSFR - Funev correlation plot ...")
 
         import mpl_scatter_density  # NOQA
 
@@ -5350,7 +5696,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper6(self, path=None):
+    def plot_special6(self, path=None):
 
         """
         This function ...
@@ -5359,7 +5705,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper advanced sSFR - Funev correlation plots ...")
+        log.info("Creating the advanced sSFR - Funev correlation plots ...")
 
         import mpl_scatter_density # NOQA
 
@@ -5526,7 +5872,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper7(self, path=None):
+    def plot_special7(self, path=None):
 
         """
         This function ...
@@ -5668,7 +6014,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_paper8(self, path=None):
+    def plot_special8(self, path=None):
 
         """
         This function ...
@@ -5677,7 +6023,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Inform the user
-        log.info("Creating the paper SEDs plot (NEW VERSION) ...")
+        log.info("Creating the combo - SEDs plot ...")
 
         # Set limits
         unit = u("Lsun", density=True)
@@ -5687,7 +6033,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         max_flux = PhotometricQuantity(10 ** 10, unit)
 
         # Create figure
-        figsize = (20, 12,)
+        figsize = (20, 10,)
         figure = MPLFigure(size=figsize)
 
         # Initialize dictionary for the SEDs (observed and simulated)
@@ -5697,32 +6043,47 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         fitting_filters = tuple(self.fitting_run.fitting_filters)
         hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
 
-        # Add SEDs
-        seds["Observed stellar"] = self.get_observed_stellar_sed("total")
-        seds["Absorbed"] = self.get_dust_absorption_sed("total")
-        seds["Dust"] = self.get_dust_emission_sed("total")
-        #seds["Scattered"] = self.get_scattered_sed("total")
-        seds["Internal dust (SFR)"] = self.get_dust_emission_sed("sfr", dust_contribution="internal")
-
+        # Get SEDs
+        total_observed_stellar_sed = self.get_observed_stellar_sed("total")
         # Add component simulation SEDs
-        #total_sed = self.get_simulation_sed(total)
+        total_sed = self.get_simulation_sed(total)
         #old_sed = self.get_simulation_sed(old)
         #young_sed = self.get_simulation_sed(young)
         #sfr_sed = self.get_simulation_sed(sfr)
         # summed_sed = old_sed + young_sed + sfr_sed
         # summed_sed_no_sfr = old_sed + young_sed
         # summed_sed_no_sfr_mir = summed_sed_no_sfr.splice(min_wavelength=q("15 micron"), max_wavelength=q("150 micron"))
-
         # Get observed stellar SEDs
         old_sed = self.get_observed_stellar_sed(old)
         young_sed = self.get_observed_stellar_sed(young)
         sfr_sed = self.get_observed_stellar_sed(sfr)
+        #sfr_sed_intrinsic = self.get_observed_stellar_sed(sfr, dust_contribution=internal_name)
+
+        # Extrapolate old and total observed stellar seds
+        #start_wavelength = sed.get_max_positive_wavelength(upper=self.observed_stellar_sed_extrapolate_from)
+        total_observed_stellar_sed = total_observed_stellar_sed.extrapolated_from(q("50 micron"), regression_from_x=q("10 micron"), xlog=True, ylog=True, replace_nan=0.)
+        old_sed = old_sed.extrapolated_from(q("50 micron"), regression_from_x=q("10 micron"), xlog=True, ylog=True, replace_nan=0.)
+
+        # Extrapolate dust seds
+        total_dust_sed = self.get_dust_emission_sed("total")
+        internal_dust_sed = self.get_dust_emission_sed("sfr", dust_contribution="internal")
+        total_dust_sed = total_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True, ylog=True, replace_nan=0.)
+        internal_dust_sed = internal_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True, ylog=True, replace_nan=0.)
+
+        # Add SEDs
+        seds["Observed stellar"] = total_observed_stellar_sed
+        seds["Dust"] = total_dust_sed
+        seds["Internal dust (SFR)"] = internal_dust_sed
+        seds["Absorbed"] = self.get_dust_absorption_sed("total")
+        seds["Absorbed (internal)"] = self.get_dust_absorption_sed(sfr, "internal")  # INTERNALLY ABSORBED ENERGY
 
         # Add simulated SEDs
-        #seds["Total"] = total_sed
+        seds["Total"] = total_sed
         seds["Old"] = old_sed
         seds["Young"] = young_sed
         seds["Ionizing"] = sfr_sed
+        #seds["Ionizing_internal"] = sfr_sed_intrinsic
+
         # seds1["Summed"] = summed_sed
         # seds1["Summed_nosfr"] = summed_sed_no_sfr
         # seds1["Summed_nosfr_mir"] = summed_sed_no_sfr_mir
@@ -5740,23 +6101,213 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Set options
         plot_options = dict()
 
+        # Absorbed colors
+        absorbed_color = "mediumslateblue"
+        absorbed_internal_color = "deepskyblue"
+
+        # Stellar colors
+        old_color = "orange"
+        young_color = "lawngreen"
+        ionizing_color = "royalblue"
+
+        # Dust colors
+        #absorbed_color = "blueviolet"
+        #dust_color = "mediumslateblue"
+        dust_color = "darkred"
+        #internal_dust_color = "orange"
+        internal_dust_color = "darkmagenta"
+
         # Set options
-        #plot_options["Total"] = {"residuals": True, "residual_color": "darkgrey"}
-        plot_options["Old"] = {"residuals": False}
-        plot_options["Young"] = {"residuals": False}
-        plot_options["Ionizing"] = {"residuals": False}
+        plot_options["Total simulated SED"] = {"residuals": True, "residual_color": "darkgrey", "only_residuals": True}
+        plot_options["Old"] = {"residuals": False, "color": old_color}
+        plot_options["Young"] = {"residuals": False, "color": young_color}
+        plot_options["Ionizing"] = {"residuals": False, "color": ionizing_color}
+        #plot_options["Ionizing_internal"] = {"above": "Ionizing", "residuals": False, "color": "deepskyblue"}
+
         plot_options["Mock fluxes"] = {"only_residuals": True, "as_reference": False}
         plot_options["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
-        #plot_options["Summed"] = {"ghost": True}
-        plot_options["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar"}
-        plot_options["Dust"] = {"above": "Observed stellar", "color": "red"}
-        plot_options["Internal dust (SFR)"] = {"above": "Observed stellar", "color": "orange"} #"fill": False}
+        plot_options["Observed stellar"] = {"residuals": False, "color": "black"}
+
+        plot_options["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar", "residuals": False, "color": absorbed_color}
+        plot_options["Absorbed (internal)"] = {"above": "Ionizing", "residuals": False, "color": absorbed_internal_color}
+        plot_options["Dust"] = {"above": "Observed stellar", "color": dust_color, "residuals": False}
+        plot_options["Internal dust (SFR)"] = {"above": "Observed stellar", "color": internal_dust_color, "residuals": False} #"fill": False}
 
         # Plot
-        plot_seds(seds, figure=figure, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
+        plotter = plot_seds(seds, figure=figure, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux,
                   distance=self.galaxy_distance, options=plot_options, tex=False, unit=unit,
                   residual_reference="observations", smooth_residuals=True, observations_legend_ncols=1,
-                  instruments_legend_ncols = 3, only_residuals_legend=True, observations_residuals_legend_location="lower left")
+                  instruments_legend_ncols=3, only_residuals_legend=True, observations_residuals_legend_location="lower left", models_residuals_legend_location="upper left", show=False,
+                  show_models_legend=False)
+
+        ## Create legends
+
+        #props = dict()
+        #props["loc"] = self.config.legends.observations_residuals_location
+        #props["numpoints"] = 1
+        #props["scatterpoints"] = 4
+        #props["ncol"] = self.config.legends.observations_residuals_ncols
+        #props["shadow"] = False
+        #props["frameon"] = True
+        #props["facecolor"] = None
+        #props["fontsize"] = self.config.plot.legend_fontsize
+
+        # Set legend specs
+        stellar_legend_lines = OrderedDict()
+        stellar_legend_lines["Total"] = "black"
+        stellar_legend_lines["Old stars"] = old_color
+        stellar_legend_lines["Young stars"] = young_color
+        stellar_legend_lines["Ionizing stars"] = ionizing_color
+
+        # Set legend props
+        stellar_legend_props = dict()
+        stellar_legend_props["title"] = "Observed stellar"
+        stellar_legend_props["loc"] = "upper center"
+
+        # Stellar legend
+        plotter.add_line_legend(stellar_legend_lines, props=stellar_legend_props)
+
+        # Set legend specs
+        absorbed_legend_rectangles = OrderedDict()
+        absorbed_legend_rectangles["Diffuse dust"] = absorbed_color
+        absorbed_legend_rectangles["Internal dust"] = absorbed_internal_color
+
+        # Set legend props
+        absorbed_legend_props = dict()
+        absorbed_legend_props["title"] = "Absorbed"
+        absorbed_legend_props["loc"] = "upper right"
+
+        # Absorbed legend
+        plotter.add_rectangle_legend(absorbed_legend_rectangles, props=absorbed_legend_props)
+
+        # Set legend specs
+        dust_legend_rectangles = OrderedDict()
+        dust_legend_rectangles["Diffuse dust"] = dust_color
+        dust_legend_rectangles["Internal dust"] = internal_dust_color
+
+        # Set legend props
+        dust_legend_props = dict()
+        dust_legend_props["title"] = "Dust emission"
+        dust_legend_props["loc"] = "center right"
+
+        # Dust legend
+        plotter.add_rectangle_legend(dust_legend_rectangles, props=dust_legend_props)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_special9(self, path=None):
+        
+        """
+        This function ...
+        :param path:
+        :return: 
+        """
+        
+        # Inform the user
+        log.info("Creating the heating (maps + curve) plot ...")
+
+        # Create figure
+        figsize = (20, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Set width ratios
+        # width_ratios = [0.5, 0.5, 0.5]
+        width_ratios = None
+
+        # Create plots
+        plot0, plot1, plot2 = figure.create_row(3, width_ratios=width_ratios)
+
+        # Zoom from the normal galaxy truncation
+        zoom = 1.1
+        radius = self.physical_truncation_radius * zoom
+        offset = q("5 kpc")
+
+        # Set radii to plot
+        radii = [self.inner_region_max_radius, self.outer_region_min_radius]
+
+        # Get the heating maps
+        midplane = self.get_heating_map("midplane")
+        faceon = self.get_heating_map("cells")
+        faceon.apply_mask_nans(midplane.nans)
+        midplane.apply_mask_nans(faceon.nans)
+
+        # Plot the faceon heating map
+        plot_map_centered(faceon, radius, offset, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0, plot_radii=radii)
+
+        # Plot distribution
+        # print(self.heating_distribution)
+        # distr_axes = figure.figure.add_subplot(gs[1])
+        # plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
+        plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval,
+                          plot=plot1, show_mean=True, show_median=True, show_most_frequent=False)
+        plot1.set_xlabel("Heating fraction by unevolved stars")
+        #plot1.hide_yaxis()
+
+        # Plot radial curve
+        radii = [self.inner_region_max_radius, self.outer_region_min_radius]
+        plot_curve(self.radial_heating_fraction_curve, vlines=radii, ylimits=self.heating_fraction_interval, plot=plot2, vlinestyle="dashed", vlinecolor="green")
+
+        # Save or show
+        figure.tight_layout()
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_special10(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+        
+        # Inform the user
+        log.info("Creating the sSFR-Funev (pixels+cells) correlation plot ...")
+
+        import mpl_scatter_density  # NOQA
+
+        # Create the figure
+        figsize = (8, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create row of plots
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Make the first plot
+        xlog = True
+        ylog = True
+
+        xlimits = (1e-14, 5e-10,)
+        ylimits = (0.01,1,)
+
+        # plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
+        output0 = plot_scatters_astrofrog(self.ssfr_funev_pixel_scatters, xlimits=xlimits,
+                                          ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False,
+                                          plot=plot, colors=self.ssfr_funev_pixel_colors)
+
+        # Plot fits
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color)
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color)
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81", color=self.darker_red)
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
+
+        # Make the second plot
+        output1 = plot_scatter_astrofrog(self.ssfr_funev_scatter_cells, xlimits=xlimits,
+                                         ylimits=ylimits, xlog=True, ylog=False, plot=plot,
+                                         color="red")
+
+        # Add legend for fits
+        plot.legend(loc="lower right")
+
+        # Plot fits
+        # plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81 pixels", color=self.darker_red)
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
 
         # Save or show
         if path is not None: figure.saveto(path)

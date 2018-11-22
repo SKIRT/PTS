@@ -2037,7 +2037,7 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
 
 def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                 xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-                ynonzero=False, x_label=None, y_label=None):
+                ynonzero=False, x_label=None, y_label=None, show=None):
 
     """
     This function ...
@@ -2056,6 +2056,7 @@ def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=N
     :param ynonzero:
     :param x_label:
     :param y_label:
+    :param show:
     :return:
     """
 
@@ -2077,9 +2078,9 @@ def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=N
         if hasattr(ylimits[1], "unit"): ylimits[1] = ylimits[1].to(y_unit).value
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
+    return plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
             xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
-            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
+            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero, show=show)
 
 # -----------------------------------------------------------------
 # PLOTTING SCATTER

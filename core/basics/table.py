@@ -347,6 +347,8 @@ class SmartTable(Table):
 
         #if "names" in kwargs: kwargs.pop("names")
         if "units" in kwargs: kwargs.pop("units")
+        #if "dtypes" in kwargs: kwargs["dtype"] = kwargs.pop("dtypes")
+        #print(kwargs)
 
         # Call the constructor of the base class
         super(SmartTable, self).__init__(*args, **kwargs)
@@ -379,12 +381,6 @@ class SmartTable(Table):
 
     @property
     def has_column_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.column_info) > 0
 
     # -----------------------------------------------------------------
@@ -1032,6 +1028,7 @@ class SmartTable(Table):
         :return:
         """
 
+        #print("adding column info", name, dtype, unit, description, index)
         if types.is_string_type(unit): unit = u(unit)
         if index is not None: self.column_info.insert(index, (name, dtype, unit, description))
         else: self.column_info.append((name, dtype, unit, description))
@@ -1135,6 +1132,7 @@ class SmartTable(Table):
             data = []
 
             # Add column
+            #print(name, dtype)
             col = MaskedColumn(data=data, name=name, dtype=dtype, unit=unit)
             self.add_column(col)
 
