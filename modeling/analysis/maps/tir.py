@@ -51,13 +51,13 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         :return:
         """
 
-        # 2. Make the maps
+        # Make the maps
         self.make_maps()
 
-        # 3. Write
+        # Write
         self.write()
 
-        # 4. Plot
+        # Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -276,12 +276,6 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
     @property
     def maps_sub_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.tir_path
 
     # -----------------------------------------------------------------

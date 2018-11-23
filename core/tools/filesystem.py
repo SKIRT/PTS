@@ -3802,6 +3802,29 @@ def get_columns(filepath, method="numpy", dtype=None, indices=None):
 
 # -----------------------------------------------------------------
 
+def write_columns(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    import numpy as np
+
+    # Get filepath
+    filepath = args[0]
+    if not types.is_string_type(filepath): raise ValueError("First argument must be the filepath")
+
+    # Get columns
+    cols = args[1:]
+
+    # Save
+    np.savetxt(filepath, np.transpose(cols))
+
+# -----------------------------------------------------------------
+
 def get_2d_data(filepath, method="numpy", dtype=None, columns=None, base="column"):
 
     """

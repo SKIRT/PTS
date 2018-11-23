@@ -86,7 +86,6 @@ analyse_images | -- | analysis.images.ImagesAnalyser | arguments | Create mock i
 analyse_fluxes | -- | analysis.fluxes.FluxesAnalyser | arguments | Calculate mock fluxes from analysis model
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
 analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
-analyse_maps | -- | analysis.maps.maps.MapsAnalyser | arguments | Analyse maps derived from the simulated images
 analyse_colour_maps | -- | analysis.maps.colours.ColourMapsAnalyser | arguments | Analyse colour maps derived from the simulated images
 analyse_ssfr_maps | -- | analysis.maps.ssfr.SSFRMapsAnalyser | arguments | Analyse sSFR maps derived from the simulated images
 analyse_tir_maps | -- | analysis.maps.tir.TIRMapsAnalyser | arguments | Analyse TIR maps derived from the simulated images

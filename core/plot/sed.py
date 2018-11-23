@@ -414,6 +414,9 @@ class SEDPlotter(Configurable):
         self.observation_colors = dict()
         self.observation_markers = None
 
+        # Dictionary that keeps data about filling between curves
+        self.fills = dict()
+
     # -----------------------------------------------------------------
 
     @property
@@ -1649,8 +1652,23 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def _get_next_model_linecolor_residuals(self):
+
+        # If there are not enough linestyles, different colors
+        if self.nmodels_for_residuals > len(line_styles): return sequences.find_first_not_in(["black"] + self.model_linecolors, self.model_colors.values())
+
+        # If there are enough linestyles, only black color (line styles will be different)
+        else: return "black"
+
+    # -----------------------------------------------------------------
+
     def _get_next_model_linestyle_residuals(self):
-        return self.model_linestyle_iterator.next()
+
+        # If there are not enough linestyles, just normal lines
+        if self.nmodels_for_residuals > len(line_styles): return "-"
+
+        # If there are enough linestyles, return the next
+        else: return self.model_linestyle_iterator.next()
 
     # -----------------------------------------------------------------
 
@@ -1740,8 +1758,10 @@ class SEDPlotter(Configurable):
             # Determine linecolor
             if model_color is not None: linecolor = model_color
             elif ghost: linecolor = "lightgrey"
-            elif plot_residuals: linecolor = "black"
+            elif plot_residuals: linecolor = self._get_next_model_linecolor_residuals() #linecolor = "black"
             else: linecolor = self._get_next_model_linecolor()
+
+            #print(model_label, plot_residuals)
 
             # Determine linestyle
             if model_linestyle is not None: linestyle = model_linestyle
@@ -1776,7 +1796,39 @@ class SEDPlotter(Configurable):
             self._models[model_label].above_fluxes = above_fluxes
 
             # Fill
-            if above is not None and fill: self.main_plot.axes.fill_between(wavelengths, np.log10(above_fluxes), np.log10(fluxes), facecolor=self.model_colors[model_label], alpha=0.5, label=model_label.replace("_", "\_"))
+            if above is not None and fill:
+
+                # Get fill data
+                fill_wavelengths = wavelengths
+                fill_lower = np.log10(above_fluxes)
+                fill_upper = np.log10(fluxes)
+                fill_log_wavelengths = np.log10(fill_wavelengths)
+
+                #print("fill")
+                #print("wavelengths", fill_wavelengths)
+                #print("lower", fill_lower)
+                #print("upper", fill_upper)
+
+                # Interpolate nans
+                #fill_log_wavelengths = np.log10(fill_wavelengths)
+
+                #nans_lower = np.isnan(fill_lower)
+                #nans_upper = np.isnan(fill_upper)
+                #nans = nans_lower + nans_upper
+                #valid = np.isfinite(fill_lower) * np.isfinite(fill_upper)
+                #invalid = np.logical_not(valid)
+                #valid_fill_wavelengths = fill_wavelengths[valid]
+                #valid_fill_lower = fill_lower[valid]
+                #valid_fill_upper = fill_upper[valid]
+
+                fill_lower = interpolate_and_extrapolate_nans(fill_log_wavelengths, fill_lower)
+                fill_upper = interpolate_and_extrapolate_nans(fill_log_wavelengths, fill_upper)
+
+                # Set fill data
+                self.fills[model_label] = (fill_wavelengths, fill_lower, fill_upper)
+
+                # Fill
+                self.main_plot.axes.fill_between(fill_wavelengths, fill_lower, fill_upper, facecolor=self.model_colors[model_label], alpha=0.5, label=model_label.replace("_", "\_"))
 
             # Create for legend
             if not ghost and not (only_residuals and self.config.only_residuals_legend):
@@ -3585,5 +3637,45 @@ def join_observed_seds(seds):
 
     # Return
     return joined_sed
+
+# -----------------------------------------------------------------
+
+def interpolate_and_extrapolate_nans(x, y):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :return:
+    """
+
+    # Get nans
+    nan_indices = np.argwhere(np.isnan(y))
+    if len(nan_indices) == 0: return y
+    nan_indices = nan_indices[0]
+
+    valid = np.isfinite(y)
+    valid_x = x[valid]
+    valid_y = y[valid]
+    #print(valid_x)
+    #print(valid_y)
+
+    # Do the interpolation
+    interpolation = interp1d(valid_x, valid_y, kind="linear", fill_value="extrapolate")
+
+    # Get array of new x
+    new_y = y.copy()
+
+    # Loop over the nan indices
+    for index in nan_indices:
+
+        xi = x[index]
+        interpolated = interpolation(xi)
+        #original = y[index]
+        #print(original, interpolated)
+        new_y[index] = interpolated
+
+    # Return the new data
+    return new_y
 
 # -----------------------------------------------------------------

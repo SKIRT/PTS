@@ -166,12 +166,6 @@ class MapMakerBase(GalaxyModelingComponent):
 
     @abstractproperty
     def maps_sub_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
@@ -1043,7 +1037,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 # if types.is_dictionary(self.origins[method]):
 
                 # Directory path
-                path = fs.join(self.maps_sub_path, method)
+                path = fs.create_directory_in(self.maps_sub_path, method)
 
                 # Origins path
                 origins_path = fs.join(path, origins_filename)
@@ -1085,7 +1079,7 @@ class MapMakerBase(GalaxyModelingComponent):
                 # if types.is_dictionary(self.methods[method]):
 
                 # Directory path
-                path = fs.join(self.maps_sub_path, method)
+                path = fs.create_directory_in(self.maps_sub_path, method)
 
                 # Methods path
                 methods_path = fs.join(path, methods_filename)
@@ -2261,13 +2255,11 @@ class MapMakerBase(GalaxyModelingComponent):
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
 
-                if method not in self.methods: raise ValueError(
-                    "'" + method + "' section of the methods is missing")
+                if method not in self.methods: raise ValueError("'" + method + "' section of the methods is missing")
 
                 # Loop over the maps
                 for name in self.maps[method]:
-                    if name not in self.methods[method]: raise ValueError(
-                        "Method for '" + method + "/" + name + "' map is not defined")
+                    if name not in self.methods[method]: raise ValueError("Method for '" + method + "/" + name + "' map is not defined")
 
             # No different methods
             else:
@@ -2277,48 +2269,24 @@ class MapMakerBase(GalaxyModelingComponent):
 
     @abstractmethod
     def load_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.load_collection()
 
     # -----------------------------------------------------------------
 
     @abstractmethod
     def load_static_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def static_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.load_static_collection()
 
     # -----------------------------------------------------------------

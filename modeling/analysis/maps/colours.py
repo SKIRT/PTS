@@ -52,16 +52,16 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
         :return:
         """
 
-        # 2. Load the data
+        # Load the data
         self.load_data()
 
-        # 3. Make the maps
+        # Make the maps
         self.make_maps()
 
-        # 4. Write
+        # Write
         self.write()
 
-        # 5. Plot
+        # Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -176,12 +176,6 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
 
     @property
     def maps_sub_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.colours_path
 
     # -----------------------------------------------------------------

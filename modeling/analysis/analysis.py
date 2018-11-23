@@ -97,6 +97,14 @@ from ...core.tools.serialization import load_dict, write_dict
 from ...magic.tools.fitting import get_linear_fitted_values, get_linear_values
 from ...core.basics.plot import dark_pretty_colors
 from ...core.basics.table import SmartTable
+from .maps.colours import ColourMapsAnalyser
+from .maps.ssfr import SSFRMapsAnalyser
+from .maps.tir import TIRMapsAnalyser
+from .maps.attenuation import AttenuationMapsAnalyser
+from .maps.old import OldMapsAnalyser
+from .maps.dust import DustMapsAnalyser
+from .maps.young import YoungMapsAnalyser
+from .maps.ionizing import IonizingMapsAnalyser
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -156,6 +164,7 @@ _sfr_command_name = "sfr"
 _correlations_command_name = "correlations"
 _fluxes_command_name = "fluxes"
 _residuals_command_name = "residuals"
+_maps_command_name = "maps"
 
 # -----------------------------------------------------------------
 
@@ -375,6 +384,7 @@ commands[_correlations_command_name] = ("analyse_correlations_command", True, "a
 commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
 commands[_fluxes_command_name] = ("analyse_fluxes_command", True, "analyse the simulation fluxes", None)
 commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
+commands[_maps_command_name] = ("analyse_maps_command", True, "analyse maps", None)
 
 # -----------------------------------------------------------------
 
@@ -479,6 +489,18 @@ salim_name = "salim"
 ke_name = "ke"
 mappings_name = "mappings"
 mappings_ke_name = "mappings_ke"
+
+# -----------------------------------------------------------------
+
+colour_map_name = "colour"
+ssfr_map_name = "ssfr"
+tir_map_name = "tir"
+attenuation_map_name = "attenuation"
+old_map_name = "old"
+dust_map_name = "dust"
+young_map_name = "young"
+ionizing_map_name = "ionizing"
+map_names = [colour_map_name, ssfr_map_name, tir_map_name, attenuation_map_name, old_map_name, dust_map_name, young_map_name, ionizing_map_name]
 
 # -----------------------------------------------------------------
 
@@ -4405,9 +4427,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Set options
         plot_options2 = dict()
-        plot_options2["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar"}
-        plot_options2["Dust"] = {"above": "Observed stellar"}
-        plot_options2["Internal dust (SFR)"] = {"above": "Observed stellar", "color": "lightgrey", "fill": False} # color does not work yet
+        plot_options2["Observed stellar"] = {"residuals": False}
+        plot_options2["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar", "residuals": False}
+        plot_options2["Dust"] = {"above": "Observed stellar", "residuals": False}
+        plot_options2["Scattered"] = {"residuals": False}
+        plot_options2["Internal dust (SFR)"] = {"above": "Observed stellar", "color": "lightgrey", "fill": False, "residuals": False}
 
         # Plot SECOND
         plot_seds(seds2, figure=figure, main_plot=main_plots[1], show=False, # don't show yet
@@ -6061,12 +6085,24 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Extrapolate old and total observed stellar seds
         #start_wavelength = sed.get_max_positive_wavelength(upper=self.observed_stellar_sed_extrapolate_from)
+        total_observed_stellar_sed = total_observed_stellar_sed.extended_to_right(q("2000 micron"), logscale=True, points=5)
         total_observed_stellar_sed = total_observed_stellar_sed.extrapolated_from(q("50 micron"), regression_from_x=q("10 micron"), xlog=True, ylog=True, replace_nan=0.)
+
         old_sed = old_sed.extrapolated_from(q("50 micron"), regression_from_x=q("10 micron"), xlog=True, ylog=True, replace_nan=0.)
 
-        # Extrapolate dust seds
+        # Get dust SEDs
         total_dust_sed = self.get_dust_emission_sed("total")
         internal_dust_sed = self.get_dust_emission_sed("sfr", dust_contribution="internal")
+        #print(total_dust_sed.x_array[-10:], total_dust_sed.wavelength_unit)
+        #print(internal_dust_sed.x_array[-10:], internal_dust_sed.wavelength_unit)
+
+        # Extend dust seds to the right
+        total_dust_sed = total_dust_sed.extended_to_right(q("2000 micron"), logscale=True, points=5)
+        internal_dust_sed = internal_dust_sed.extended_to_right(q("2000 micron"), logscale=True, points=5)
+        #print(total_dust_sed.x_array[-10:], total_dust_sed.wavelength_unit)
+        #print(internal_dust_sed.x_array[-10:], internal_dust_sed.wavelength_unit)
+
+        # Extrapolate dust seds
         total_dust_sed = total_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True, ylog=True, replace_nan=0.)
         internal_dust_sed = internal_dust_sed.extrapolated_from(q("800 micron"), regression_from_x=q("500 micron"), xlog=True, ylog=True, replace_nan=0.)
 
@@ -6077,8 +6113,10 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         seds["Absorbed"] = self.get_dust_absorption_sed("total")
         seds["Absorbed (internal)"] = self.get_dust_absorption_sed(sfr, "internal")  # INTERNALLY ABSORBED ENERGY
 
+        total_simulated_sed_name = "Total simulation"
+
         # Add simulated SEDs
-        seds["Total"] = total_sed
+        seds[total_simulated_sed_name] = total_sed
         seds["Old"] = old_sed
         seds["Young"] = young_sed
         seds["Ionizing"] = sfr_sed
@@ -6118,7 +6156,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         internal_dust_color = "darkmagenta"
 
         # Set options
-        plot_options["Total simulated SED"] = {"residuals": True, "residual_color": "darkgrey", "only_residuals": True}
+        plot_options[total_simulated_sed_name] = {"residuals": True, "residual_color": "darkgrey", "only_residuals": True}
         plot_options["Old"] = {"residuals": False, "color": old_color}
         plot_options["Young"] = {"residuals": False, "color": young_color}
         plot_options["Ionizing"] = {"residuals": False, "color": ionizing_color}
@@ -6192,6 +6230,10 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Dust legend
         plotter.add_rectangle_legend(dust_legend_rectangles, props=dust_legend_props)
+
+        # Show fills
+        fill_wavelengths, fill_lower, fill_upper = plotter.fills["Dust"]
+        fs.write_columns(fs.join(self.analysis_run_path, "fill.dat"), fill_wavelengths, fill_lower, fill_upper)
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -10526,6 +10568,261 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         analyser.config.run = self.config.run
 
         # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Which maps to create
+        definition.add_required("name", "string", "which map to make", choices=map_names)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_maps_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Set all kwargs
+        #kwargs.update(self.analyse_maps_kwargs)
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_maps_definition, **kwargs)
+
+        # Colour maps
+        if config.name == colour_map_name: self.analyse_colour_maps()
+
+        # sSFR maps
+        elif config.name == ssfr_map_name: self.analyse_ssfr_maps()
+
+        # TIR
+        elif config.name == tir_map_name: self.analyse_tir_maps()
+
+        # Attenuation
+        elif config.name == attenuation_map_name: self.analyse_attenuation_maps()
+
+        # Old
+        elif config.name == old_map_name: self.analyse_old_stellar_maps()
+
+        # Dust
+        elif config.name == dust_map_name: self.analyse_dust_maps()
+
+        # Young
+        elif config.name == young_map_name: self.analyse_young_stellar_maps()
+
+        # Ionizing
+        elif config.name == ionizing_map_name: self.analyse_ionizing_stellar_maps()
+
+        # Invalid
+        else: raise ValueError("Invalid map name: '" + config.name + "'")
+
+    # -----------------------------------------------------------------
+
+    def analyse_colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing colour maps ...")
+
+        # Create the analyser
+        analyser = ColourMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_ssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing sSFR maps ...")
+
+        # Create the analyser
+        analyser = SSFRMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing TIR maps ...")
+
+        # Create the analyser
+        analyser = TIRMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing attenuation maps ...")
+
+        # Create the analyser
+        analyser = AttenuationMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_old_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing old stellar maps ...")
+
+        # Create the analyser
+        analyser = OldMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_dust_maps(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing dust maps ...")
+
+        # Create the analyser
+        analyser = DustMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_young_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing young stellar maps ...")
+
+        # Create the analyser
+        analyser = YoungMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_ionizing_stellar_maps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing ionizing stellar maps ...")
+
+        # Create the analyser
+        analyser = IonizingMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
         analyser.run()
 
     # -----------------------------------------------------------------
