@@ -22,7 +22,7 @@ from ....core.basics.log import log
 from ...maps.component import MapMakerBase
 from ...maps.collection import MapsCollection, StaticMapsCollection
 from ....core.filter.filter import parse_filter
-from ....magic.core.list import NamedFrameList
+from ....magic.core.list import NamedFrameList, uniformize
 from ....core.basics.distribution import Distribution
 from ....core.tools import filesystem as fs
 from ....core.tools import types
@@ -82,6 +82,26 @@ class MapsAnalysisComponent(AnalysisRunComponent, MapMakerBase):
         """
 
         return self.analysis_run.get_simulated_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_frames_for_filters(self, *fltrs, **kwargs):
+
+        """
+        This function ...
+        :param fltrs:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the frames
+        frames = [self.get_frame_for_filter(fltr) for fltr in fltrs]
+
+        # Uniformize
+        if kwargs.pop("uniformize", False): frames = uniformize(*frames)
+
+        # Return
+        return frames
 
     # -----------------------------------------------------------------
 
@@ -158,6 +178,12 @@ class MapsAnalysisComponent(AnalysisRunComponent, MapMakerBase):
     @property
     def dust_path(self):
         return self.analysis_run.dust_maps_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rgb_path(self):
+        return self.analysis_run.rgb_maps_path
 
     # -----------------------------------------------------------------
 

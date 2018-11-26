@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import numpy as np
 
 # Import astronomical modules
 from astropy.io.fits import Header
@@ -165,6 +166,47 @@ class Image(object):
             frame = kwargs[name]
             if not isinstance(frame, Frame): raise ValueError("Not a frame: '" + name + "'")
             image.add_frame(frame, name=name)
+
+        # Return the image
+        return image
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_3d_array(cls, array, split_axis=-1, name=None, wcs=None, names=None):
+
+        """
+        This function ...
+        :param array:
+        :param split_axis:
+        :param name:
+        :param wcs:
+        :param names:
+        :return:
+        """
+
+        # Move axis to first position
+        array = np.moveaxis(array, split_axis, 0)
+        nframes = array.shape[0]
+
+        # Create image
+        if name is None: image = cls()
+        else: image = cls(name=name)
+
+        # Add the frames
+        for index in range(nframes):
+
+            # Are names defined?
+            if names is not None: frame_name = names[index]
+            else: frame_name = None
+
+            # Create the frame
+            print(array[index])
+            frame = Frame(array[index], wcs=wcs, name=frame_name)
+
+            # Add the frame
+            if frame_name is None: frame_name = "frame" + str(index)
+            image.add_frame(frame, frame_name)
 
         # Return the image
         return image

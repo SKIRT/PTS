@@ -105,6 +105,8 @@ from .maps.old import OldMapsAnalyser
 from .maps.dust import DustMapsAnalyser
 from .maps.young import YoungMapsAnalyser
 from .maps.ionizing import IonizingMapsAnalyser
+from .maps.rgb import RGBMapsAnalyser
+from ...magic.plot.imagegrid import plot_images_aplpy
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -500,7 +502,8 @@ old_map_name = "old"
 dust_map_name = "dust"
 young_map_name = "young"
 ionizing_map_name = "ionizing"
-map_names = [colour_map_name, ssfr_map_name, tir_map_name, attenuation_map_name, old_map_name, dust_map_name, young_map_name, ionizing_map_name]
+rgb_map_name = "rgb"
+map_names = [colour_map_name, ssfr_map_name, tir_map_name, attenuation_map_name, old_map_name, dust_map_name, young_map_name, ionizing_map_name, rgb_map_name]
 
 # -----------------------------------------------------------------
 
@@ -4262,6 +4265,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         descriptions["seds_combo"] = "make a single-panel plot that combines the comparison between observation and simulation and the absorption and re-emission by dust"
         descriptions["heating_curve"] = "make a three-panel plot with the face-on heating map, the heating fraction distribution, and the radial heating curve"
         descriptions["ssfr_funev_log"] = "plot the sSFR-Funev correlation for pixels and cells with Funev on a logarithmic scale"
+        descriptions["maps"] = "plot the component maps together with an observed optical RGB image"
+        descriptions["correlations_basic"] = "make a plot of the sSFR-Funev correlation, but more basic"
 
         # Return
         return descriptions
@@ -6350,6 +6355,143 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81 pixels", color=self.darker_red)
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_special11(self, path=None, dark=False, zoom=0.7):
+
+        """
+        This function ...
+        :param path:
+        :param dark:
+        :param zoom:
+        :return:
+        """
+        
+        # Inform the user
+        log.info("Creating the component maps + RGB map plot ...")
+
+        share_scale = None
+        scales = {"bulge": "log", "disk": "log", "young": "log", "sfr": "log", "dust": "linear"}
+        minmax_scaling = {"disk": 10., "dust": 1.}  # instead of default of 0.5 for pts scaling
+
+        # descriptions = self.model.component_descriptions
+        descriptions = self.model.component_names
+
+        # Get center and radius
+        has_center_and_radius = self.model.has_center and self.model.has_truncation_ellipse
+        if has_center_and_radius:
+            center = self.model.center
+            radius = self.model.truncation_radius * zoom
+            xy_ratio = self.model.truncation_box_axial_ratio
+        # Cannot define center, radius or xy ratio
+        else: center = radius = xy_ratio = None
+
+        # Get the maps
+        maps = self.model.component_maps_earth
+
+        # Plot
+        plot_images_aplpy(maps, center=center, radius=radius, filepath=path, dark=dark,
+                          xy_ratio=xy_ratio, distance=self.galaxy_distance, share_scale=share_scale,
+                          scale=scales, descriptions=descriptions, minmax_scaling=minmax_scaling)
+
+    # -----------------------------------------------------------------
+
+    def plot_special12(self, path=None, dark=False, zoom=0.7):
+
+        """
+        This function ...
+        :param path:
+        :param dark:
+        :param zoom:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the basic sSFR-Funev correlations plot ...")
+
+        # Create the figure
+        figsize = (10, 7)
+        figure = MPLFigure(size=figsize)
+
+        import mpl_scatter_density # NOQA
+
+        # Create plots
+        nrows = 2
+        ncols = 2
+        projection = "scatter_density"
+        rows = figure.create_grid(nrows, ncols, projections=projection)
+        first_row = rows[0]
+        second_row = rows[1]
+        #third_row = rows[2]
+
+        # FIRST PLOT: with radius
+        settings1 = self.ssfr_funev_radius_settings
+        output_radius = self.plot_correlation_impl("sSFR-Funev (with radius)", self.ssfr_funev_scatter_cells, first_row[0], settings1, add_colorbar=True, figure=figure)
+        first_row[0].set_xaxis_top()
+        first_row[0].set_yaxis_left()
+        #first_row[0].set_background_color("gainsboro")
+        first_row[0].add_text("(b)", horizontal_position="left", vertical_position="top", fontsize=14)
+
+        # Plot inner radius line
+        inner_radius_ssfr_values, inner_radius_funev_values = self.ssfr_funev_points_at_inner_radius
+        # first_row[1].plot(inner_radius_ssfr_values, inner_radius_funev_values, label="Inner", color="white")
+        first_row[0].plot(inner_radius_ssfr_values, inner_radius_funev_values, color="white")  # no label
+
+        # Plot outer radius line
+        outer_radius_ssfr_values, outer_radius_funev_values = self.ssfr_funev_points_at_outer_radius
+        # first_row[1].plot(outer_radius_ssfr_values, outer_radius_funev_values, label="Outer", color="white")
+        first_row[0].plot(outer_radius_ssfr_values, outer_radius_funev_values, color="white")  # no label
+
+
+
+        # SECOND PLOT: with height
+        settings2 = self.ssfr_funev_dust_heights_settings
+        output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells,
+                                                   first_row[1], settings2,
+                                                   add_colorbar=True, figure=figure, colorbar_label_position="right")
+                                                   #references=self.reference_ssfr_funev_scatters,
+                                                   #reference_colors=self.reference_ssfr_funev_scatter_colors,
+                                                   #legend_location="upper center")
+        first_row[1].set_xaxis_top()
+        first_row[1].set_yaxis_right()
+        #first_row[1].set_background_color("gainsboro")
+
+
+
+        # THIRD PLOT: vSFR as auxilary
+        settings4 = self.ssfr_funev_vsfr_settings.copy()
+        settings4.aux_limits = [1e-18, 1e-11]
+        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells,
+                                                     second_row[0],
+                                                     settings4, add_colorbar=True, figure=figure)
+        #second_row[0].hide_xaxis()
+        second_row[0].set_yaxis_left()
+        #second_row[1].set_background_color("gainsboro")
+        second_row[0].add_text("(e)", horizontal_position="left", vertical_position="top", fontsize=14)
+
+        # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
+        # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_high_vsfr, label="High vSFR", color="black")
+        # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
+        # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
+
+
+
+        # FOURTH PLOT: dust density as auxilary
+        settings5 = self.ssfr_funev_dust_density_settings
+        colorbar_ticks5 = [1e-12, 1e-10, 1e-8, 1e-6, 1e-4, 1e-2]
+        output_dust_density = self.plot_correlation_impl("sSFR-Funev (with dust density)",
+                                                         self.ssfr_funev_scatter_cells, second_row[1],
+                                                         settings5, add_colorbar=True, figure=figure,
+                                                         colorbar_ticks=colorbar_ticks5)
+        #second_row[1].hide_xaxis()
+        second_row[1].set_yaxis_right()
+        #second_row[2].set_background_color("gainsboro")
+        second_row[1].add_text("(f)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -10630,6 +10772,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Ionizing
         elif config.name == ionizing_map_name: self.analyse_ionizing_stellar_maps()
 
+        # RGB
+        elif config.name == rgb_map_name: self.analyse_rgb_maps()
+
         # Invalid
         else: raise ValueError("Invalid map name: '" + config.name + "'")
 
@@ -10815,6 +10960,30 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create the analyser
         analyser = IonizingMapsAnalyser()
+
+        # Set modeling path
+        analyser.config.path = self.config.path
+
+        # Set run name
+        analyser.config.run = self.config.run
+
+        # Run the analyser
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def analyse_rgb_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing RGB maps ...")
+
+        # Create the analyser
+        analyser = RGBMapsAnalyser()
 
         # Set modeling path
         analyser.config.path = self.config.path

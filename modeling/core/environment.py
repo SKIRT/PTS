@@ -482,10 +482,11 @@ old_name = "old"
 young_name = "young"
 ionizing_name = "ionizing"
 dust_name = "dust"
+rgb_name = "rgb"
 
 # -----------------------------------------------------------------
 
-map_sub_names = [colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name]
+map_sub_names = [colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name, rgb_name]
 
 # -----------------------------------------------------------------
 

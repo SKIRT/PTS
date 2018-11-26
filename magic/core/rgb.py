@@ -173,36 +173,18 @@ class RGBImage(object):
 
     @property
     def shape(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PixelShape(self.red.shape[0], self.red.shape[1])
 
     # -----------------------------------------------------------------
 
     @property
     def xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.shape.x
 
     # -----------------------------------------------------------------
 
     @property
     def ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.shape.y
 
     # -----------------------------------------------------------------

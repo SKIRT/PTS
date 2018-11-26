@@ -3080,24 +3080,12 @@ class DataCube(Image):
 
     @property
     def is_brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_brightness
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_brightness_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_brightness_unit
 
     # -----------------------------------------------------------------
@@ -3167,84 +3155,42 @@ class DataCube(Image):
 
     @property
     def is_surface_brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_surface_brightness
 
     # -----------------------------------------------------------------
 
     @property
     def is_intrinsic_brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_intrinsic_brightness
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_angular_area_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_angular_area_unit
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_intrinsic_area_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_intrinsic_area_unit
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_non_brightness_unit(self):
-
-        """
-        This funtion ...
-        :return:
-        """
-
         return self.unit.corresponding_non_brightness_unit
 
     # -----------------------------------------------------------------
 
     @property
     def is_per_angular_or_intrinsic_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_per_angular_or_intrinsic_area
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_angular_or_intrinsic_area_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_angular_or_intrinsic_area_unit
 
     # -----------------------------------------------------------------
@@ -3314,12 +3260,6 @@ class DataCube(Image):
 
     @property
     def corresponding_non_angular_or_intrinsic_area_unit(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.unit.corresponding_non_angular_or_intrinsic_area_unit
 
     # -----------------------------------------------------------------
@@ -3386,12 +3326,6 @@ class DataCube(Image):
 
     @property
     def is_per_angular_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_per_angular_area
 
     # -----------------------------------------------------------------
@@ -3461,12 +3395,6 @@ class DataCube(Image):
 
     @property
     def is_per_intrinsic_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_per_intrinsic_area
 
     # -----------------------------------------------------------------
@@ -3593,34 +3521,23 @@ class DataCube(Image):
 
     @property
     def is_wavelength_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_wavelength_density
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_wavelength_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_wavelength_density_unit
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_wavelength_density_unit(self, distance=None, silent=False):
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None, silent=False, wavelength_unit=None):
 
         """
         This function ...
         :param distance:
         :param silent:
+        :param wavelength_unit:
         :return:
         """
 
@@ -3652,7 +3569,7 @@ class DataCube(Image):
             wavelength = wavelengths[i]
 
             # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength, distance=distance)
+            factor = self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength, distance=distance, wavelength_unit=wavelength_unit)
             factors.append(factor)
 
             # Debugging
@@ -3689,33 +3606,22 @@ class DataCube(Image):
 
     @property
     def is_frequency_density(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.unit.is_frequency_unit
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_frequency_density_unit(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.unit.corresponding_frequency_density_unit
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_frequency_density_unit(self, silent=False):
+    def convert_to_corresponding_frequency_density_unit(self, silent=False, frequency_unit=None):
 
         """
         This function ...
         :param silent:
+        :param frequency_unit:
         :return:
         """
 
@@ -3744,7 +3650,7 @@ class DataCube(Image):
             wavelength = wavelengths[i]
 
             # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_frequency_density_unit(wavelength=wavelength)
+            factor = self.frames[i].convert_to_corresponding_frequency_density_unit(wavelength=wavelength, frequency_unit=frequency_unit)
             factors.append(factor)
 
             # Debugging
@@ -3781,24 +3687,12 @@ class DataCube(Image):
 
     @property
     def is_neutral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_neutral_density
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_neutral_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_neutral_density_unit
 
     # -----------------------------------------------------------------

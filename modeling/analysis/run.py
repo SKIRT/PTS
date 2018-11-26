@@ -48,6 +48,7 @@ from ..core.environment import old_name as old_maps_name
 from ..core.environment import young_name as young_maps_name
 from ..core.environment import ionizing_name as ionizing_maps_name
 from ..core.environment import dust_name as dust_maps_name
+from ..core.environment import rgb_name as rgb_maps_name
 from ...core.data.sed import ObservedSED, SED
 from ...magic.core.datacube import DataCube
 from ...core.simulation.tree import get_nleaves
@@ -614,6 +615,18 @@ class AnalysisRunBase(object):
     @property
     def ionizing_maps_name(self):
         return fs.name(self.ionizing_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rgb_maps_path(self):
+        return fs.join(self.maps_path, rgb_maps_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rgb_maps_name(self):
+        return fs.name(self.rgb_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -1344,6 +1357,7 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.dust_maps_path): fs.create_directory(self.dust_maps_path)
         if not fs.is_directory(self.young_maps_path): fs.create_directory(self.young_maps_path)
         if not fs.is_directory(self.ionizing_maps_path): fs.create_directory(self.ionizing_maps_path)
+        if not fs.is_directory(self.rgb_maps_path): fs.create_directory(self.rgb_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -1569,6 +1583,12 @@ class AnalysisRun(AnalysisRunBase):
     def nionizing_maps(self):
         if fs.has_files_in_path(self.ionizing_maps_path, extension="fits"): return fs.nfiles_in_path(self.ionizing_maps_path, extension="fits")
         else: return fs.nfiles_in_path(self.ionizing_maps_path, extension="fits", recursive=True, recursion_level=1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_rgb(self):
+        return fs.is_directory(self.rgb_maps_path) and not fs.is_empty(self.rgb_maps_path)
 
     # -----------------------------------------------------------------
 
@@ -2482,31 +2502,20 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        get_name_function = lambda filename: filename.split("__")[1]
-        return DataSet.from_directory(self.total_misc_path, get_name=get_name_function)
+        #get_name_function = lambda filename: filename.split("__")[1]
+        #return DataSet.from_directory(self.total_misc_path, get_name=get_name_function)
+        return DataSet.from_directory(self.images_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def simulated_frame_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulated_dataset.get_framelist(named=False)  # on filter
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def simulated_named_frame_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulated_dataset.get_framelist(named=True)  # on name
 
     # -----------------------------------------------------------------
@@ -2526,12 +2535,6 @@ class AnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def maps_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..maps.collection import MapsCollection
         return MapsCollection.from_modeling_path(self.modeling_path, analysis_run_name=self.name)
 
@@ -2539,12 +2542,6 @@ class AnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def observation_maps_collection(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         from ..maps.collection import MapsCollection
         return MapsCollection.from_modeling_path(self.modeling_path)
 
@@ -2552,121 +2549,60 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def colours_methods(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_colours_methods(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def colours_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_colours_origins(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def ssfr_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_ssfr_methods(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def ssfr_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_ssfr_origins(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def tir_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_tir_methods(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def tir_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_tir_origins(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_attenuation_methods(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_attenuation_origins(flatten=True)
 
     # -----------------------------------------------------------------
 
     @property
     def old_methods(self):
-
-        """
-        This function ...
-        :param self:
-        :return:
-        """
-
         return self.observation_maps_collection.get_old_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def old_map_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.old_methods[self.model_old_map_name] # for flattened
         #return find_value_for_unique_key_nested(self.old_methods, self.model_old_map_name)
         return self.old_methods["disk"][self.model_old_map_name]
@@ -2675,24 +2611,12 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def old_origins(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_old_origins(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def old_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.old_origins[self.model_old_map_name] # for flattened
         #return find_value_for_unique_key_nested(self.old_origins, self.model_old_map_name)
         return self.old_origins["disk"][self.model_old_map_name]
@@ -2701,36 +2625,18 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def old_map_method_and_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "disk", self.model_old_map_name
 
     # -----------------------------------------------------------------
 
     @property
     def young_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_young_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def young_map_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.young_methods[self.model_young_map_name]
         return find_value_for_unique_key_nested(self.young_methods, self.model_young_map_name)
 
@@ -2738,24 +2644,12 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def young_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_young_origins(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def young_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.young_origins[self.model_young_map_name]
         return find_value_for_unique_key_nested(self.young_origins, self.model_young_map_name)
 
@@ -2783,24 +2677,12 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def ionizing_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_ionizing_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_map_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.ionizing_methods[self.model_ionizing_map_name]
         return find_value_for_unique_key_nested(self.ionizing_methods, self.model_ionizing_map_name)
 
@@ -2808,24 +2690,12 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def ionizing_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_ionizing_origins(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.ionizing_origins[self.model_ionizing_map_name]
         return find_value_for_unique_key_nested(self.ionizing_origins, self.model_ionizing_map_name)
 
@@ -2853,24 +2723,12 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def dust_methods(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_dust_methods(flatten=False)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_map_methods(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.dust_methods[self.model_dust_map_name]
         try: return find_value_for_unique_key_nested(self.dust_methods, self.model_dust_map_name)
         except ValueError: return find_value_for_unique_key_nested(self.dust_methods, self.model_dust_map_name.split("_", 1)[1])
@@ -2879,12 +2737,6 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def dust_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_maps_collection.get_dust_origins(flatten=False)
 
     # -----------------------------------------------------------------
@@ -2945,24 +2797,12 @@ class AnalysisRuns(object):
 
     @property
     def modeling_data_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.modeling_path, "data")
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_info_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #  Set the path to the galaxy info file
         return fs.join(self.modeling_data_path, "info.dat")
 
@@ -2990,60 +2830,30 @@ class AnalysisRuns(object):
 
     @lazyproperty
     def hubble_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_info["Hubble Type"]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def hubble_stage(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.galaxy_info["Hubble Stage"]
 
     # -----------------------------------------------------------------
 
     @property
     def analysis_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.modeling_path, "analysis")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directories_in_path(self.analysis_path, returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directories_in_path(self.analysis_path, returns="path")
 
     # -----------------------------------------------------------------
@@ -3061,48 +2871,24 @@ class AnalysisRuns(object):
 
     @lazyproperty
     def empty(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.is_empty(self.names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_single(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.is_singleton(self.names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def single_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.get_singleton(self.names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def single_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_path(self.single_name)
 
     # -----------------------------------------------------------------
@@ -3135,12 +2921,6 @@ class AnalysisRuns(object):
 
     @lazyproperty
     def single(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return AnalysisRun.from_path(self.single_path, hubble_stage=self.hubble_stage)
 
     # -----------------------------------------------------------------
@@ -3163,26 +2943,12 @@ class AnalysisRuns(object):
 
     @lazyproperty
     def last_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return self.get_path(self.last_name)
-
         return fs.last_created_path(*self.paths)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def last(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.load(self.last_name)
 
 # -----------------------------------------------------------------
@@ -3209,12 +2975,6 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def galaxy_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.original_modeling_path)
 
     # -----------------------------------------------------------------
@@ -3235,348 +2995,174 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return AnalysisRunInfo.from_remote_file(self.info_path, self.remote)
 
     # -----------------------------------------------------------------
 
     @property
     def original_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.path
 
     # -----------------------------------------------------------------
 
     @property
     def original_analysis_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.original_path)
 
     # -----------------------------------------------------------------
 
     @property
     def original_modeling_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.original_analysis_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Configuration.from_remote_file(self.config_path, self.remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def heating_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Configuration.from_remote_file(self.heating_config_path, self.remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return WavelengthGrid.from_skirt_input(self.wavelength_grid_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_grid(self.dust_grid_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nfiles(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.nfiles_in_path(self.path, recursive=True)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def disk_space(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.directory_size(self.path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_output(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.remote.has_files_in_path(self.output_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_logfile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_file(self.logfile_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def logfile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return LogFile.from_remote_file(self.total_logfile_path, self.remote)
 
     # -----------------------------------------------------------------
 
     @property
     def has_misc(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.remote.has_files_in_path(self.total_misc_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_extracted(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.remote.has_files_in_path(self.total_extr_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_progress(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
         return self.remote.is_file(self.progress_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_timeline(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.remote.is_file(self.timeline_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_memory(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.remote.is_file(self.memory_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def progress(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ProgressTable.from_remote_file(self.progress_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def timeline(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return TimeLineTable.from_remote_file(self.timeline_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def memory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return MemoryUsageTable.from_remote_file(self.memory_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
     @property
     def has_plots(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.remote.has_files_in_path(self.plot_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_attenuation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_directory(self.attenuation_path) and not self.remote.is_empty(self.attenuation_path)
 
     # -----------------------------------------------------------------
 
     @property
     def has_colours(self):
-
-        """
-        This functino ...
-        :return:
-        """
-
         return self.remote.is_directory(self.colours_path) and not self.remote.is_empty(self.colours_path)
 
     # -----------------------------------------------------------------
 
     @property
     def colour_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.files_in_path(self.colours_simulated_path, extension="fits", returns="name")
 
     # -----------------------------------------------------------------
 
     @property
     def has_residuals(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.remote.is_directory(self.residuals_path) and not self.remote.is_empty(self.residuals_path)
 
     # -----------------------------------------------------------------
 
     @property
     def residual_image_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.files_in_path(self.residuals_path, extension="fits", not_contains=["significance"], returns="name")
 
     # -----------------------------------------------------------------
 
     @property
     def has_maps_attenuation(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.remote.is_directory(self.attenuation_maps_path) and not self.remote.is_empty(self.attenuation_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def nattenuation_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.attenuation_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.attenuation_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.attenuation_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3584,24 +3170,12 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_maps_colours(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
         return self.remote.is_directory(self.colour_maps_path) and not self.remote.is_empty(self.colour_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ncolour_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.colour_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.colour_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.colour_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3609,24 +3183,12 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_maps_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_directory(self.dust_maps_path) and not self.remote.is_empty(self.dust_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ndust_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.dust_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.dust_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.dust_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3634,49 +3196,31 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_maps_ionizing(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.remote.is_directory(self.ionizing_maps_path) and not self.remote.is_empty(self.ionizing_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def nionizing_maps(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.ionizing_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.ionizing_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.ionizing_maps_path, extension="fits", recursive=True, recursion_level=1)
 
     # -----------------------------------------------------------------
 
     @property
+    def has_maps_rgb(self):
+        return self.remote.is_directory(self.rgb_maps_path) and not self.remote.is_empty(self.rgb_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_maps_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_directory(self.old_maps_path) and not self.remote.is_empty(self.old_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def nold_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.old_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.old_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.old_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3684,24 +3228,12 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_maps_ssfr(self):
-
-        """
-        Thisjfunction ...
-        :return:
-        """
-
         return self.remote.is_directory(self.ssfr_maps_path) and not self.remote.is_empty(self.ssfr_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def nssfr_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.ssfr_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.ssfr_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.ssfr_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3709,24 +3241,12 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_maps_tir(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_directory(self.tir_maps_path) and not self.remote.is_empty(self.tir_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ntir_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.tir_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.tir_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.tir_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3734,24 +3254,12 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_maps_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_directory(self.young_maps_path) and not self.remote.is_empty(self.young_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def nyoung_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.remote.has_files_in_path(self.young_maps_path, extension="fits"): return self.remote.nfiles_in_path(self.young_maps_path, extension="fits")
         else: return self.remote.nfiles_in_path(self.young_maps_path, extension="fits", recursive=True, recursion_level=1)
 
@@ -3759,48 +3267,24 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_heating(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_file(self.heating_config_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ski_file(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SkiFile.from_remote_file(self.ski_file_path, self.remote)
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_grid_simulation_logfile(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.remote.is_file(self.dust_grid_simulation_logfile_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid_simulation_logfile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return LogFile.from_remote_file(self.dust_grid_simulation_logfile_path, self.remote)
 
     # -----------------------------------------------------------------
@@ -3823,12 +3307,6 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def remote_script_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.files_in_path(self.path, extension="sh")
 
     # -----------------------------------------------------------------
@@ -3894,48 +3372,24 @@ class CachedAnalysisRun(AnalysisRunBase):
 
     @property
     def has_simulated_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_file(self.simulated_sed_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def simulated_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SED.from_skirt(self.simulated_sed_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 
     @property
     def has_simulated_fluxes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.is_file(self.simulated_fluxes_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def simulated_fluxes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ObservedSED.from_remote_file(self.simulated_fluxes_path, self.remote)
 
 # -----------------------------------------------------------------
@@ -3962,24 +3416,12 @@ class CachedAnalysisRuns(AnalysisRunBase):
 
     @property
     def galaxy_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.modeling_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cache_directory_name(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.galaxy_name + "_analysis"
 
     # -----------------------------------------------------------------
@@ -4014,12 +3456,6 @@ class CachedAnalysisRuns(AnalysisRunBase):
 
     @lazyproperty
     def names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remote.directories_in_path(self.cache_directory_path, returns="name")
 
     # -----------------------------------------------------------------
@@ -4037,48 +3473,24 @@ class CachedAnalysisRuns(AnalysisRunBase):
 
     @lazyproperty
     def empty(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.is_empty(self.names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_single(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.is_singleton(self.names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def single_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.get_singleton(self.names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def single_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_path(self.single_name)
 
     # -----------------------------------------------------------------
@@ -4111,12 +3523,6 @@ class CachedAnalysisRuns(AnalysisRunBase):
 
     @lazyproperty
     def single(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return CachedAnalysisRun.from_path(self.single_path, self.remote)
 
     # -----------------------------------------------------------------

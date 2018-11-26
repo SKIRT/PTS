@@ -999,44 +999,63 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_intensity_unit(self):
+        return self.get_corresponding_intensity_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_intensity_unit(self, solid_angle_unit=None, default_solid_angle_unit="sr"):
 
         """
-        This function ...
+        Thisn function ...
+        :param solid_angle_unit:
+        :param default_solid_angle_unit:
         :return:
         """
 
         # Already intensity
-        if self.is_intensity: return self.copy()
+        if self.is_intensity:
+            if solid_angle_unit is None: return self.copy()
+            else:
+                new_unit = self * self.solid_angle_unit / solid_angle_unit
+                new_unit_string = str(new_unit)
 
         # From luminosity
         elif self.is_luminosity:
 
-            new_unit = self / "sr"
+            if solid_angle_unit is None: solid_angle_unit = default_solid_angle_unit
+            new_unit = self / solid_angle_unit
             new_unit_string = str(new_unit)
 
         # From flux
         elif self.is_flux:
 
-            new_unit = self * self.distance_unit / "sr"
+            if solid_angle_unit is None: solid_angle_unit = default_solid_angle_unit
+            new_unit = self * self.distance_unit / solid_angle_unit
             new_unit_string = str(new_unit)
 
         # From surface brightness
         elif self.is_surface_brightness:
 
-            new_unit = self * self.distance_unit
-            new_unit_string = str(new_unit)
+            if solid_angle_unit is None:
+                new_unit = self * self.distance_unit
+                new_unit_string = str(new_unit)
+            else:
+                new_unit = self * self.solid_angle_unit / solid_angle_unit
+                new_unit_string = str(new_unit)
 
         # From intrinsic surface brightness
         elif self.is_intrinsic_surface_brightness:
 
+            if solid_angle_unit is None: solid_angle_unit = default_solid_angle_unit
+
             if self.has_distance_unit:
 
-                new_unit = self * self.distance_unit * self.extent_unit / "sr"
+                new_unit = self * self.distance_unit * self.extent_unit / solid_angle_unit
                 new_unit_string = str(new_unit)
 
             else:
 
-                new_unit = self * self.extent_unit / "sr"
+                new_unit = self * self.extent_unit / solid_angle_unit
                 new_unit_string = str(new_unit)
 
         # Invalid
@@ -1060,6 +1079,11 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_bolometric_unit(self):
+        return self.get_corresponding_bolometric_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_bolometric_unit(self):
 
         """
         This function ...
@@ -1107,31 +1131,46 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_wavelength_density_unit(self):
+        return self.get_corresponding_wavelength_density_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_wavelength_density_unit(self, wavelength_unit=None, default_wavelength_unit="micron"):
 
         """
         This function ...
+        :param wavelength_unit:
+        :param default_wavelength_unit:
         :return:
         """
 
         # Already wavelength density
-        if self.is_wavelength_density: return self.copy()
+        if self.is_wavelength_density:
+
+            if wavelength_unit is None: return self.copy()
+            else:
+                new_unit = self * self.wavelength_unit / wavelength_unit
+                new_unit_string = str(new_unit)
 
         # Bolometric unit
         elif self.is_bolometric:
 
-            new_unit = self / "micron"
+            if wavelength_unit is None: wavelength_unit = default_wavelength_unit
+            new_unit = self / wavelength_unit
             new_unit_string = str(new_unit)
 
         # Frequency density unit
         elif self.is_frequency_density:
 
-            new_unit = self * self.frequency_unit / "micron"
+            if wavelength_unit is None: wavelength_unit = default_wavelength_unit
+            new_unit = self * self.frequency_unit / wavelength_unit
             new_unit_string = str(new_unit)
 
         # Neutral density unit
         elif self.is_neutral_density:
 
-            new_unit = self / "micron"
+            if wavelength_unit is None: wavelength_unit = default_wavelength_unit
+            new_unit = self / wavelength_unit
             new_unit_string = str(new_unit)
 
         # Invalid
@@ -1156,31 +1195,45 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_frequency_density_unit(self):
+        return self.get_corresponding_frequency_density_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_frequency_density_unit(self, frequency_unit=None, default_frequency_unit="Hz"):
 
         """
         This function ...
+        :param frequency_unit:
+        :param default_frequency_unit:
         :return:
         """
 
         # Already frequency density
-        if self.is_frequency_density: return self.copy()
+        if self.is_frequency_density:
+            if frequency_unit is None: return self.copy()
+            else:
+                new_unit = self * self.frequency_unit / frequency_unit
+                new_unit_string = str(new_unit)
 
         # Bolometric
         elif self.is_bolometric:
 
-            new_unit = self / "Hz"
+            if frequency_unit is None: frequency_unit = default_frequency_unit
+            new_unit = self / frequency_unit
             new_unit_string = str(new_unit)
 
         # Wavelength density
         elif self.is_wavelength_density:
 
-            new_unit = self * self.wavelength_unit / "Hz"
+            if frequency_unit is None: frequency_unit = default_frequency_unit
+            new_unit = self * self.wavelength_unit / frequency_unit
             new_unit_string = str(new_unit)
 
         # Neutral density
         elif self.is_neutral_density:
 
-            new_unit = self / "Hz"
+            if frequency_unit is None: frequency_unit = default_frequency_unit
+            new_unit = self / frequency_unit
             new_unit_string = str(new_unit)
 
         # Invalid state
@@ -1205,6 +1258,11 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_neutral_density_unit(self):
+        return self.get_corresponding_neutral_density_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_neutral_density_unit(self):
 
         """
         This function ...
@@ -1250,31 +1308,58 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_brightness_unit(self):
+        return self.get_corresponding_brightness_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_brightness_unit(self, solid_angle_unit=None, distance_unit=None,
+                                          default_solid_angle_unit="sr", default_distance_unit="m2"):
 
         """
         This function ...
+        :param solid_angle_unit:
+        :param distance_unit:
+        :param default_solid_angle_unit:
+        :param default_distance_unit:
         :return:
         """
 
         # Already a brightness
-        if self.is_brightness: return self.copy()
+        if self.is_brightness:
+
+            if solid_angle_unit is None and distance_unit is None: return self.copy()
+            elif solid_angle_unit is None: # distance unit is not None
+                if not self.has_distance_unit: raise ValueError("Distance unit cannot be specified")
+                new_unit = self * self.distance_unit / distance_unit
+                new_unit_string = str(new_unit)
+            elif distance_unit is None: # solid angle is not None
+                if not self.has_solid_angle_unit: raise ValueError("Solid angle unit cannot be specified")
+                new_unit = self * self.solid_angle_unit / solid_angle_unit
+                new_unit_string = str(new_unit)
+            else:
+                new_unit = self * self.distance_unit * self.solid_angle_unit / distance_unit / solid_angle_unit
+                new_unit_string = str(new_unit)
 
         # From luminosity
         elif self.is_luminosity:
 
-            new_unit = self / "m2" / "sr"
+            if solid_angle_unit is None: solid_angle_unit = default_solid_angle_unit
+            if distance_unit is None: distance_unit = default_distance_unit
+            new_unit = self / distance_unit / solid_angle_unit
             new_unit_string = str(new_unit)
 
         # From intensity
         elif self.is_intensity:
 
-            new_unit = self / "m2"
+            if distance_unit is None: distance_unit = default_distance_unit
+            new_unit = self / distance_unit
             new_unit_string = str(new_unit)
 
         # From flux
         elif self.is_flux:
 
-            new_unit = self / "sr"
+            if solid_angle_unit is None: solid_angle_unit = default_solid_angle_unit
+            new_unit = self / solid_angle_unit
             new_unit_string = str(new_unit)
 
         # Invalid
@@ -1299,6 +1384,11 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_non_brightness_unit(self):
+        return self.get_corresponding_non_brightness_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_non_brightness_unit(self):
 
         """
         This function ...
@@ -1345,41 +1435,91 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def is_per_angular_or_instrinsic_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.is_per_angular_area or self.is_per_intrinsic_area
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_angular_or_intrinsic_area_unit(self):
+        return self.get_corresponding_angular_or_intrinsic_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_angular_or_intrinsic_area_unit(self, solid_angle_unit=None, extent_unit=None,
+                                                         default_solid_angle_unit="sr", default_extent_unit="pc2"):
 
         """
         This function ...
+        :param solid_angle_unit:
+        :param extent_unit:
+        :param default_solid_angle_unit:
+        :param default_extent_unit:
         :return:
         """
 
-        # Already:
         # Should cover intensities, surface and intrinsic surface brightnesses
-        if self.is_per_angular_or_intrinsic_area: return self.copy()
+        if self.is_per_angular_or_intrinsic_area:
+
+            if solid_angle_unit is None and extent_unit is None: return self.copy()
+
+            elif solid_angle_unit is None: # extent unit is specified
+
+                if self.has_solid_angle_unit: new_unit = self * self.solid_angle_unit / extent_unit
+                else: new_unit = self * self.extent_unit / extent_unit
+                new_unit_string = str(new_unit)
+
+            elif extent_unit is None: # solid angle unit is specified
+
+                if self.has_solid_angle_unit: new_unit = self * self.solid_angle_unit / solid_angle_unit
+                else: new_unit = self * self.extent_unit / solid_angle_unit
+                new_unit_string = str(new_unit)
+
+            # Extent and solid angle unit are specified
+            else: raise ValueError("Must specify either solid angle unit or extent unit (or none)")
 
         # From luminosity
         elif self.is_luminosity:
 
-            new_unit = self / "sr"
-            new_unit_string = str(new_unit)
-            brightness = False # intensity
+            if solid_angle_unit is not None:
+
+                if extent_unit is not None: raise ValueError("Must specify either solid angle unit or extent unit")
+                new_unit = self / solid_angle_unit
+                new_unit_string = str(new_unit)
+                brightness = False # intensity
+
+            elif extent_unit is not None:
+
+                new_unit = self / extent_unit
+                new_unit_string = str(new_unit)
+                brightness = True # intrinsic surface brightness
+
+            else:
+
+                new_unit = self / default_solid_angle_unit
+                new_unit_string = str(new_unit)
+                brightness = False # intensity
 
         # From flux
         elif self.is_flux:
 
-            new_unit = self / "sr"
-            new_unit_string = str(new_unit)
-            brightness = True
+            if solid_angle_unit is not None:
+
+                if extent_unit is not None: raise ValueError("Must specify either solid angle unit or extent unit")
+                new_unit = self / solid_angle_unit
+                new_unit_string = str(new_unit)
+                brightness = True # surface brightness
+
+            elif extent_unit is not None:
+
+                new_unit = self / extent_unit
+                new_unit_string = str(new_unit)
+                brightness = True # intrinsic surface brightness
+
+            else:
+
+                new_unit = self / default_solid_angle_unit
+                new_unit_string = str(new_unit)
+                brightness = True # surface brightness
 
         # Invalid unit
         else: raise ValueError("Invalid unit")
@@ -1406,6 +1546,11 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_non_angular_or_intrinsic_area_unit(self):
+        return self.get_corresponding_non_angular_or_intrinsic_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_non_angular_or_intrinsic_area_unit(self):
 
         """
         This function ...
@@ -1461,6 +1606,11 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_angular_area_unit(self):
+        return self.get_corresponding_angular_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_angular_area_unit(self):
 
         """
         This function ...
@@ -1524,6 +1674,11 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def corresponding_intrinsic_area_unit(self):
+        return self.get_corresponding_intrinsic_area_unit()
+
+    # -----------------------------------------------------------------
+
+    def get_corresponding_intrinsic_area_unit(self):
 
         """
         This function ...
@@ -1599,60 +1754,30 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def has_extent_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.extent_unit != ""
 
     # -----------------------------------------------------------------
 
     @property
     def has_distance_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distance_unit != ""
 
     # -----------------------------------------------------------------
 
     @property
     def has_solid_angle_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.solid_angle_unit != ""
 
     # -----------------------------------------------------------------
 
     @property
     def has_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.scale_factor != 1
 
     # -----------------------------------------------------------------
 
     @property
     def scale_string(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return repr(self.scale_factor)
 
     # -----------------------------------------------------------------
@@ -1680,12 +1805,6 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def reduced_root(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PhotometricUnit(self.reduced_root_string, density=self.density, density_strict=True, brightness=self.brightness, brightness_strict=True)
 
     # -----------------------------------------------------------------
@@ -1706,12 +1825,6 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def reduced(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PhotometricUnit(self.reduced_string, density=self.density, density_strict=True, brightness=self.brightness, brightness_strict=True)
 
     # -----------------------------------------------------------------
@@ -1778,36 +1891,18 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def is_spectral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.density
 
     # -----------------------------------------------------------------
 
     @property
     def is_bolometric(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return not self.is_spectral_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_wavelength_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.wavelength_unit != "":
             assert self.frequency_unit == ""
             return True
@@ -1817,12 +1912,6 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def is_frequency_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.frequency_unit != "":
             assert self.wavelength_unit == ""
             return True
@@ -1832,12 +1921,6 @@ class PhotometricUnit(CompositeUnit):
 
     @property
     def is_neutral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.wavelength_unit == "" and self.frequency_unit == "": return self.density
         else: return False
 

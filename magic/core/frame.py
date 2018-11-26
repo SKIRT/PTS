@@ -2835,34 +2835,39 @@ class Frame(NDDataArray):
 
     @property
     def corresponding_wavelength_density_unit(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.unit.corresponding_wavelength_density_unit
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_wavelength_density_unit(self, distance=None, wavelength=None):
+    def get_corresponding_wavelength_density_unit(self, wavelength_unit=None):
+        return self.unit.get_corresponding_wavelength_density_unit(wavelength_unit=wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None, wavelength=None, wavelength_unit=None):
 
         """
         This function ...
         :param distance:
         :param wavelength:
+        :param wavelength_unit:
         :return:
         """
 
+        # Get unit
+        if wavelength_unit is not None: unit = self.get_corresponding_wavelength_density_unit(wavelength_unit=wavelength_unit)
+        else: unit = self.corresponding_wavelength_density_unit
+
         # Convert, return the factor
-        return self.convert_to(self.corresponding_wavelength_density_unit, distance=distance, wavelength=wavelength)
+        return self.convert_to(unit, distance=distance, wavelength=wavelength)
 
     # -----------------------------------------------------------------
 
-    def converted_to_corresponding_wavelength_density_unit(self):
+    def converted_to_corresponding_wavelength_density_unit(self, wavelength_unit=None):
 
         """
         This function ...
+        :param wavelength_unit:
         :return:
         """
 
@@ -2872,25 +2877,31 @@ class Frame(NDDataArray):
 
     @property
     def corresponding_frequency_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_frequency_density_unit
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_frequency_density_unit(self):
+    def get_corresponding_frequency_density_unit(self, frequency_unit=None):
+        return self.unit.get_corresponding_frequency_density_unit(frequency_unit=frequency_unit)
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_frequency_density_unit(self, wavelength=None, frequency_unit=None, distance=None):
 
         """
         This function ...
+        :param wavelength:
+        :param frequency_unit:
+        :param distance:
         :return:
         """
 
+        # Get unit
+        if frequency_unit is not None: unit = self.get_corresponding_frequency_density_unit(frequency_unit=frequency_unit)
+        else: unit = self.corresponding_frequency_density_unit
+
         # Convert, return the factor
-        return self.convert_to(self.corresponding_frequency_density_unit)
+        return self.convert_to(unit, wavelength=wavelength, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -2907,12 +2918,6 @@ class Frame(NDDataArray):
 
     @property
     def corresponding_neutral_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_neutral_density_unit
 
     # -----------------------------------------------------------------
@@ -2942,24 +2947,12 @@ class Frame(NDDataArray):
 
     @property
     def is_brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_brightness
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_brightness_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_brightness_unit
 
     # -----------------------------------------------------------------
@@ -2988,12 +2981,6 @@ class Frame(NDDataArray):
 
     @property
     def corresponding_non_brightness_unit(self):
-
-        """
-        This funtion ...
-        :return:
-        """
-
         return self.unit.corresponding_non_brightness_unit
 
     # -----------------------------------------------------------------
@@ -3023,48 +3010,24 @@ class Frame(NDDataArray):
 
     @property
     def is_surface_brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_surface_brightness
 
     # -----------------------------------------------------------------
 
     @property
     def is_intrinsic_brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_intrinsic_brightness
 
     # -----------------------------------------------------------------
 
     @property
     def is_per_angular_or_intrinsic_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_per_angular_or_intrinsic_area
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_angular_or_intrinsic_area_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_angular_or_intrinsic_area_unit
 
     # -----------------------------------------------------------------
@@ -3093,12 +3056,6 @@ class Frame(NDDataArray):
 
     @property
     def corresponding_non_angular_or_intrinsic_area_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_non_angular_or_intrinsic_area_unit
 
     # -----------------------------------------------------------------
@@ -3127,36 +3084,18 @@ class Frame(NDDataArray):
 
     @property
     def is_per_angular_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_per_angular_area
 
     # -----------------------------------------------------------------
 
     @property
     def is_per_intrinsic_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_per_intrinsic_area
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_angular_area_unit(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.corresponding_angular_area_unit
 
     # -----------------------------------------------------------------
@@ -3190,12 +3129,6 @@ class Frame(NDDataArray):
 
     @property
     def corresponding_intrinsic_area_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_intrinsic_area_unit
 
     # -----------------------------------------------------------------
@@ -5061,12 +4994,6 @@ class Frame(NDDataArray):
 
     @property
     def bounding_box(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wcs.bounding_box
 
     # -----------------------------------------------------------------
@@ -5100,12 +5027,6 @@ class Frame(NDDataArray):
 
     @property
     def coordinate_range(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.wcs.coordinate_range
 
     # -----------------------------------------------------------------
@@ -5689,24 +5610,12 @@ class Frame(NDDataArray):
 
     @property
     def data_size(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self._data.nbytes * u("byte")).to("GB")
 
     # -----------------------------------------------------------------
 
     @property
     def hdu(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from astropy.io.fits import PrimaryHDU
         return PrimaryHDU(self.data, self.header)
 

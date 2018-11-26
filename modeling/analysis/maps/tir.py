@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ....magic.maps.tir.single import SingleBandTIRMapMaker
@@ -21,6 +24,15 @@ from ....core.tools.utils import lazyproperty
 from ...maps.tir import singleband_filter_names, multiband_filter_names
 from ....core.filter.filter import parse_filter
 from .component import MapsAnalysisComponent
+from ....core.tools import time
+from ....core.units.parsing import parse_quantity as q
+
+# -----------------------------------------------------------------
+
+total_name = "total"
+young_name = "young"
+ionizing_name = "ionizing"
+unevolved_name = "unevolved"
 
 # -----------------------------------------------------------------
 
@@ -196,11 +208,14 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
         # Inform the user
         log.info("Making TIR map ...")
 
-        # 1. Make maps based on a single band
+        # Make maps based on a single band
         self.make_tir_maps_single()
 
-        # 2. Make maps based on multiple bands
+        # Make maps based on multiple bands
         self.make_tir_maps_multi()
+
+        # Make maps based on integrating the full dust SED
+        self.make_tir_maps_integration()
 
     # -----------------------------------------------------------------
 
@@ -226,6 +241,7 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
         # Run
         frames = self.load_frames_singleband()
+        print(frames)
         maker.run(frames=frames, maps=current, method_name=method_name)
 
         # Set the maps
@@ -261,6 +277,7 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
         # Run
         frames = self.load_frames_multiband()
+        print(frames)
         maker.run(frames=frames, maps=current, method_name=method_name)
 
         # Set the maps
@@ -271,6 +288,75 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
         # Set the methods
         self.methods[method_name] = maker.methods
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_cube(self):
+        return self.model.total_bolometric_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_cube(self):
+        return self.model.young_bolometric_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_cube(self):
+        return self.model.sfr_bolometric_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_cube(self):
+        return self.model.unevolved_bolometric_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tir_min_wavelength(self):
+        return q("8 micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tir_max_wavelength(self):
+        return q("1000 micron")
+
+    # -----------------------------------------------------------------
+
+    def make_tir_maps_integration(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making maps based on integrating the dust emission ...")
+
+        # Set method name
+        method_name = "integration"
+
+        # The TIR maps
+        maps = dict()
+
+        # Create
+        maps[total_name] = integrate_datacube(self.total_cube, min_wavelength=self.tir_min_wavelength, max_wavelength=self.tir_max_wavelength)
+        maps[young_name] = integrate_datacube(self.young_cube, min_wavelength=self.tir_min_wavelength, max_wavelength=self.tir_max_wavelength)
+        maps[ionizing_name] = integrate_datacube(self.ionizing_cube, min_wavelength=self.tir_min_wavelength, max_wavelength=self.tir_max_wavelength)
+        maps[unevolved_name] = integrate_datacube(self.unevolved_cube, min_wavelength=self.tir_min_wavelength, max_wavelength=self.tir_max_wavelength)
+
+        # Set the maps
+        self.maps[method_name] = maps
+
+        # Set the origins
+        #self.origins[method_name] = origins
+
+        # Set the methods
+        #self.methods[method_name] = methods
 
     # -----------------------------------------------------------------
 
@@ -313,5 +399,42 @@ class TIRMapsAnalyser(MapsAnalysisComponent):
 
         # Plot the maps
         self.plot_maps()
+
+# -----------------------------------------------------------------
+
+def integrate_datacube(cube, min_wavelength=None, max_wavelength=None, show_time=False):
+
+    """
+    This function ...
+    :param cube:
+    :param min_wavelength:
+    :param max_wavelength:
+    :param show_time:
+    :return:
+    """
+
+    # Splice the datacube
+    cube = cube.splice(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+    wavelength_unit = cube.wavelength_unit
+
+    # Get wavelength grid
+    wavelength_grid = cube.wavelength_grid
+    #wavelengths = wavelength_grid.wavelengths(unit=wavelength_unit, asarray=True)
+    deltas = wavelength_grid.deltas(unit=wavelength_unit, asarray=True)
+
+    # Get converted to wavelength density
+    cube = cube.converted_to_corresponding_wavelength_density_unit(wavelength_unit=wavelength_unit)
+
+    # Get 3D array
+    array = cube.asarray(axis=2) # wavelength along second axis
+
+    # Perform the integration
+    with time.elapsed_timer() as elapsed:
+        integrated2 = np.trapz(y=array, dx=deltas)
+        integrated = np.sum(array * deltas, axis=2)
+        if show_time: print("Integration performed in " + str(elapsed()) + " seconds")
+
+    # Return
+    return integrated
 
 # -----------------------------------------------------------------

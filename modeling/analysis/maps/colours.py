@@ -77,9 +77,6 @@ class ColourMapsAnalyser(MapsAnalysisComponent):
         # Call the setup function of the base class
         super(ColourMapsAnalyser, self).setup(**kwargs)
 
-        # Load the analysis run
-        self.load_run()
-
     # -----------------------------------------------------------------
 
     @lazyproperty

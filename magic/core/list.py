@@ -936,24 +936,12 @@ class FrameList(FilterBasedList):
 
     @property
     def filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.keys
 
     # -----------------------------------------------------------------
 
     @property
     def frames(self): # an alias for the contents for this subclass
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.contents
 
     # -----------------------------------------------------------------
@@ -1101,24 +1089,12 @@ class FrameList(FilterBasedList):
 
     @property
     def center_coordinate(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.bounding_box.center
 
     # -----------------------------------------------------------------
 
     @property
     def coordinate_systems(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
         for fltr in self.frames: yield self.frames[fltr].wcs
 
     # -----------------------------------------------------------------
@@ -1148,12 +1124,6 @@ class FrameList(FilterBasedList):
 
     @property
     def min_ra_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.min_ra.to("deg").value
 
     # -----------------------------------------------------------------
@@ -1183,36 +1153,18 @@ class FrameList(FilterBasedList):
 
     @property
     def max_ra_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.max_ra.to("deg").value
 
     # -----------------------------------------------------------------
 
     @property
     def ra_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * (self.min_ra + self.max_ra)
 
     # -----------------------------------------------------------------
 
     @property
     def ra_center_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ra_center.to("deg").value
 
     # -----------------------------------------------------------------
@@ -1267,12 +1219,6 @@ class FrameList(FilterBasedList):
 
     @property
     def min_dec_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.min_dec.to("deg").value
 
     # -----------------------------------------------------------------
@@ -1303,12 +1249,6 @@ class FrameList(FilterBasedList):
 
     @property
     def dec_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         dec_center = 0.5 * (self.min_dec + self.max_dec)
         return dec_center
 
@@ -1316,24 +1256,12 @@ class FrameList(FilterBasedList):
 
     @property
     def dec_center_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dec_center.to("deg").value
 
     # -----------------------------------------------------------------
 
     @property
     def max_dec_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.max_dec.to("deg").value
 
     # -----------------------------------------------------------------
@@ -1364,12 +1292,6 @@ class FrameList(FilterBasedList):
 
     @property
     def center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SkyCoordinate(self.ra_center_deg, self.dec_center_deg, unit="deg")
 
     # -----------------------------------------------------------------

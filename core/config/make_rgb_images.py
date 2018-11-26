@@ -17,10 +17,3 @@ definition = ConfigurationDefinition()
 definition.add_optional("output", "string", "output directory")
 
 # -----------------------------------------------------------------
-
-# Define the wavelengths for the RGB
-#wavelengths = dict()
-#wavelengths["optical"] = (0.77, 0.55, 0.33)
-#wavelengths["infrared"] = (333, 100, 24)
-
-# -----------------------------------------------------------------
