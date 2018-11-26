@@ -4513,10 +4513,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Has fit parameters?
-        if self.has_fit:
+        if self.has_fit(name):
 
             # Get parameters
             slope, intercept = self.get_fits_parameters(name)
+
+            #print(slope, intercept)
+            #print(new_x)
 
             # Calculate the fitted
             fitted = get_linear_values(new_x, slope, intercept, xlog=xlog, ylog=ylog)
@@ -5632,6 +5635,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def galaxy_cells_label(self):
+        return self.galaxy_name + " cells"
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def ssfr_funev_pixel_scatters_adjusted(self):
         scatters = OrderedDict()
@@ -5653,9 +5662,31 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def ssfr_funev_all_scatters(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels
+        scatters[self.galaxy_cells_label] = self.ssfr_funev_scatter_cells
+        scatters["M31 pixels"] = self.m31_ssfr_funev_scatter
+        scatters["M51 pixels"] = self.m51_ssfr_funev_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ssfr_funev_pixel_colors(self):
         colors = dict()
         colors[self.galaxy_pixels_label] = "red"
+        colors["M31 pixels"] = self.m31_color
+        colors["M51 pixels"] = self.m51_color
+        return colors
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_all_colors(self):
+        colors = dict()
+        colors[self.galaxy_pixels_label] = "orange"
+        colors[self.galaxy_cells_label] = "red"
         colors["M31 pixels"] = self.m31_color
         colors["M51 pixels"] = self.m51_color
         return colors
@@ -6333,9 +6364,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         ylimits = (0.01,1,)
 
         # plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
-        output0 = plot_scatters_astrofrog(self.ssfr_funev_pixel_scatters, xlimits=xlimits,
+        output0 = plot_scatters_astrofrog(self.ssfr_funev_all_scatters, xlimits=xlimits,
                                           ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False,
-                                          plot=plot, colors=self.ssfr_funev_pixel_colors)
+                                          plot=plot, colors=self.ssfr_funev_all_colors)
 
         # Plot fits
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color)
@@ -6344,16 +6375,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
 
         # Make the second plot
-        output1 = plot_scatter_astrofrog(self.ssfr_funev_scatter_cells, xlimits=xlimits,
-                                         ylimits=ylimits, xlog=True, ylog=False, plot=plot,
-                                         color="red")
+        #output1 = plot_scatter_astrofrog(self.ssfr_funev_scatter_cells, xlimits=xlimits,
+        #                                 ylimits=ylimits, xlog=True, ylog=False, plot=plot,
+        #                                 color="red")
 
         # Add legend for fits
         plot.legend(loc="lower right")
 
         # Plot fits
         # plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81 pixels", color=self.darker_red)
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81 pixels", color=self.darker_red)
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
 
         # Save or show
