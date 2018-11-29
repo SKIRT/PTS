@@ -229,6 +229,12 @@ class CellEnergyAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_luminosity_values(self):
+        return self.total_diffuse_luminosities + self.internal_luminosities
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Data3D, "total_luminosities_path", True, write=False)
     def total_luminosities(self):
 
@@ -240,14 +246,67 @@ class CellEnergyAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Calculating the total dust cell luminosities ...")
 
-        # Get luminosities
-        luminosities = self.total_diffuse_luminosities + self.internal_luminosities
-
         # Create the data with external xyz
-        return Data3D.from_values(self.dust_lum_name, luminosities, self.cell_x_coordinates_colname,
+        return Data3D.from_values(self.dust_lum_name, self.total_luminosity_values, self.cell_x_coordinates_colname,
                                   self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
                                   length_unit=self.length_unit, description=self.dust_lum_description,
                                   xyz_filepath=self.cell_coordinates_filepath, unit=self.bolometric_luminosity_unit,
+                                  distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_luminosity_density_values(self):
+        return self.total_luminosity_values / self.cell_volumes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_luminosity_density_unit(self):
+        return self.bolometric_luminosity_unit / self.cell_volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_luminosity_densities_path(self):
+        return fs.join(self.cell_energy_path, "total_density.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_luminosity_densities(self):
+        return fs.is_file(self.total_luminosity_densities_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_lum_density_name(self):
+        return "vLdust"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_lum_density_description(self):
+        return "Bolometric dust luminosity density"
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "total_luminosity_densities_path", True, write=False)
+    def total_luminosity_densities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the total dust cell luminosity densities ...")
+
+        # Create the data with external xyz
+        return Data3D.from_values(self.dust_lum_density_name, self.total_luminosity_density_values, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.dust_lum_density_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.bolometric_luminosity_density_unit,
                                   distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
@@ -302,6 +361,12 @@ class CellEnergyAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_total_luminosity_densities(self):
+        return not self.has_total_luminosity_densities
+
+    # -----------------------------------------------------------------
+
     def write_luminosities(self):
 
         """
@@ -311,6 +376,9 @@ class CellEnergyAnalyser(AnalysisRunComponent):
 
         # Total
         if self.do_write_total_luminosities: self.write_total_luminosities()
+
+        # Total luminosity density
+        if self.do_write_total_luminosity_densities: self.write_total_luminosity_densities()
 
     # -----------------------------------------------------------------
 
@@ -326,6 +394,21 @@ class CellEnergyAnalyser(AnalysisRunComponent):
 
         # Write
         self.total_luminosities.saveto(self.total_luminosities_path)
+
+    # -----------------------------------------------------------------
+
+    def write_total_luminosity_densities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the total dust cell luminosity densities ...")
+
+        # Write
+        self.total_luminosity_densities.saveto(self.total_luminosity_densities_path)
 
     # -----------------------------------------------------------------
 

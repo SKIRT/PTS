@@ -462,6 +462,12 @@ class AnalysisRunComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_volume_unit(self):
+        return self.model.cell_volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_contribution_absorption_filepath(self):
         #return self.total_contribution_data.absorption_path
         if self.total_contribution_data.has_absorption: return self.total_contribution_data.absorption_path

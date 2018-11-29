@@ -61,7 +61,7 @@ radius_name = "Radius"
 dust_heights_name = "Dust scale heights"
 bulge_disk_ratio_name = "Bulge disk ratio"
 temperature_name = "Dust temperature"
-luminosity_name = "Dust luminosity"
+luminosity_density_name = "Dust luminosity density"
 mean_age_name = "Mean stellar age"
 funev_name = "Fraction of heating by unevolved stars"
 sfr_density_salim_name = "vSFR (Salim)"
@@ -72,7 +72,7 @@ sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K&E)"
 # -----------------------------------------------------------------
 
 # Auxilary column names for sSFR-Funev scatter data
-ssfr_funev_aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, radius_name, dust_heights_name, bulge_disk_ratio_name, temperature_name, luminosity_name, mean_age_name]
+ssfr_funev_aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, radius_name, dust_heights_name, bulge_disk_ratio_name, temperature_name, luminosity_density_name, mean_age_name]
 
 # Auxilary column names for SFR-SFR scatter
 sfr_sfr_cells_aux_colnames = [temperature_name, mean_age_name, funev_name]
@@ -220,26 +220,26 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def cell_dust_luminosity_data_path(self):
-        return fs.join(self.cell_energy_path, "total.dat")
+    def cell_dust_luminosity_density_data_path(self):
+        return fs.join(self.cell_energy_path, "total_density.dat")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def cell_dust_luminosity_data(self):
-        return Data3D.from_file(self.cell_dust_luminosity_data_path)
+    def cell_dust_luminosity_density_data(self):
+        return Data3D.from_file(self.cell_dust_luminosity_density_data_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def cell_dust_luminosities(self):
-        return self.cell_dust_luminosity_data.values
+    def cell_dust_luminosity_densities(self):
+        return self.cell_dust_luminosity_density_data.values
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def cell_dust_luminosity_unit(self):
-        return self.cell_dust_luminosity_data.unit
+    def cell_dust_luminosity_density_unit(self):
+        return self.cell_dust_luminosity_density_data.unit
 
     # -----------------------------------------------------------------
     # CELL PROPERTIES
@@ -1078,7 +1078,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         aux[dust_heights_name] = self.cell_dust_heights
         aux[bulge_disk_ratio_name] = self.cell_bd_ratios
         aux[temperature_name] = self.cell_temperatures
-        aux[luminosity_name] = self.cell_dust_luminosities
+        aux[luminosity_density_name] = self.cell_dust_luminosity_densities
         aux[mean_age_name] = self.cell_mean_ages
 
         # Set auxilary column units
@@ -1088,7 +1088,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         aux_units[distance_center_name] = self.length_unit
         aux_units[radius_name] = self.length_unit
         aux_units[temperature_name] = self.temperature_unit
-        aux_units[luminosity_name] = self.cell_dust_luminosity_unit
+        aux_units[luminosity_density_name] = self.cell_dust_luminosity_density_unit
         aux_units[mean_age_name] = self.log_age_unit
 
         # Create

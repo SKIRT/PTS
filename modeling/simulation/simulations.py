@@ -1409,6 +1409,12 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def cell_volumes_unit(self):
+        return self.observed.cell_volumes_unit
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_dust_densities(self):
         return self.observed.cell_dust_densities
 

@@ -239,18 +239,42 @@ class ComponentSimulation(SkirtSimulation):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def cell_volumes_column_name(self):
+        if "Volume" in self.cell_properties_columns: return "Volume" # SKIRT 7
+        elif "Cell volume" in self.cell_properties_columns: return "Cell volume" # SKIRT 8
+        else: raise IOError("Cell volumes not found in the cell properties file")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def cell_volumes(self):
-        if "Volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Volume"])  # SKIRT 7
-        elif "Cell volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Cell volume"])  # SKIRT 8
-        else: raise IOError("")
+        return np.asarray(self.cell_properties[self.cell_volumes_column_name])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_volumes_unit(self):
+        return self.cell_properties.get_column_unit(self.cell_volumes_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_dust_densities_column_name(self):
+        if "Density" in self.cell_properties_columns: return "Density" # SKIRT 7
+        elif "Average dust density in cell": return "Average dust density in cell" # SKIRT 8
+        else: raise IOError("Dust densities not found in the cell properties file")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_dust_densities(self):
-        if "Density" in self.cell_properties_columns: return np.asarray(self.cell_properties["Density"])  # SKIRT 7
-        elif "Average dust density in cell" in self.cell_properties_columns: return np.asarray(self.cell_properties["Average dust density in cell"])  # SKIRT 8
-        else: raise IOError("")
+        return np.asarray(self.cell_properties[self.cell_dust_densities_column_name])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_dust_densities_unit(self):
+        return self.cell_properties.get_column_unit(self.cell_dust_densities_column_name)
 
     # -----------------------------------------------------------------
 

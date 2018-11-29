@@ -11729,6 +11729,12 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def cell_volume_unit(self):
+        return self.total_simulations.cell_volumes_unit
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_dust_densities(self):
         return self.total_simulations.cell_dust_densities
 
