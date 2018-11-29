@@ -175,7 +175,10 @@ def plot_seds(seds, **kwargs):
     # Show the figure after plotting
     show = kwargs.pop("show", None)
 
+    # Other options
     show_models_residuals = kwargs.pop("show_models_residuals", False)
+    show_smooth = kwargs.pop("show_smooth", False)
+    smooth_residuals_ignore_close = kwargs.pop("smooth_residuals_ignore_close", False)
 
     # LEGENDS
     instruments_legend_ncols = kwargs.pop("instruments_legend_ncols", None)
@@ -209,12 +212,14 @@ def plot_seds(seds, **kwargs):
     if observations_residuals_legend_location is not None: plotter.config.legends.observations_residuals_location = observations_residuals_legend_location
     if models_residuals_legend_location is not None: plotter.config.legends.models_residuals_location = models_residuals_legend_location
 
+    # Set other options
     plotter.config.legends.instruments = show_instruments_legend
     plotter.config.legends.observations = show_observations_legend
     plotter.config.legends.models = show_models_legend
     plotter.config.legends.residuals = show_residuals_legends
-
     plotter.config.models_residuals = show_models_residuals
+    plotter.config.show_smooth = show_smooth
+    plotter.config.smooth_residuals_ignore_close = smooth_residuals_ignore_close
 
     # Set TeX flag
     plotter.config.tex = tex
@@ -236,12 +241,16 @@ def plot_seds(seds, **kwargs):
     # Get the units
     if wavelength_unit is None:
         wavelength_units = [seds[label].wavelength_unit for label in seds]
-        wavelength_unit = sequences.get_single(wavelength_units)
+        #print(wavelength_units)
+        wavelength_unit = sequences.get_single(wavelength_units, none="error", method="first_not_none")
+        #print(wavelength_unit)
     if unit is None:
         units = [seds[label].unit for label in seds]
         unit = sequences.get_single(units)
 
     # Set units
+    #print("WAVELENGTH UNIT:", wavelength_unit)
+    #print("UNIT:", unit)
     plotter.config.wavelength_unit = wavelength_unit
     plotter.config.unit = unit
 
@@ -2183,6 +2192,7 @@ class SEDPlotter(Configurable):
             if label in self.observation_labels_with_joined:
 
                 joined_observation = self.joined_observations[label]
+                #print(label + " joined")
                 # print(joined_observation)
                 # print(joined_observation.wavelength_unit, joined_observation.unit)
 
@@ -2203,6 +2213,9 @@ class SEDPlotter(Configurable):
             residual_plot = self.residual_plots[observation_reference_index]
             observation_reference_index += 1
 
+            #print(wavelengths)
+            #print(fluxes)
+
             # PLOT RESIDUALS WITH MODELS
             for model_label in self.models:
 
@@ -2222,6 +2235,8 @@ class SEDPlotter(Configurable):
                 if self.config.smooth_residuals:
 
                     logwavelengths = np.log10(wavelengths)
+                    logfluxes = np.log10(fluxes)
+
                     # gradient = np.gradient(logwavelengths)
                     diffs = np.ediff1d(logwavelengths)
                     # print(len(gradient), len(wavelengths))
@@ -2229,23 +2244,35 @@ class SEDPlotter(Configurable):
                     # print(len(diffs))
                     reldiffs = diffs / logwavelengths[:-1]
                     # for grad, band in zip(gradient, bands): print(band, grad)
+                    ignore_bands = []
                     for first_band, first_wavelength, second_band, second_wavelength, reld in zip(bands[:-1], wavelengths[:-1], bands[1:], wavelengths[1:], reldiffs):
 
                         # print(first_band + " vs " + second_band + ": " + str(reld))
-                        if abs(reld) < 0.01:
-                            log.warning("The " + str(
-                                first_band) + " and " + second_band + " wavelengths are very close (" + str(first_wavelength) + " and " + str(second_wavelength) + ", closeness = " + str(abs(reld)) + "), but not necessarily their photometric value: this may give artefacts in the residual curve")
+                        if abs(reld) < self.config.smooth_residuals_closeness_limit:
+                            log.warning("The " + str(first_band) + " and " + second_band + " wavelengths are very close (" + str(first_wavelength) + " and " + str(second_wavelength) + ", closeness = " + str(abs(reld)) + "), but not necessarily their photometric value: this may give artefacts in the residual curve")
+                            if self.config.smooth_residuals_ignore_close: ignore_bands.append(second_band)
+
+                    # Ignore bands?
+                    if len(ignore_bands) > 0:
+
+                        ignore_indices = [bands.index(band) for band in ignore_bands]
+                        ignore_mask = np.zeros(len(bands), dtype=bool)
+                        ignore_mask[ignore_indices] = 1
+                        pass_mask = np.logical_not(ignore_mask)
+                        logwavelengths = logwavelengths[pass_mask]
+                        logfluxes = logfluxes[pass_mask]
 
                     # Create spline (interpolate in log-log space)
-                    logfluxes = np.log10(fluxes)
                     logsed_wavelengths = np.log10(sed_wavelengths)
+                    #logsmooth_model = interp1d(logwavelengths, logfluxes, kind="cubic")
+                    #logsmooth_model = interp1d(logwavelengths, logfluxes, fill_value="extrapolate")
+                    #logsmooth_fluxes = logsmooth_model(logsed_wavelengths)
                     logsmooth_fluxes = spline(logwavelengths, logfluxes, logsed_wavelengths)
                     smooth_fluxes = 10 ** logsmooth_fluxes
 
                     min_obs_wavelength = wavelengths[0]
                     max_obs_wavelength = wavelengths[-1]
-                    within_observations_mask = (sed_wavelengths > min_obs_wavelength) * (
-                            sed_wavelengths < max_obs_wavelength)
+                    within_observations_mask = (sed_wavelengths > min_obs_wavelength) * ( sed_wavelengths < max_obs_wavelength)
                     # print(within_observations_mask)
 
                     # Mask
@@ -2269,9 +2296,7 @@ class SEDPlotter(Configurable):
                     min_sed_wavelength = min(sed_wavelengths)
                     max_sed_wavelength = max(sed_wavelengths)
 
-                    wavelengths_fluxes_residuals = sorted(
-                        [(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if
-                         min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
+                    wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
                     wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
                     fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
                     residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
@@ -3093,11 +3118,11 @@ class SEDPlotter(Configurable):
             res_axis.set_ylabel(r"Res. $[\%]$", fontsize='large')
 
         # Hide x ticks of all but last residual plot
-        if len(self.residual_plots) > 0:
+        if self.has_residual_plots:
 
             # Hide other tick labels but last residual plot
-            self.main_plot.hide_xtick_labels()
-            for j in range(len(self.residual_plots)-1): self.residual_plots[j].hide_xtick_labels()
+            self.main_plot.hide_xtick_labels(shared_axis=True)
+            for j in range(len(self.residual_plots)-1): self.residual_plots[j].hide_xtick_labels(shared_axis=True)
 
             # Set xticks for last residual plot
             last_residual_plot_index = len(self.residual_plots)-1
@@ -3115,7 +3140,8 @@ class SEDPlotter(Configurable):
 
         # Set ticks
         #if len(self.residual_plots) == 0: self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
-        self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
+        if not self.has_residual_plots: self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
+        else: self.residual_plots[-1].set_xticks(fontsize=self.config.plot.ticks_fontsize)
         self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize) # minor = False is possible
 
         # Add axis labels and a legend
@@ -3139,6 +3165,11 @@ class SEDPlotter(Configurable):
         #self.figure.set_grid(self.config.plot, which="both")
         self.main_plot.set_grid(self.config.plot, which="both")
         for plot in self.residual_plots: plot.set_grid(self.config.plot, which="both")
+
+        # FAILED TEST TO HIDE TICK LABELS ON MAIN BUT SHOW ON LAST RESIDUAL PLOT
+        #if self.has_residual_plots:
+        #    self.residual_plots[-1].set_xticks(fontsize=self.config.plot.ticks_fontsize)
+        #    #self.main_plot.hide_xtick_labels()
 
         # Set borders
         if not self._external_figure: self.figure.set_borders(self.config.plot)

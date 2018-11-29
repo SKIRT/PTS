@@ -61,6 +61,7 @@ radius_name = "Radius"
 dust_heights_name = "Dust scale heights"
 bulge_disk_ratio_name = "Bulge disk ratio"
 temperature_name = "Dust temperature"
+luminosity_name = "Dust luminosity"
 mean_age_name = "Mean stellar age"
 funev_name = "Fraction of heating by unevolved stars"
 sfr_density_salim_name = "vSFR (Salim)"
@@ -71,7 +72,7 @@ sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K&E)"
 # -----------------------------------------------------------------
 
 # Auxilary column names for sSFR-Funev scatter data
-ssfr_funev_aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, radius_name, dust_heights_name, bulge_disk_ratio_name, temperature_name, mean_age_name]
+ssfr_funev_aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, radius_name, dust_heights_name, bulge_disk_ratio_name, temperature_name, luminosity_name, mean_age_name]
 
 # Auxilary column names for SFR-SFR scatter
 sfr_sfr_cells_aux_colnames = [temperature_name, mean_age_name, funev_name]
@@ -1035,6 +1036,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         aux[dust_heights_name] = self.cell_dust_heights
         aux[bulge_disk_ratio_name] = self.cell_bd_ratios
         aux[temperature_name] = self.cell_temperatures
+        aux[luminosity_name] = self.cell_dust_luminosities
         aux[mean_age_name] = self.cell_mean_ages
 
         # Set auxilary column units

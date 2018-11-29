@@ -3408,7 +3408,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     def write_extra_emission_curve(self):
         self.extra_spectral_emission_curve.saveto(self.extra_spectral_emission_curve_path)
 
-
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 

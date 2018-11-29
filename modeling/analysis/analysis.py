@@ -542,6 +542,7 @@ class CorrelationPlotSettings(object):
         self.aux_colname = kwargs.pop("aux_colname", None)
         self.aux_log = kwargs.pop("aux_log", False)
         self.aux_limits = kwargs.pop("aux_limits", None)
+        self.aux_label = kwargs.pop("aux_label", None)
 
     # -----------------------------------------------------------------
 
@@ -4267,6 +4268,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         descriptions["ssfr_funev_log"] = "plot the sSFR-Funev correlation for pixels and cells with Funev on a logarithmic scale"
         descriptions["maps"] = "plot the component maps together with an observed optical RGB image"
         descriptions["correlations_basic"] = "make a plot of the sSFR-Funev correlation, but more basic"
+        descriptions["dust_seds"] = "make a plot of the dust emission SEDs for the different stellar contributions"
 
         # Return
         return descriptions
@@ -5037,11 +5039,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_special4(self, path=None):
+    def plot_special4(self, path=None, colored_lines=False):
 
         """
         This function ...
         :param path:
+        :param colored_lines:
         :return:
         """
 
@@ -5110,12 +5113,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         r_fraction = curve.value_for_wavelength(self.sdss_r_wavelength)
 
         # Get colours
-        fuv_color = cmap(fuv_fraction)
-        nuv_color = cmap(nuv_fraction)
-        u_color = cmap(u_fraction)
-        g_color = cmap(g_fraction)
-        r_color = cmap(r_fraction)
-        linecolors = [fuv_color, nuv_color, u_color, g_color, r_color]
+        if colored_lines:
+            fuv_color = cmap(fuv_fraction)
+            nuv_color = cmap(nuv_fraction)
+            u_color = cmap(u_fraction)
+            g_color = cmap(g_fraction)
+            r_color = cmap(r_fraction)
+            linecolors = [fuv_color, nuv_color, u_color, g_color, r_color]
+        else: linecolors = ["black", "black", "black", "black", "black"]
 
         # Plot curve
         plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
@@ -5664,8 +5669,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @lazyproperty
     def ssfr_funev_all_scatters(self):
         scatters = OrderedDict()
-        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels
         scatters[self.galaxy_cells_label] = self.ssfr_funev_scatter_cells
+        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels
         scatters["M31 pixels"] = self.m31_ssfr_funev_scatter
         scatters["M51 pixels"] = self.m51_ssfr_funev_scatter
         return scatters
@@ -6089,19 +6094,23 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         unit = u("Lsun", density=True)
         min_wavelength = q("0.05 micron")
         max_wavelength = q("2000 micron")
+        #max_wavelength = q("1000 micron")
         min_flux = PhotometricQuantity(10 ** 6.5, unit)
         max_flux = PhotometricQuantity(10 ** 10, unit)
 
         # Create figure
-        figsize = (20, 10,)
+        #figsize = (20, 10,)
+        figsize = (15,8,)
         figure = MPLFigure(size=figsize)
 
         # Initialize dictionary for the SEDs (observed and simulated)
         seds = OrderedDict()
 
         # Define seperate filter tuples
+        first_three_hfi_filter_names =["Planck 350", "Planck 550", "Planck 850"]
+        first_three_hfi_filters = [parse_filter(filter_name) for filter_name in first_three_hfi_filter_names]
         fitting_filters = tuple(self.fitting_run.fitting_filters)
-        hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
+        hfi_and_2mass_filters = tuple(first_three_hfi_filters + self.jhk_filters)
 
         # Get SEDs
         total_observed_stellar_sed = self.get_observed_stellar_sed("total")
@@ -6212,7 +6221,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                   distance=self.galaxy_distance, options=plot_options, tex=False, unit=unit,
                   residual_reference="observations", smooth_residuals=True, observations_legend_ncols=1,
                   instruments_legend_ncols=3, only_residuals_legend=True, observations_residuals_legend_location="lower left", models_residuals_legend_location="upper left", show=False,
-                  show_models_legend=False)
+                  show_models_legend=False, smooth_residuals_ignore_close=True) # show_smooth=True
 
         ## Create legends
 
@@ -6289,7 +6298,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.info("Creating the heating (maps + curve) plot ...")
 
         # Create figure
-        figsize = (20, 6,)
+        figsize = (15, 4,)
         figure = MPLFigure(size=figsize)
 
         # Set width ratios
@@ -6321,13 +6330,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # distr_axes = figure.figure.add_subplot(gs[1])
         # plot_distribution(self.heating_distribution, axes=distr_axes, cmap="inferno", cmap_interval=self.heating_fraction_interval)
         plot_distribution(self.heating_distribution, cmap="inferno", cmap_interval=self.heating_fraction_interval,
-                          plot=plot1, show_mean=True, show_median=True, show_most_frequent=False)
+                          plot=plot1, show_mean=True, show_median=True, show_most_frequent=False, mean_color="green", median_color="blue")
         plot1.set_xlabel("Heating fraction by unevolved stars")
-        #plot1.hide_yaxis()
+        plot1.hide_yaxis()
 
         # Plot radial curve
         radii = [self.inner_region_max_radius, self.outer_region_min_radius]
-        plot_curve(self.radial_heating_fraction_curve, vlines=radii, ylimits=self.heating_fraction_interval, plot=plot2, vlinestyle="dashed", vlinecolor="green")
+        plot_curve(self.radial_heating_fraction_curve, color="purple", vlines=radii, ylimits=self.heating_fraction_interval, plot=plot2, vlinestyle="dashed", vlinecolor="gray")
+        plot2.set_yaxis_right()
 
         # Save or show
         figure.tight_layout()
@@ -6360,32 +6370,26 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         xlog = True
         ylog = True
 
-        xlimits = (1e-14, 5e-10,)
+        #xlimits = (1e-14, 5e-10,)
+        xlimits = (5e-14, 2e-10,)
         ylimits = (0.01,1,)
 
         # plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
         output0 = plot_scatters_astrofrog(self.ssfr_funev_all_scatters, xlimits=xlimits,
                                           ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False,
-                                          plot=plot, colors=self.ssfr_funev_all_colors)
+                                          plot=plot, colors=self.ssfr_funev_all_colors, dpi=72, density_log=True)
 
         # Plot fits
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color)
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color)
-        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81", color=self.darker_red)
-        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
-
-        # Make the second plot
-        #output1 = plot_scatter_astrofrog(self.ssfr_funev_scatter_cells, xlimits=xlimits,
-        #                                 ylimits=ylimits, xlog=True, ylog=False, plot=plot,
-        #                                 color="red")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color, linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color, linestyle=":")
 
         # Add legend for fits
         plot.legend(loc="lower right")
 
-        # Plot fits
-        # plot1.plot(ssfr_points, funev_m81, label="M81 (pixels)")
-        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label="M81 pixels", color=self.darker_red)
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
+        # Set labels
+        plot.set_xticks()
+        plot.set_yticks()
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -6462,11 +6466,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # FIRST PLOT: with radius
         settings1 = self.ssfr_funev_radius_settings
-        output_radius = self.plot_correlation_impl("sSFR-Funev (with radius)", self.ssfr_funev_scatter_cells, first_row[0], settings1, add_colorbar=True, figure=figure)
+        output_radius = self.plot_correlation_impl("sSFR-Funev (with radius)", self.ssfr_funev_scatter_cells, first_row[0], settings1, add_colorbar=True, figure=figure, aux_density=True, log_density=True)
         first_row[0].set_xaxis_top()
         first_row[0].set_yaxis_left()
         #first_row[0].set_background_color("gainsboro")
-        first_row[0].add_text("(b)", horizontal_position="left", vertical_position="top", fontsize=14)
+        first_row[0].add_text("(a)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         # Plot inner radius line
         inner_radius_ssfr_values, inner_radius_funev_values = self.ssfr_funev_points_at_inner_radius
@@ -6478,39 +6482,27 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # first_row[1].plot(outer_radius_ssfr_values, outer_radius_funev_values, label="Outer", color="white")
         first_row[0].plot(outer_radius_ssfr_values, outer_radius_funev_values, color="white")  # no label
 
-
-
         # SECOND PLOT: with height
         settings2 = self.ssfr_funev_dust_heights_settings
-        output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells,
-                                                   first_row[1], settings2,
-                                                   add_colorbar=True, figure=figure, colorbar_label_position="right")
-                                                   #references=self.reference_ssfr_funev_scatters,
-                                                   #reference_colors=self.reference_ssfr_funev_scatter_colors,
-                                                   #legend_location="upper center")
+        output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells, first_row[1], settings2, add_colorbar=True, figure=figure, colorbar_label_position="right", aux_density=True, log_density=True)
         first_row[1].set_xaxis_top()
         first_row[1].set_yaxis_right()
         #first_row[1].set_background_color("gainsboro")
-
-
+        first_row[1].add_text("(b)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         # THIRD PLOT: vSFR as auxilary
         settings4 = self.ssfr_funev_vsfr_settings.copy()
         settings4.aux_limits = [1e-18, 1e-11]
-        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells,
-                                                     second_row[0],
-                                                     settings4, add_colorbar=True, figure=figure)
+        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells, second_row[0], settings4, add_colorbar=True, figure=figure, aux_density=True, log_density=True)
         #second_row[0].hide_xaxis()
         second_row[0].set_yaxis_left()
         #second_row[1].set_background_color("gainsboro")
-        second_row[0].add_text("(e)", horizontal_position="left", vertical_position="top", fontsize=14)
+        second_row[0].add_text("(c)", horizontal_position="left", vertical_position="top", fontsize=14)
 
         # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="All cells", color=self.darker_red, linestyle="dashed")
         # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_high_vsfr, label="High vSFR", color="black")
         # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m31, color=self.darker_m31_color, linestyle="dashed")
         # second_row[1].plot(self.ssfr_points_fit, self.funev_points_fit_m51, color=self.darker_m51_color, linestyle="dashed")
-
-
 
         # FOURTH PLOT: dust density as auxilary
         settings5 = self.ssfr_funev_dust_density_settings
@@ -6518,11 +6510,79 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         output_dust_density = self.plot_correlation_impl("sSFR-Funev (with dust density)",
                                                          self.ssfr_funev_scatter_cells, second_row[1],
                                                          settings5, add_colorbar=True, figure=figure,
-                                                         colorbar_ticks=colorbar_ticks5)
+                                                         colorbar_ticks=colorbar_ticks5, aux_density=True, log_density=True)
         #second_row[1].hide_xaxis()
         second_row[1].set_yaxis_right()
         #second_row[2].set_background_color("gainsboro")
-        second_row[1].add_text("(f)", horizontal_position="left", vertical_position="top", fontsize=14)
+        second_row[1].add_text("(d)", horizontal_position="left", vertical_position="top", fontsize=14)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_special13(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the dust SEDs plot ...")
+
+        # Set limits
+        unit = u("Lsun", density=True)
+        min_wavelength = q("2 micron")
+        max_wavelength = q("2000 micron")
+        min_flux = PhotometricQuantity(10**4.6, unit)
+        max_flux = PhotometricQuantity(10**9.5, unit)
+
+        # Create figure
+        figsize = (10, 5,)
+        figure = MPLFigure(size=figsize)
+
+        # Get SEDs
+        old_dust_sed = self.get_dust_emission_sed(old)
+        young_dust_sed = self.get_dust_emission_sed(young)
+        sfr_diffuse_dust_sed = self.get_dust_emission_sed(sfr, dust_contribution="diffuse")
+        sfr_internal_dust_sed = self.get_dust_emission_sed(sfr, dust_contribution="internal")
+        total_dust_sed = self.get_dust_emission_sed(total)
+
+        # Add SEDs
+        seds = OrderedDict()
+        seds["Old"] = old_dust_sed
+        seds["Young"] = young_dust_sed
+        seds["Ionizing diffuse"] = sfr_diffuse_dust_sed
+        seds["Ionizing internal"] = sfr_internal_dust_sed
+        seds["Total"] = total_dust_sed
+
+        # Set options
+        plot_options = dict()
+
+        # Stellar colors
+        old_color = "orange"
+        young_color = "lawngreen"
+        ionizing_color = "royalblue"
+
+        # Dust colors
+        dust_color = "darkred"
+        internal_dust_color = "darkmagenta"
+
+        # Set options
+        plot_options["Old"] = {"color": old_color, "linestyle": "dashed"}
+        plot_options["Young"] = {"color": young_color, "linestyle": "dashed"}
+        plot_options["Ionizing diffuse"] = {"color": ionizing_color, "linestyle": "dashed"}
+        plot_options["Ionizing internal"] = {"color": internal_dust_color, "linestyle": "dashed"}
+        plot_options["Total"] = {"color": dust_color}
+
+        # Plot
+        plotter = plot_seds(seds, figure=figure, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                            min_flux=min_flux, max_flux=max_flux,
+                            distance=self.galaxy_distance, options=plot_options, tex=False, unit=unit, show=False,
+                            show_models_legend=True)
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -6783,7 +6843,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
                               fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None,
-                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None):
+                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None, log_density=False, aux_density=False):
 
         """
         This function ...
@@ -6807,6 +6867,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param coefficients:
         :param colorbar_ticks:
         :param legend_location:
+        :param log_density:
+        :param aux_density:
         :return:
         """
 
@@ -6821,12 +6883,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                         xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
                                         aux_colname=settings.aux_colname, aux_log=settings.aux_log, aux_limits=settings.aux_limits,
-                                        valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname)
+                                        valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname, density_log=log_density, aux_density=aux_density)
 
         # Plot references?
         if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                                                                xlog=settings.xlog, ylog=settings.ylog, plot=output.plot,
-                                                                               colors=reference_colors, legend_location=legend_location)
+                                                                               colors=reference_colors, legend_location=legend_location,
+                                                                               density_log=log_density)
 
         # Add colorbar for auxilary axis?
         if settings.aux_colname is not None and add_colorbar:
@@ -6835,7 +6898,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             if figure is None: raise ValueError("Figure has to be passed to be able to create colorbar")
 
             # Create colorbar
-            aux_label = output.aux_name
+            aux_label = settings.aux_label if settings.aux_label is not None else output.aux_name
             if output.aux_unit is not None: aux_label = aux_label + " [" + tostr(output.aux_unit, latex=True) + "]"
             figure.create_horizontal_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label,
                                                       logarithmic=settings.aux_log, label_position=colorbar_label_position,
@@ -6909,7 +6972,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def ssfr_funev_preset_names(self):
-        return ["standard", "standard_log", "vsfr", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
+        return ["standard", "standard_log", "vsfr", "density", "dust_density", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_funev_preset(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get settings
+        if name == "standard": settings = self.ssfr_funev_standard_settings
+        elif name == "standard_log": settings = self.ssfr_funev_standard_log_settings
+        elif name == "distance": settings = self.ssfr_funev_distance_settings
+        elif name == "vsfr": settings = self.ssfr_funev_vsfr_settings
+        elif name == "density": settings = self.ssfr_funev_stellar_density_settings
+        elif name == "dust_density": settings = self.ssfr_funev_dust_density_settings
+        elif name == "radius": settings = self.ssfr_funev_radius_settings
+        elif name == "dust_heights": settings = self.ssfr_funev_dust_heights_settings
+        elif name == "inner": settings = self.ssfr_funev_inner_settings
+        elif name == "outer": settings = self.ssfr_funev_outer_settings
+        elif name == "intermediate": settings = self.ssfr_funev_intermediate_settings
+        elif name == "outside_inner": settings = self.ssfr_funev_outside_inner_settings
+        elif name == "midplane": settings = self.ssfr_funev_midplane_settings
+        else: raise ValueError("Invalid preset: '" + name + "'")
+
+        # Return the settings
+        return settings
 
     # -----------------------------------------------------------------
 
@@ -6935,6 +7027,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot p value
         definition.add_flag("coefficient", "show the correlation coefficient on the plot")
+
+        # Use density alpha
+        definition.add_flag("alpha", "enable density alpha for plots with auxilary color axis")
 
         # Return
         return definition
@@ -7010,6 +7105,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # vSFR auxilary axis
         settings.aux_colname = "vSFR"
+        settings.aux_label = "\\rho_{SFR}"
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_stellar_density_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
+
+        # vSFR auxilary axis
+        settings.aux_colname = "vSFR / sSFR" # = stellar density
+        settings.aux_label = "Stellar density"
 
         # Logscales?
         settings.xlog = True
@@ -7295,15 +7420,21 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def create_ssfr_funev_settings(self):
+    def create_ssfr_funev_settings(self, prompt_preset=False):
 
         """
         This function ...
+        :param prompt_preset:
         :return:
         """
 
         # Initialize
         settings = CorrelationPlotSettings()
+
+        # Use preset anyway?
+        if prompt_preset and prompt_yn("use_preset", "use preset?", default=False):
+            name = prompt_string("preset", "name of the preset", choices=self.ssfr_funev_preset_names)
+            return self.get_ssfr_funev_preset(name)
 
         # Log?
         settings.xlog = True
@@ -7345,23 +7476,10 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         config = self.get_config_from_command(command, self.plot_ssfr_funev_definition, **kwargs)
 
         # Use preset settings
-        if config.preset is not None:
-
-            if config.preset == "standard": settings = self.ssfr_funev_standard_settings
-            elif config.preset == "standard_log": settings = self.ssfr_funev_standard_log_settings
-            elif config.preset == "distance": settings = self.ssfr_funev_distance_settings
-            elif config.preset == "vsfr": settings = self.ssfr_funev_vsfr_settings
-            elif config.preset == "radius": settings = self.ssfr_funev_radius_settings
-            elif config.preset == "dust_heights": settings = self.ssfr_funev_dust_heights_settings
-            elif config.preset == "inner": settings = self.ssfr_funev_inner_settings
-            elif config.preset == "outer": settings = self.ssfr_funev_outer_settings
-            elif config.preset == "intermediate": settings = self.ssfr_funev_intermediate_settings
-            elif config.preset == "outside_inner": settings = self.ssfr_funev_outside_inner_settings
-            elif config.preset == "midplane": settings = self.ssfr_funev_midplane_settings
-            else: raise ValueError("Invalid preset: '" + config.preset + "'")
+        if config.preset is not None: settings = self.get_ssfr_funev_preset(config.preset)
 
         # Create new settings
-        else: settings = self.create_ssfr_funev_settings()
+        else: settings = self.create_ssfr_funev_settings(prompt_preset=True)
 
         # Create the figure
         figsize = (12, 6,)
@@ -7374,12 +7492,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient)
+        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient, aux_density=config.alpha, log_density=True)
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:
-            aux_unit = scatter.get_unit(settings.aux_colname)
-            aux_label = settings.aux_colname + " [" + str(aux_unit) + "]" if aux_unit is not None else settings.aux_colname
+            aux_label = settings.aux_label if settings.aux_label is not None else output.aux_name
+            if output.aux_unit is not None: aux_label = aux_label + " [" + tostr(output.aux_unit, latex=True) + "]"
             figure.figure.colorbar(output.scatter, label=aux_label)
 
         # Save or show
@@ -7668,6 +7786,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot p value
         definition.add_flag("coefficient", "show the correlation coefficient on the plot")
 
+        # Use alpha
+        definition.add_flag("alpha", "enable density alpha for plots with auxilary color axis")
+
         # Return
         return definition
 
@@ -7729,7 +7850,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Plot
         output = self.plot_correlation_impl("Stellar density-Funev", scatter, plot,
                                             self.density_funev_standard_settings, show_coefficient=True,
-                                            plot_coefficient=config.coefficient)
+                                            plot_coefficient=config.coefficient, aux_density=config.alpha)
 
         # Save or show
         if config.path is not None: figure.saveto(config.path)

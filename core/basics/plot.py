@@ -2054,31 +2054,47 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def hide_xtick_labels(self):
+    def hide_xtick_labels(self, shared_axis=False):
 
         """
         This function ...
+        :param shared_axis:
         :return:
         """
 
-        # Set labels to empty strings
-        labels = [item.get_text() for item in self.axes.get_xticklabels()]
-        empty_string_labels = [''] * len(labels)
-        self.set_xtick_labels(empty_string_labels)
+        # Shared axis required other method, or the other axis also loses its labels
+        if shared_axis:
+            plt.setp(self.axes.get_xticklabels(), visible=False)
+
+        # Not shared
+        else:
+
+            # Set labels to empty strings
+            labels = [item.get_text() for item in self.axes.get_xticklabels()]
+            empty_string_labels = [''] * len(labels)
+            self.set_xtick_labels(empty_string_labels)
 
     # -----------------------------------------------------------------
 
-    def hide_ytick_labels(self):
+    def hide_ytick_labels(self, shared_axis=False):
 
         """
         This function ...
+        :param shared_axis:
         :return:
         """
 
-        # Set labels to empty strings
-        labels = [item.get_text() for item in self.axes.get_yticklabels()]
-        empty_string_labels = [''] * len(labels)
-        self.set_ytick_labels(empty_string_labels)
+        # Shared axis requires other method, or the other axis also loses its labels
+        if shared_axis:
+            plt.setp(self.axes.get_yticklabels(), visible=False)
+
+        # Not shared
+        else:
+
+            # Set labels to empty strings
+            labels = [item.get_text() for item in self.axes.get_yticklabels()]
+            empty_string_labels = [''] * len(labels)
+            self.set_ytick_labels(empty_string_labels)
 
     # -----------------------------------------------------------------
 

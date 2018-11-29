@@ -73,7 +73,8 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
                       xsize=5, ysize=5, colors=None, statistics=True, soft_xmin=False,
                       soft_xmax=False, soft_ymin=False, soft_ymax=False, mean=None, median=None, most_frequent=None,
                       stddev=None, fwhm=None, show_mean=None, show_median=None, show_most_frequent=None,
-                      show_stddev=False, show_fwhm=False, alpha=None, plot=None, cmap=None, cmap_interval=None):
+                      show_stddev=False, show_fwhm=False, alpha=None, plot=None, cmap=None, cmap_interval=None,
+                      mean_color="green", median_color="purple", most_frequent_color="orange"):
 
     """
     This function ...
@@ -111,6 +112,9 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param plot:
     :param cmap:
     :param cmap_interval:
+    :param mean_color:
+    :param median_color:
+    :param most_frequent_color:
     :return:
     """
 
@@ -230,7 +234,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
             else: mean = distribution.mean_value
 
         # Show
-        mean_line = axes.axvline(mean, color="green", linestyle="dashed", label="Mean")
+        mean_line = axes.axvline(mean, color=mean_color, linestyle="dashed", label="Mean")
 
     # Don't show mean
     else: mean_line = None
@@ -242,7 +246,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         if median is None: median = distribution.median_value
 
         # Show
-        median_line = axes.axvline(median, color="purple", linestyle="dashed", label="Median")
+        median_line = axes.axvline(median, color=median_color, linestyle="dashed", label="Median")
 
     # Don't show median
     else: median_line = None
@@ -254,7 +258,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         if most_frequent is None: most_frequent = distribution.most_frequent_value
 
         # Show
-        most_frequent_line = axes.axvline(most_frequent, color="orange", linestyle="dashed", label="Most frequent")
+        most_frequent_line = axes.axvline(most_frequent, color=most_frequent_color, linestyle="dashed", label="Most frequent")
 
     # Don't show most frequent
     else: most_frequent_line = None
