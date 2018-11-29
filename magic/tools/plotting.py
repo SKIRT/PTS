@@ -1839,7 +1839,7 @@ def get_x_column(curve, colname=None, return_label=False):
     if x_unit is not None: x_label += " [" + str(x_unit) + "]"
 
     # Return
-    if return_label: return x, x_label
+    if return_label: return x, x_label.encode('utf-8')
     else: return x
 
 # -----------------------------------------------------------------
@@ -1907,10 +1907,10 @@ def get_y_column(curve, colname=None, return_label=False):
 
     # Get the labels
     y_label = curve.y_name if colname is None else colname
-    if y_unit is not None: y_label += " [" + str(y_unit) + "]"
+    if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
     # Return
-    if return_label: return y, y_label
+    if return_label: return y, y_label.encode('utf-8')
     else: return y
 
 # -----------------------------------------------------------------

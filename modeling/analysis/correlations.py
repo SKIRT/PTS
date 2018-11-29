@@ -200,6 +200,48 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return fs.join(self.sfr_path, "cell")
 
     # -----------------------------------------------------------------
+
+    @property
+    def energy_path(self):
+        return self.analysis_run.energy_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_energy_path(self):
+        return fs.join(self.energy_path, "projected")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_energy_path(self):
+        return fs.join(self.energy_path, "cell")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_luminosity_data_path(self):
+        return fs.join(self.cell_energy_path, "total.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_dust_luminosity_data(self):
+        return Data3D.from_file(self.cell_dust_luminosity_data_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_dust_luminosities(self):
+        return self.cell_dust_luminosity_data.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_dust_luminosity_unit(self):
+        return self.cell_dust_luminosity_data.unit
+
+    # -----------------------------------------------------------------
     # CELL PROPERTIES
     # -----------------------------------------------------------------
 
@@ -1046,6 +1088,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         aux_units[distance_center_name] = self.length_unit
         aux_units[radius_name] = self.length_unit
         aux_units[temperature_name] = self.temperature_unit
+        aux_units[luminosity_name] = self.cell_dust_luminosity_unit
         aux_units[mean_age_name] = self.log_age_unit
 
         # Create
@@ -4744,7 +4787,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the sSFR to Funev dust cell scatter data ...")
+        log.info("Writing the sSFR (Salim) to Funev dust cell scatter data ...")
 
         # Write
         self.ssfr_salim_funev_cells.saveto(self.ssfr_salim_funev_cells_path)

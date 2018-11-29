@@ -235,6 +235,7 @@ ssfr_funev_name = "ssfr_funev"
 vsfr_funev_name = "vsfr_funev"
 temperature_funev_name = "temp_funev"
 density_funev_name = "density_funev"
+ssfr_dustlum_name = "ssfr_dustlum"
 
 plot_heating_commands = OrderedDict()
 plot_heating_commands.description = "make plots of the heating fraction"
@@ -253,6 +254,7 @@ plot_correlations_commands[ssfr_funev_name] = ("plot_ssfr_funev_command", True, 
 plot_correlations_commands[vsfr_funev_name] = ("plot_vsfr_funev_command", True, "plot the vSFR to Funev scatter", None)
 plot_correlations_commands[temperature_funev_name] = ("plot_temperature_funev_command", True, "plot the dust temperature to Funev scatter", None)
 plot_correlations_commands[density_funev_name] = ("plot_density_funev_command", True, "plot the stellar mass density to Funev scatter", None)
+plot_correlations_commands[ssfr_dustlum_name] = ("plot_ssfr_dust_luminosity_command", True, "plot the sSFR to dust luminosity scatter", None)
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -6900,6 +6902,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             # Create colorbar
             aux_label = settings.aux_label if settings.aux_label is not None else output.aux_name
             if output.aux_unit is not None: aux_label = aux_label + " [" + tostr(output.aux_unit, latex=True) + "]"
+            #print(aux_label)
             figure.create_horizontal_colorbar_in_plot(plot, output.scatter, position="bottom", label=aux_label,
                                                       logarithmic=settings.aux_log, label_position=colorbar_label_position,
                                                       limits=output.aux_limits, ticks=colorbar_ticks)
@@ -7851,6 +7854,190 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         output = self.plot_correlation_impl("Stellar density-Funev", scatter, plot,
                                             self.density_funev_standard_settings, show_coefficient=True,
                                             plot_coefficient=config.coefficient, aux_density=config.alpha)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_dust_luminosity_preset_names(self):
+        return ["standard", "density", "funev"]
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_dust_luminosity_preset(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get settings
+        if name == "standard": settings = self.ssfr_dust_luminosity_standard_settings
+        elif name == "density": settings = self.ssfr_dust_luminosity_density_settings
+        elif name == "funev": settings = self.ssfr_dust_luminosity_funev_settings
+        else: raise ValueError("Invalid preset: '" + name + "'")
+
+        # Return the settings
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_ssfr_dust_luminosity_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # SFR method
+        definition.add_positional_optional("sfr_method", "string", "method for the SFR estimation", self.default_sfr_method, choices=self.sfr_methods)
+
+        # Use preset?
+        definition.add_optional("preset", "string", "use a plotting preset", default="standard", choices=self.ssfr_dust_luminosity_preset_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
+
+        # Use alpha
+        definition.add_flag("alpha", "enable density alpha for plots with auxilary color axis")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_dust_luminosity_standard_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blueviolet"
+        settings.x_colname = "sSFR"
+        settings.y_colname = "Dust luminosity"
+
+        # Limits
+        settings.xlimits = self.ssfr_limits
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_dust_luminosity_density_settings(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blueviolet"
+        settings.x_colname = "sSFR"
+        settings.y_colname = "Dust luminosity"
+
+        # vSFR auxilary axis
+        settings.aux_colname = "vSFR / sSFR"  # = stellar density
+        settings.aux_label = "Stellar density"
+        settings.aux_log = True
+
+        # Limits
+        settings.xlimits = self.ssfr_limits
+
+        # Return
+        return settings
+        
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_dust_luminosity_funev_settings(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blueviolet"
+        settings.x_colname = "sSFR"
+        settings.y_colname = "Dust luminosity"
+
+        # vSFR auxilary axis
+        settings.aux_colname = "Funev"
+        settings.aux_label = "funev"
+        settings.aux_log = True
+        settings.aux_limits = self.funev_limits_log
+
+        # Limits
+        settings.xlimits = self.ssfr_limits
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_dust_luminosity_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_ssfr_dust_luminosity_definition, **kwargs)
+
+        # Get settings
+        settings = self.get_ssfr_dust_luminosity_preset(config.preset)
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
+
+        # Plot
+        output = self.plot_correlation_impl("sSFR-Dust luminosity", scatter, plot,
+                                            settings, show_coefficient=True,
+                                            plot_coefficient=config.coefficient, aux_density=config.alpha, figure=figure,
+                                            add_colorbar=True)
 
         # Save or show
         if config.path is not None: figure.saveto(config.path)
