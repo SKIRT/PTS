@@ -6468,7 +6468,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # FIRST PLOT: with radius
         settings1 = self.ssfr_funev_radius_settings
-        output_radius = self.plot_correlation_impl("sSFR-Funev (with radius)", self.ssfr_funev_scatter_cells, first_row[0], settings1, add_colorbar=True, figure=figure, aux_density=True, log_density=True)
+        output_radius = self.plot_correlation_impl("sSFR-Funev (with radius)", self.ssfr_funev_scatter_cells, first_row[0], settings1, add_colorbar=True, figure=figure, aux_density=True)
         first_row[0].set_xaxis_top()
         first_row[0].set_yaxis_left()
         #first_row[0].set_background_color("gainsboro")
@@ -6486,7 +6486,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # SECOND PLOT: with height
         settings2 = self.ssfr_funev_dust_heights_settings
-        output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells, first_row[1], settings2, add_colorbar=True, figure=figure, colorbar_label_position="right", aux_density=True, log_density=True)
+        output_height = self.plot_correlation_impl("sSFR-Funev (with height)", self.ssfr_funev_scatter_cells, first_row[1], settings2, add_colorbar=True, figure=figure, colorbar_label_position="right", aux_density=True)
         first_row[1].set_xaxis_top()
         first_row[1].set_yaxis_right()
         #first_row[1].set_background_color("gainsboro")
@@ -6495,7 +6495,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # THIRD PLOT: vSFR as auxilary
         settings4 = self.ssfr_funev_vsfr_settings.copy()
         settings4.aux_limits = [1e-18, 1e-11]
-        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells, second_row[0], settings4, add_colorbar=True, figure=figure, aux_density=True, log_density=True)
+        output_vsfr_aux = self.plot_correlation_impl("sSFR-Funev (with vSFR)", self.ssfr_funev_scatter_cells, second_row[0], settings4, add_colorbar=True, figure=figure, aux_density=True)
         #second_row[0].hide_xaxis()
         second_row[0].set_yaxis_left()
         #second_row[1].set_background_color("gainsboro")
@@ -6512,7 +6512,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         output_dust_density = self.plot_correlation_impl("sSFR-Funev (with dust density)",
                                                          self.ssfr_funev_scatter_cells, second_row[1],
                                                          settings5, add_colorbar=True, figure=figure,
-                                                         colorbar_ticks=colorbar_ticks5, aux_density=True, log_density=True)
+                                                         colorbar_ticks=colorbar_ticks5, aux_density=True)
         #second_row[1].hide_xaxis()
         second_row[1].set_yaxis_right()
         #second_row[2].set_background_color("gainsboro")
@@ -6845,7 +6845,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
                               fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None,
-                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None, log_density=False, aux_density=False):
+                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None, aux_density=False):
 
         """
         This function ...
@@ -6881,11 +6881,34 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if settings.conditions is not None and len(settings.conditions) > 0: mask = self.get_mask_for_conditions(scatter, settings.conditions)
         else: mask = None
 
+        # Set options
+        if settings.aux_colname is not None:
+
+            # ALso display density as transparency: use semi-uniform luminance color map!
+            if aux_density:
+
+                cmap = "brg"
+                log_density = True # always use log for density
+
+            # Don't display density: just the auxilary color
+            else:
+
+                cmap = "plasma"
+                log_density = False # does not matter
+
+        else:
+            cmap = None
+            log_density = False # don't use log density for plotting only density?
+
         # Make the plot
         output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                         xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
                                         aux_colname=settings.aux_colname, aux_log=settings.aux_log, aux_limits=settings.aux_limits,
-                                        valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname, density_log=log_density, aux_density=aux_density)
+                                        valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname,
+                                        density_log=log_density, aux_density=aux_density, cmap=cmap)
+
+        print("x limits:", output.xlimits)
+        print("y limits:", output.ylimits)
 
         # Plot references?
         if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits,
@@ -7495,7 +7518,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient, aux_density=config.alpha, log_density=True)
+        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient, aux_density=config.alpha)
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:

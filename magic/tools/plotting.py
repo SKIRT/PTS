@@ -2166,7 +2166,7 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
                            colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
                            aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, valid_points=None, x_colname=None,
-                           y_colname=None, legend_location=None, density_log=False, aux_density=False):
+                           y_colname=None, legend_location=None, density_log=False, aux_density=False, cmap=None):
 
     """
     This function ...
@@ -2225,7 +2225,8 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
                              xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
                              color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log,
-                             aux_limits=aux_limits, legend_location=legend_location, density_log=density_log, aux_density=aux_density)
+                             aux_limits=aux_limits, legend_location=legend_location, density_log=density_log, aux_density=aux_density,
+                             cmap=cmap)
 
 # -----------------------------------------------------------------
 
