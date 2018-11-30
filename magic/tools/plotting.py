@@ -1773,13 +1773,14 @@ def get_aux(curve, colname):
 
 # -----------------------------------------------------------------
 
-def get_x(curve, colname=None, return_label=False):
+def get_x(curve, colname=None, return_label=False, label=None):
 
     """
     This function ...
     :param curve:
     :param colname:
     :param return_label:
+    :param label:
     :return:
     """
 
@@ -1805,24 +1806,26 @@ def get_x(curve, colname=None, return_label=False):
         x = x_a / x_b
 
         # Set label
-        x_label = colname + " [" + str(unit) + "]"
+        if label is not None: x_label = label + " [" + str(unit) + "]"
+        else: x_label = colname + " [" + str(unit) + "]"
 
         # Return
         if return_label: return x, x_label
         else: return x
 
     # Just one column
-    else: return get_x_column(curve, colname=colname, return_label=return_label)
+    else: return get_x_column(curve, colname=colname, return_label=return_label, label=label)
 
 # -----------------------------------------------------------------
 
-def get_x_column(curve, colname=None, return_label=False):
+def get_x_column(curve, colname=None, return_label=False, label=None):
 
     """
     This function ...
     :param curve:
     :param colname:
     :param return_label:
+    :param label:
     :return:
     """
 
@@ -1835,7 +1838,9 @@ def get_x_column(curve, colname=None, return_label=False):
     else: x = curve.get_x(asarray=True, unit=x_unit)
 
     # Get the labels
-    x_label = curve.x_name if colname is None else colname
+    if label is not None: x_label = label
+    elif colname is not None: x_label = colname
+    else: x_label = curve.x_name
     if x_unit is not None: x_label += " [" + str(x_unit) + "]"
 
     # Return
@@ -1844,13 +1849,14 @@ def get_x_column(curve, colname=None, return_label=False):
 
 # -----------------------------------------------------------------
 
-def get_y(curve, colname=None, return_label=False):
+def get_y(curve, colname=None, return_label=False, label=None):
 
     """
     This function ...
     :param curve:
     :param colname:
     :param return_label:
+    :param label:
     :return:
     """
 
@@ -1876,24 +1882,26 @@ def get_y(curve, colname=None, return_label=False):
         y = y_a / y_b
 
         # Set label
-        y_label = colname + " [" + str(unit) + "]"
+        if label is not None: y_label = label + " [" + str(unit) + "]"
+        else: y_label = colname + " [" + str(unit) + "]"
 
         # Return
         if return_label: return y, y_label
         else: return y
 
     # Just one column
-    else: return get_y_column(curve, colname=colname, return_label=return_label)
+    else: return get_y_column(curve, colname=colname, return_label=return_label, label=label)
 
 # -----------------------------------------------------------------
 
-def get_y_column(curve, colname=None, return_label=False):
+def get_y_column(curve, colname=None, return_label=False, label=None):
 
     """
     This function ...
     :param curve:
     :param colname:
     :param return_label:
+    :param label:
     :return:
     """
 
@@ -1906,7 +1914,9 @@ def get_y_column(curve, colname=None, return_label=False):
     else: y = curve.get_y(asarray=True, unit=y_unit)
 
     # Get the labels
-    y_label = curve.y_name if colname is None else colname
+    if label is not None: y_label = label
+    elif colname is not None: y_label = colname
+    else: y_label = curve.y_name
     if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
     # Return
@@ -1915,7 +1925,7 @@ def get_y_column(curve, colname=None, return_label=False):
 
 # -----------------------------------------------------------------
 
-def get_xy(curve, return_labels=False, x_colname=None, y_colname=None):
+def get_xy(curve, return_labels=False, x_colname=None, y_colname=None, x_label=None, y_label=None):
 
     """
     This function ...
@@ -1923,14 +1933,16 @@ def get_xy(curve, return_labels=False, x_colname=None, y_colname=None):
     :param return_labels:
     :param x_colname:
     :param y_colname:
+    :param x_label:
+    :param y_label:
     :return:
     """
 
     # Get x
-    x, x_label = get_x(curve, colname=x_colname, return_label=True)
+    x, x_label = get_x(curve, colname=x_colname, return_label=True, label=x_label)
 
     # Get y
-    y, y_label = get_y(curve, colname=y_colname, return_label=True)
+    y, y_label = get_y(curve, colname=y_colname, return_label=True, label=y_label)
 
     # Return
     if return_labels: return x, y, x_label, y_label
@@ -2166,7 +2178,8 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
                            colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
                            aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, valid_points=None, x_colname=None,
-                           y_colname=None, legend_location=None, density_log=False, aux_density=False, cmap=None):
+                           y_colname=None, legend_location=None, density_log=False, aux_density=False, cmap=None,
+                           x_label=None, y_label=None):
 
     """
     This function ...
@@ -2195,12 +2208,15 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param legend_location:
     :param density_log:
     :param aux_density:
+    :param cmap:
+    :param x_label:
+    :param y_label:
     :return:
     """
 
     # Get x, y and labels
     #print(x_colname, y_colname)
-    x, y, x_label, y_label = get_xy(scatter, return_labels=True, x_colname=x_colname, y_colname=y_colname)
+    x, y, x_label, y_label = get_xy(scatter, return_labels=True, x_colname=x_colname, y_colname=y_colname, x_label=x_label, y_label=y_label)
     #print(x_label, y_label)
 
     # Get aux values
@@ -3140,7 +3156,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         if not sequences.equal_sizes(x, y): raise ValueError("The number of x and y points must agree")
 
         # Clean xy data
-        x, y, xlimits, ylimits, valid = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog, return_valid=True)
+        x, y, xlimits, ylimits, valid = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog, return_valid=True, get_limits=True)
 
         # Set valid mask
         output.valid = valid
@@ -4120,7 +4136,7 @@ def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=No
 
 def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpositive=False, ypositive=False,
                   xnonnegative=False, ynonnegative=False, xnonzero=False, ynonzero=False, adjust_limits=False,
-                  apply_log=False, return_valid=False):
+                  apply_log=False, return_valid=False, get_limits=False):
 
     """
     This function ...
@@ -4139,6 +4155,7 @@ def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpos
     :param adjust_limits:
     :param apply_log:
     :param return_valid:
+    :param get_limits:
     :return:
     """
 
@@ -4193,6 +4210,9 @@ def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpos
     if adjust_limits:
         xlimits = (np.min(x), np.max(x),)
         ylimits = (np.min(y), np.max(y),)
+    elif get_limits:
+        if xlimits is None: xlimits = (np.min(x), np.max(x),)
+        if ylimits is None: ylimits = (np.min(y), np.max(y),)
 
     # Return cleaned data
     if return_valid: return x, y, xlimits, ylimits, valid
