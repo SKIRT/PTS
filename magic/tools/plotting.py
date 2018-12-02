@@ -1296,7 +1296,7 @@ def plot_map_offset(frame, center, radius, offset_step, interval="pts", scale="l
 
 # -----------------------------------------------------------------
 
-def plot_map_centered(frame, radius, offset, interval=None, cmap="viridis", plot=None, plot_radii=None, colorbar=False):
+def plot_map_centered(frame, radius, offset, interval=None, cmap="viridis", plot=None, plot_radii=None, colorbar=False, background_color=None):
 
     """
     This function ...
@@ -1308,6 +1308,7 @@ def plot_map_centered(frame, radius, offset, interval=None, cmap="viridis", plot
     :param plot:
     :param plot_radii:
     :param colorbar:
+    :param background_color:
     :return:
     """
 
@@ -1317,7 +1318,7 @@ def plot_map_centered(frame, radius, offset, interval=None, cmap="viridis", plot
     center_pix = frame.pixel_center
 
     # Plot
-    output = plot_map_offset(frame, center_pix, radius, offset, interval=interval, colorbar=colorbar, cmap=cmap, plot=plot)
+    output = plot_map_offset(frame, center_pix, radius, offset, interval=interval, colorbar=colorbar, cmap=cmap, plot=plot, background_color=background_color)
 
     # Plot radii?
     if plot_radii is not None:
@@ -3035,7 +3036,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     output.y = y
 
     # Set dpi
-    if dpi is None: dpi = 50
+    if dpi is None: dpi = 72
 
     from matplotlib.lines import Line2D
     from matplotlib.legend import Legend

@@ -19,6 +19,7 @@ from copy import deepcopy
 from scipy.stats import pearsonr, spearmanr
 from collections import OrderedDict
 from matplotlib.colors import to_hex, to_rgb
+import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, memoize_method
@@ -5078,7 +5079,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create grid
         #figsize = (25, 15,)
-        figsize = (18,12,) # 3:2
+        #figsize = (18,12,) # 3:2
+        figsize = (12,8)
         figure = MPLFigure(size=figsize)
         nrows = 2
         ncols = 3
@@ -5097,17 +5099,21 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create colorbar
         #total_width = first_row[0].width + first_row[1].width + first_row[2].width
         #total_height = first_row[0].height + second_row[0].height
-        #cb_width = 0.05 * total_width
-        #cb = figure.add_colorbar(second_row[0].x_min+total_width, second_row[1].y_min, cb_width, total_height, "inferno", "vertical", self.heating_fraction_interval)
+        #cb_width = 0.03 * total_width
+        #cbarx = second_row[0].x_min+total_width
+        #cbary = second_row[1].y_min
+        #print(cbarx)
+        #print(cbary)
+        #cb = figure.add_colorbar(cbarx, cbary, cb_width, total_height, "inferno", "vertical", self.heating_fraction_interval)
         #cmap = cb.cmap
 
         # ADD COLORBAR AXES
-        last_plot = second_row[2]
+        #last_plot = second_row[2]
         # colorbar_plot = figure.add_plot(1.01, last_plot.bounding_box.y0, 0.02, first_plot.bounding_box.y1-last_plot.bounding_box.y0)
-        cb = figure.add_colorbar(1.01, last_plot.bounding_box.y0, 0.02,
-                                 first_plot.bounding_box.y1 - last_plot.bounding_box.y0, "inferno", "vertical",
-                                 self.heating_fraction_interval)
-        cmap = cb.cmap
+        #cb = figure.add_colorbar(1.01, last_plot.bounding_box.y0, 0.02,
+        #                         first_plot.bounding_box.y1 - last_plot.bounding_box.y0, "inferno", "vertical",
+        #                         self.heating_fraction_interval)
+        #cmap = cb.cmap
 
         # Create colorbar
         #from matplotlib.colors import Normalize
@@ -5130,12 +5136,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             g_color = cmap(g_fraction)
             r_color = cmap(r_fraction)
             linecolors = [fuv_color, nuv_color, u_color, g_color, r_color]
-        else: linecolors = ["black", "black", "black", "black", "black"]
+        else:
+            #linecolors = ["black", "black", "black", "black", "black"]
+            linecolors = ["dimgray"] * 5
 
         # Plot curve
         plot_curve(curve, xlimits=self.heating_absorption_wavelength_limits, ylimits=self.heating_fraction_interval,
                    xlog=True, y_label=self.heating_fraction_name, plot=first_row[0], vlines=filter_wavelengths,
-                   vlinestyle="dashed", color="dimgray", vlinecolor=linecolors)
+                   vlinestyle="dashed", color="blue", vlinecolor=linecolors)
         first_row[0].set_xticks()
 
         # Zoom from the normal galaxy truncation
@@ -5148,30 +5156,56 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         offset_step = q("5 kpc")
 
         # GALEX FUV
-        plot_map_offset(fuv_map, fuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[1], aspect="auto")
+        plot_map_offset(fuv_map, fuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[1], aspect="auto", background_color="black")
         first_row[1].hide_yaxis()
         first_row[1].set_xaxis_position("top")
         first_row[1].add_text("GALEX FUV")
+        plt.setp(first_row[1].axes.spines.values(), color="white")
+        first_row[1].axes.tick_params(axis='x', colors="white", direction="inout", bottom=True, top=True, length=15, labelcolor="black")
+        first_row[1].axes.tick_params(axis='y', colors="white", direction="inout", left=True, right=True, length=15, labelcolor="black")
 
         # GALEX NUV
-        plot_map_offset(nuv_map, nuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[2], aspect="auto")
+        plot_map_offset(nuv_map, nuv_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=first_row[2], aspect="auto", background_color="black")
         first_row[2].set_xaxis_position("top")
         first_row[2].set_yaxis_position("right")
         first_row[2].add_text("GALEX NUV")
+        plt.setp(first_row[2].axes.spines.values(), color="white")
+        first_row[2].axes.tick_params(axis='x', colors="white", direction="inout", bottom=True, top=True, length=15, labelcolor="black")
+        first_row[2].axes.tick_params(axis='y', colors="white", direction="inout", left=True, right=True, length=15, labelcolor="black")
 
         # SDSS u
-        plot_map_offset(u_map, u_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[0], aspect="auto")
+        plot_map_offset(u_map, u_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[0], aspect="auto", background_color="black")
         second_row[0].add_text("SDSS u")
+        plt.setp(second_row[0].axes.spines.values(), color="white")
+        second_row[0].axes.tick_params(axis='x', colors="white", direction="inout", bottom=True, top=True, length=15, labelcolor="black")
+        second_row[0].axes.tick_params(axis='y', colors="white", direction="inout", left=True, right=True, length=15, labelcolor="black")
 
         # SDSS g
-        plot_map_offset(g_map, g_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[1], aspect="auto")
+        plot_map_offset(g_map, g_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[1], aspect="auto", background_color="black")
         second_row[1].hide_yaxis()
         second_row[1].add_text("SDSS g")
+        plt.setp(second_row[1].axes.spines.values(), color="white")
+        second_row[1].axes.tick_params(axis='x', colors="white", direction="inout", bottom=True, top=True, length=15, labelcolor="black")
+        second_row[1].axes.tick_params(axis='y', colors="white", direction="inout", left=True, right=True, length=15, labelcolor="black")
 
         # SDSS r
-        plot_map_offset(r_map, r_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[2], aspect="auto")
+        plot_map_offset(r_map, r_map.pixel_center, radius, offset_step, interval=self.heating_fraction_interval, cmap=cmap, plot=second_row[2], aspect="auto", background_color="black")
         second_row[2].set_yaxis_position("right")
         second_row[2].add_text("SDSS r")
+        plt.setp(second_row[2].axes.spines.values(), color="white")
+        second_row[2].axes.tick_params(axis='x', colors="white", direction="inout", bottom=True, top=True, length=15, labelcolor="black")
+        second_row[2].axes.tick_params(axis='y', colors="white", direction="inout", left=True, right=True, length=15, labelcolor="black")
+
+        # Create colorbar
+        total_width = first_row[0].width + first_row[1].width + first_row[2].width
+        total_height = first_row[0].height + second_row[0].height
+        cb_width = 0.03 * total_width
+        cbarx = second_row[0].x_min+total_width
+        cbary = second_row[1].y_min
+        #print(cbarx)
+        #print(cbary)
+        cb = figure.add_colorbar(cbarx+0.1, cbary, cb_width, total_height, "inferno", "vertical", self.heating_fraction_interval)
+        #cmap = cb.cmap
 
         # Set tight layout
         figure.tight_layout()
@@ -5179,6 +5213,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Save or show
         if path is not None: figure.saveto(path)
         else: figure.show()
+        figure.close()
 
     # -----------------------------------------------------------------
 
@@ -6308,7 +6343,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.info("Creating the heating (maps + curve) plot ...")
 
         # Create figure
-        figsize = (15, 4,)
+        figsize = (12, 3.5,)
         figure = MPLFigure(size=figsize)
 
         # Set width ratios
@@ -6327,13 +6362,16 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         radii = [self.inner_region_max_radius, self.outer_region_min_radius]
 
         # Get the heating maps
-        midplane = self.get_heating_map("midplane")
-        faceon = self.get_heating_map("cells")
-        faceon.apply_mask_nans(midplane.nans)
-        midplane.apply_mask_nans(faceon.nans)
+        #midplane = self.get_heating_map("midplane")
+        faceon = self.get_heating_map("cells", correct=True)
+        #faceon.apply_mask_nans(midplane.nans)
+        #midplane.apply_mask_nans(faceon.nans)
 
         # Plot the faceon heating map
-        plot_map_centered(faceon, radius, offset, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0, plot_radii=radii)
+        plot_map_centered(faceon, radius, offset, interval=self.heating_fraction_interval, cmap="inferno", plot=plot0, plot_radii=radii, background_color="black")
+        plt.setp(plot0.axes.spines.values(), color="white")
+        plot0.axes.tick_params(axis='x', colors="white", direction="inout", bottom=True, top=True, length=15, labelcolor="black")
+        plot0.axes.tick_params(axis='y', colors="white", direction="inout", left=True, right=True, length=15, labelcolor="black")
 
         # Plot distribution
         # print(self.heating_distribution)
@@ -7143,7 +7181,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # vSFR auxilary axis
         settings.aux_colname = "vSFR"
-        settings.aux_label = "\\rho_{SFR}"
+        #settings.aux_label = "\\rho_{SFR}"
 
         # Logscales?
         settings.xlog = True
@@ -7545,6 +7583,27 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def vsfr_funev_preset_names(self):
+        return ["standard", "log", "radius"]
+
+    # -----------------------------------------------------------------
+
+    def get_vsfr_funev_preset(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name == "standard": return self.vsfr_funev_standard_settings
+        elif name == "log": return self.vsfr_funev_standard_log_settings
+        elif name == "radius": return self.vsfr_funev_radius_settings
+        else: raise ValueError("Invalid preset: '" + name + "'")
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def plot_vsfr_funev_definition(self):
         
@@ -7558,6 +7617,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # SFR method
         definition.add_positional_optional("sfr_method", "string", "method for the SFR estimation", self.default_sfr_method, choices=self.sfr_methods)
+
+        # Preset
+        definition.add_optional("preset", "string", "name of preset to use", default="standard", choices=self.vsfr_funev_preset_names)
 
         # Path
         definition.add_optional("path", "new_path", "plot to file")
@@ -7586,6 +7648,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.color = "blue"
 
         settings.x_colname = "vSFR"
+        #settings.x_label = "$\rho_\\text{SFR}$"
 
         # Limits
         settings.xlimits = (1e-15, 1e-10,)
@@ -7613,10 +7676,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.color = "blue"
 
         settings.x_colname = "vSFR"
+        #settings.x_label = "$\\rho_\\text{SFR}$"
+        #settings.y_label = "$f_\\text{unev}$"
 
         # Limits
         settings.xlimits = (1e-15, 1e-10,)
-        settings.ylimits = self.funev_limits_log
+        settings.ylimits = (0.01, 1) #self.funev_limits_log
 
         # Return
         return settings
@@ -7667,8 +7732,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_vsfr_funev_definition, **kwargs)
 
+        # Get settings
+        #settings = self.vsfr_funev_standard_settings
+        settings = self.get_vsfr_funev_preset(config.preset)
+
         # Create the figure
-        figsize = (12, 6,)
+        figsize = (10,6,)
         figure = MPLFigure(size=figsize)
 
         # Create plot
@@ -7678,7 +7747,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, self.vsfr_funev_standard_settings, show_coefficient=True, plot_coefficient=config.coefficient)
+        output = self.plot_correlation_impl("vSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient)
 
         # Create colorbar
         #aux_unit = scatter.get_unit(settings.aux_colname)
@@ -8799,16 +8868,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def correct_heating_map(self, frame):
+    def correct_heating_map(self, frame, cutoff=1):
 
         """
         This function ...
         :param frame:
+        :param cutoff:
         :return:
         """
 
         #frame.replace_by_nans_where_equal_to(1)
-        frame.replace_by_nans_where_greater_than(0.95)
+        #frame.replace_by_nans_where_greater_than(0.95)
+        frame.replace_by_nans_where_greater_than(cutoff)
 
     # -----------------------------------------------------------------
 
@@ -8828,7 +8899,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         frame = Frame.from_file(path)
 
         # Correct
-        if correct: self.correct_heating_map(frame)
+        if correct: self.correct_heating_map(frame, cutoff=0.95)
 
         # Return
         return frame
