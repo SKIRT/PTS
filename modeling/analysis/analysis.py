@@ -239,6 +239,7 @@ density_funev_name = "density_funev"
 vsfr_dustlum_name = "vsfr_dustlum"
 density_vsfr_name = "density_vsfr"
 dustlum_temperature_name = "dustlum_temp"
+dustdens_vsfr_name = "dustdens_vsfr"
 
 plot_heating_commands = OrderedDict()
 plot_heating_commands.description = "make plots of the heating fraction"
@@ -260,6 +261,7 @@ plot_correlations_commands[density_funev_name] = ("plot_density_funev_command", 
 plot_correlations_commands[vsfr_dustlum_name] = ("plot_vsfr_dust_luminosity_command", True, "plot the vSFR to dust luminosity density scatter", None)
 plot_correlations_commands[density_vsfr_name] = ("plot_density_vsfr_command", True, "plot the stellar mass density to vSFR scatter", None)
 plot_correlations_commands[dustlum_temperature_name] = ("plot_dust_luminosity_temperature_command", True, "plot the dust luminosity to dust temperature scatter", None)
+plot_correlations_commands[dustdens_vsfr_name] = ("plot_dust_density_vsfr_command", True, "plot the dust density to vSFR scatter", None)
 
 # Plot subcommands
 plot_commands = OrderedDict()
@@ -4220,6 +4222,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        pass
+
     # -----------------------------------------------------------------
     
     def plot_test8(self, path=None):
@@ -4227,9 +4231,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
         This function ...
         :param path: 
-        :return: 
+        :return:
         """
-        
+
+        pass
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -4280,6 +4286,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         descriptions["maps"] = "plot the component maps together with an observed optical RGB image"
         descriptions["correlations_basic"] = "make a plot of the sSFR-Funev correlation, but more basic"
         descriptions["dust_seds"] = "make a plot of the dust emission SEDs for the different stellar contributions"
+        descriptions["dustlum"] = "make a plot of the correlation between dust luminosity and star formation"
 
         # Return
         return descriptions
@@ -6638,6 +6645,50 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def plot_special14(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Inform the user
+        log.info("Creating the vSFR vs. dust luminosity plot ...")
+
+        # Create figure
+        figsize = (10, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        #settings0 = self.ssfr_funev_standard_log_settings
+        
+        # Get settings
+        settings_inner = self.vsfr_dust_luminosity_inner_settings
+        settings_inner.color = "orchid"
+        settings_intermediate = self.vsfr_dust_luminosity_intermediate_settings
+        settings_intermediate.color = "cornflowerblue"
+        settings_outer = self.vsfr_dust_luminosity_outer_settings
+        settings_outer.color = "limegreen"
+
+        # Plot
+        output_inner = self.plot_correlation_impl("vSFR-Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_inner)
+        output_intermediate = self.plot_correlation_impl("vSFR-Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_intermediate)
+        output_outer = self.plot_correlation_impl("vSFR-Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_outer)
+
+        plot.set_xlim(1e-15, 5e-11)
+        plot.set_ylim(1e22, 5e26)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def plot_absorption_map_definition(self):
         
@@ -7048,7 +7099,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def ssfr_funev_preset_names(self):
-        return ["standard", "standard_log", "vsfr", "density", "dust_density", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
+        return ["standard", "standard_log", "vsfr", "density", "dust_density", "temperature", "distance", "radius", "dust_heights", "inner", "outer", "intermediate", "outside_inner"]
 
     # -----------------------------------------------------------------
 
@@ -7067,6 +7118,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         elif name == "vsfr": settings = self.ssfr_funev_vsfr_settings
         elif name == "density": settings = self.ssfr_funev_stellar_density_settings
         elif name == "dust_density": settings = self.ssfr_funev_dust_density_settings
+        elif name == "temperature": settings = self.ssfr_funev_dust_temperature_settings
         elif name == "radius": settings = self.ssfr_funev_radius_settings
         elif name == "dust_heights": settings = self.ssfr_funev_dust_heights_settings
         elif name == "inner": settings = self.ssfr_funev_inner_settings
@@ -7106,6 +7158,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Use density alpha
         definition.add_flag("alpha", "enable density alpha for plots with auxilary color axis")
+
+        # Plot fit
+        definition.add_flag("fit", "perform power-law fit and plot the curve")
+
+        # Plot radii
+        definition.add_flag("radii", "plot the radii")
 
         # Return
         return definition
@@ -7245,6 +7303,35 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.xlog = True
         settings.ylog = True
         settings.aux_log = True
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_dust_temperature_settings(self):
+
+        """
+        Thi function ...
+        :return:
+        """
+
+        # Initialize
+        settings = CorrelationPlotSettings()
+
+        # Axes limits
+        settings.xlimits = self.ssfr_limits
+        settings.ylimits = self.funev_limits_log
+
+        # Temperature auxilary axis
+        settings.aux_colname = "Dust temperature"
+        settings.aux_limits = (15, 60,)
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.aux_log = False
 
         # Return
         return settings
@@ -7569,7 +7656,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
 
         # Plot
-        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True, plot_coefficient=config.coefficient, aux_density=config.alpha)
+        output = self.plot_correlation_impl("sSFR-Funev", scatter, plot, settings, show_coefficient=True,
+                                            plot_coefficient=config.coefficient, aux_density=config.alpha, fit=config.fit)
+
+        # Plot radii?
+        if config.radii:
+    
+            # Plot inner radius line
+            inner_radius_ssfr_values, inner_radius_funev_values = self.ssfr_funev_points_at_inner_radius
+            plot.plot(inner_radius_ssfr_values, inner_radius_funev_values, color="white")  # no label
+
+            # Plot outer radius line
+            outer_radius_ssfr_values, outer_radius_funev_values = self.ssfr_funev_points_at_outer_radius
+            plot.plot(outer_radius_ssfr_values, outer_radius_funev_values, color="white")  # no label
 
         # Create colorbar, if auxilary axis
         if settings.aux_colname is not None:
@@ -8001,7 +8100,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def vsfr_dust_luminosity_preset_names(self):
-        return ["standard", "density", "funev_linear", "funev_log"]
+        return ["standard", "density", "funev_linear", "funev_log", "radius", "inner", "outer", "intermediate", "outside_inner"]
 
     # -----------------------------------------------------------------
 
@@ -8018,6 +8117,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         elif name == "density": settings = self.vsfr_dust_luminosity_density_settings
         elif name == "funev_linear": settings = self.vsfr_dust_luminosity_funev_linear_settings
         elif name == "funev_log": settings = self.vsfr_dust_luminosity_funev_log_settings
+        elif name == "radius": settings = self.vsfr_dust_luminosity_radius_settings
+        elif name == "inner": settings = self.vsfr_dust_luminosity_inner_settings
+        elif name == "outer": settings = self.vsfr_dust_luminosity_outer_settings
+        elif name == "intermediate": settings = self.vsfr_dust_luminosity_intermediate_settings
+        elif name == "outside_inner": settings = self.vsfr_dust_luminosity_outside_inner_settings
         else: raise ValueError("Invalid preset: '" + name + "'")
 
         # Return the settings
@@ -8076,6 +8180,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Limits
         settings.xlimits = self.ssfr_limits
+        settings.ylimits = [5e19,5e26]
 
         # Return
         return settings
@@ -8091,22 +8196,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Set settings
-        settings = CorrelationPlotSettings()
-
-        # Logscales?
-        settings.xlog = True
-        settings.ylog = True
-        settings.color = "blueviolet"
-        settings.x_colname = "vSFR"
-        settings.y_colname = "Dust luminosity density"
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # vSFR auxilary axis
         settings.aux_colname = "vSFR / sSFR"  # = stellar density
         settings.aux_label = "Stellar mass density"
         settings.aux_log = True
-
-        # Limits
-        settings.xlimits = self.ssfr_limits
 
         # Return
         return settings
@@ -8122,23 +8217,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Set settings
-        settings = CorrelationPlotSettings()
-
-        # Logscales?
-        settings.xlog = True
-        settings.ylog = True
-        settings.color = "blueviolet"
-        settings.x_colname = "vSFR"
-        settings.y_colname = "Dust luminosity density"
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # vSFR auxilary axis
         settings.aux_colname = "Funev"
         settings.aux_label = "funev"
         settings.aux_log = True
         settings.aux_limits = self.funev_limits_log
-
-        # Limits
-        settings.xlimits = self.ssfr_limits
 
         # Return
         return settings
@@ -8154,14 +8239,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Set settings
-        settings = CorrelationPlotSettings()
-
-        # Logscales?
-        settings.xlog = True
-        settings.ylog = True
-        settings.color = "blueviolet"
-        settings.x_colname = "vSFR"
-        settings.y_colname = "Dust luminosity density"
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # vSFR auxilary axis
         settings.aux_colname = "Funev"
@@ -8169,8 +8247,106 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_log = False
         settings.aux_limits = self.funev_limits_linear
 
-        # Limits
-        settings.xlimits = self.ssfr_limits
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_radius_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Radius auxilary axis
+        settings.aux_colname = "Radius"
+        settings.aux_log = False
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_inner_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Set conditions
+        radius_condition = Condition(upper=self.inner_region_max_radius.to("pc").value)
+        settings.conditions = {"Radius": radius_condition}
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_outer_settings(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Set conditions
+        radius_condition = Condition(lower=self.outer_region_min_radius.to("pc").value)
+        settings.conditions = {"Radius": radius_condition}
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_intermediate_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Set conditions
+        radius_conditions = Condition(lower=self.inner_region_max_radius.to("pc").value,
+                                      upper=self.outer_region_min_radius.to("pc").value)
+        settings.conditions = {"Radius": radius_conditions}
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_outside_inner_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Set conditions
+        radius_condition = Condition(lower=self.inner_region_max_radius.to("pc").value)
+        settings.conditions = {"Radius": radius_condition}
 
         # Return
         return settings
@@ -8481,6 +8657,101 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if config.path is not None: figure.saveto(config.path)
         else: figure.show()
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_dust_density_vsfr_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # SFR method
+        definition.add_positional_optional("sfr_method", "string", "method for the SFR estimation", self.default_sfr_method, choices=self.sfr_methods)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
+
+        # Use alpha
+        definition.add_flag("alpha", "enable density alpha for plots with auxilary color axis")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_density_vsfr_standard_settings(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "orange"
+        settings.x_colname = "Dust density"
+        settings.y_colname = "vSFR"
+
+        # Limits
+        settings.xlimits = [1e-7, 1e-3]
+        settings.ylimits = [1e-16, 1e-10]
+        
+        # Return
+        return settings
+        
+    # -----------------------------------------------------------------
+
+    def plot_dust_density_vsfr_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_dust_density_vsfr_definition, **kwargs)
+
+        # Get settings
+        settings = self.dust_density_vsfr_standard_settings
+
+        # Create the figure
+        figsize = (10, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
+
+        # Plot
+        output = self.plot_correlation_impl("Dust density - vSFR", scatter, plot,
+                                            settings, show_coefficient=True,
+                                            plot_coefficient=config.coefficient, aux_density=config.alpha,
+                                            figure=figure, add_colorbar=True, fit=True)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
