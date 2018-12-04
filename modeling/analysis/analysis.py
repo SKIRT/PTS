@@ -82,7 +82,7 @@ from ..fitting.modelanalyser import FluxDifferencesTable
 from ...core.tools.parsing import lazy_broad_band_filter_list
 from ...magic.core.frame import Frame
 from ...magic.core.mask import Mask
-from ...magic.tools.plotting import plot_map, plot_map_offset, plot_map_centered
+from ...magic.tools.plotting import plot_map, plot_map_offset, plot_map_centered, get_mask_for_conditions, FilterCondition, RemoveCondition, MultiRemoveCondition
 from ...core.basics.curve import WavelengthCurve
 from ...core.plot.distribution import plot_distribution, plot_2d_distribution
 from ...magic.core.list import uniformize
@@ -237,6 +237,7 @@ vsfr_funev_name = "vsfr_funev"
 temperature_funev_name = "temp_funev"
 density_funev_name = "density_funev"
 vsfr_dustlum_name = "vsfr_dustlum"
+ssfr_sdustlum_name = "ssfr_sdustlum"
 density_vsfr_name = "density_vsfr"
 dustlum_temperature_name = "dustlum_temp"
 dustdens_vsfr_name = "dustdens_vsfr"
@@ -259,6 +260,7 @@ plot_correlations_commands[vsfr_funev_name] = ("plot_vsfr_funev_command", True, 
 plot_correlations_commands[temperature_funev_name] = ("plot_temperature_funev_command", True, "plot the dust temperature to Funev scatter", None)
 plot_correlations_commands[density_funev_name] = ("plot_density_funev_command", True, "plot the stellar mass density to Funev scatter", None)
 plot_correlations_commands[vsfr_dustlum_name] = ("plot_vsfr_dust_luminosity_command", True, "plot the vSFR to dust luminosity density scatter", None)
+plot_correlations_commands[ssfr_sdustlum_name] = ("plot_ssfr_specific_dust_luminosity_command", True, "plot the sSFR to specific dust luminosity scatter", None)
 plot_correlations_commands[density_vsfr_name] = ("plot_density_vsfr_command", True, "plot the stellar mass density to vSFR scatter", None)
 plot_correlations_commands[dustlum_temperature_name] = ("plot_dust_luminosity_temperature_command", True, "plot the dust luminosity to dust temperature scatter", None)
 plot_correlations_commands[dustdens_vsfr_name] = ("plot_dust_density_vsfr_command", True, "plot the dust density to vSFR scatter", None)
@@ -583,26 +585,6 @@ class CorrelationPlotSettings(object):
                                        xlog=self.xlog, ylog=self.ylog, conditions=deepcopy(self.conditions),
                                        color=self.color, aux_colname=self.aux_colname, aux_log=self.aux_log, aux_limits=self.aux_limits,
                                        aux_label=self.aux_label)
-
-# -----------------------------------------------------------------
-
-class Condition(object):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, lower=None, upper=None):
-
-        """
-        The constructor ...
-        :param lower:
-        :param upper:
-        """
-
-        # Set
-        self.lower = lower
-        self.upper = upper
 
 # -----------------------------------------------------------------
 
@@ -4287,6 +4269,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         descriptions["correlations_basic"] = "make a plot of the sSFR-Funev correlation, but more basic"
         descriptions["dust_seds"] = "make a plot of the dust emission SEDs for the different stellar contributions"
         descriptions["dustlum"] = "make a plot of the correlation between dust luminosity and star formation"
+        descriptions["sdustlum"] = "make a plot of the correlation between dust lum / dust mass and star formation / dust mass"
+        descriptions["dustlum_correlations"] = "make a plot of various correlations with dust lum and its relation to star formation"
+        descriptions["sdustlum_dens"] = "make a plot of the dust luminosity per dust mass per stellar mass vs. star formation rate density"
 
         # Return
         return descriptions
@@ -5549,7 +5534,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get mask of where
-        where = self.get_mask_for_conditions(self.ssfr_funev_scatter_cells, conditions)
+        where = get_mask_for_conditions(self.ssfr_funev_scatter_cells, conditions)
 
         # Return the mask
         return self.ssfr_funev_scatter_valid_cells * where
@@ -5568,7 +5553,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create conditions
         conditions = dict()
-        conditions[column_name] = Condition(lower=lower, upper=upper)
+        conditions[column_name] = FilterCondition(lower=lower, upper=upper)
 
         # Return
         return self.get_ssfr_funev_mask_for_conditions(conditions)
@@ -5607,7 +5592,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create conditions
         conditions = dict()
-        conditions[column_name] = Condition(lower=lower, upper=upper)
+        conditions[column_name] = FilterCondition(lower=lower, upper=upper)
 
         # Return
         return self.get_ssfr_funev_arrays_for_conditions(conditions)
@@ -5929,8 +5914,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
             # Get cells
             conditions = dict()
-            conditions["sSFR"] = Condition(lower=min_ssfr, upper=max_ssfr)
-            conditions["Radius"] = Condition(lower=lower_radius, upper=upper_radius)
+            conditions["sSFR"] = FilterCondition(lower=min_ssfr, upper=max_ssfr)
+            conditions["Radius"] = FilterCondition(lower=lower_radius, upper=upper_radius)
             where = self.get_ssfr_funev_mask_for_conditions(conditions)
             ncells = np.sum(where)
             if ncells == 0: continue
@@ -5969,8 +5954,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
             # Get cells
             conditions = dict()
-            conditions["sSFR"] = Condition(lower=min_ssfr, upper=max_ssfr)
-            conditions["Radius"] = Condition(lower=lower_radius, upper=upper_radius)
+            conditions["sSFR"] = FilterCondition(lower=min_ssfr, upper=max_ssfr)
+            conditions["Radius"] = FilterCondition(lower=lower_radius, upper=upper_radius)
             where = self.get_ssfr_funev_mask_for_conditions(conditions)
             ncells = np.sum(where)
             if ncells == 0: continue
@@ -6645,6 +6630,31 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def inner_color(self):
+        return "orchid"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intermediate_color(self):
+        return "cornflowerblue"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def outer_color(self):
+        return "limegreen"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def outside_color(self):
+        #return "peru"
+        return "darkturquoise"
+
+    # -----------------------------------------------------------------
+
     def plot_special14(self, path=None):
 
         """
@@ -6666,22 +6676,758 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot = figure.create_one_plot(projection="scatter_density")
 
         #settings0 = self.ssfr_funev_standard_log_settings
-        
+
+        high_ssfr_color = "dimgrey"
+        low_density_color = "darkorange"
+
         # Get settings
         settings_inner = self.vsfr_dust_luminosity_inner_settings
-        settings_inner.color = "orchid"
+        settings_inner.color = self.inner_color
         settings_intermediate = self.vsfr_dust_luminosity_intermediate_settings
-        settings_intermediate.color = "cornflowerblue"
+        settings_intermediate.color = self.intermediate_color
         settings_outer = self.vsfr_dust_luminosity_outer_settings
-        settings_outer.color = "limegreen"
+        settings_outer.color = self.outer_color
+        settings_high_ssfr = self.vsfr_dust_luminosity_high_ssfr_settings
+        settings_high_ssfr.color = high_ssfr_color
+        settings_low_density = self.vsfr_dust_luminosity_low_density_settings
+        settings_low_density.color = low_density_color
 
         # Plot
-        output_inner = self.plot_correlation_impl("vSFR-Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_inner)
-        output_intermediate = self.plot_correlation_impl("vSFR-Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_intermediate)
-        output_outer = self.plot_correlation_impl("vSFR-Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_outer)
+        output_inner = self.plot_correlation_impl("vSFR - Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_inner, label="Inner region", fit=True, fit_color=self.inner_color, coefficients=("spearman"), show_coefficient=True)
+        output_intermediate = self.plot_correlation_impl("vSFR - Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_intermediate, label="Intermediate region", fit=True, fit_color=self.intermediate_color, coefficients=("spearman"), show_coefficient=True)
+        output_outer = self.plot_correlation_impl("vSFR - Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_outer, label="Outer region", fit=True, fit_color=self.outer_color, coefficients=("spearman"), show_coefficient=True)
+        output_high_ssfr = self.plot_correlation_impl("vSFR - Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_high_ssfr, label="High sSFR", fit=True, fit_color=high_ssfr_color, coefficients=("spearman"), show_coefficient=True)
+        output_low_density = self.plot_correlation_impl("vSFR - Dust luminosity", self.ssfr_funev_scatter_cells, plot, settings_low_density, label="Low stellar density", fit=True, fit_color=low_density_color, coefficients=("spearman"), show_coefficient=True)
 
+        # Patches
+        #scatter_inner = output_inner.scatter
+        #scatter_intermediate = output_intermediate.scatter
+        #scatter_outer = output_outer.scatter
+
+        # Add legend
+        #handles = [scatter_inner, scatter_intermediate, scatter_outer]
+        #print(scatter_inner, scatter_intermediate, scatter_outer)
+        patch_inner = output_inner.scatter_proxy
+        patch_intermediate = output_intermediate.scatter_proxy
+        patch_outer = output_outer.scatter_proxy
+        patch_high_ssfr = output_high_ssfr.scatter_proxy
+        patch_low_density = output_low_density.scatter_proxy
+        handles = [patch_inner, patch_intermediate, patch_outer, patch_high_ssfr, patch_low_density]
+        labels = ["Inner region", "Intermediate region", "Outer region", "High sSFR", "Low stellar density"]
+        plot.legend(handles, labels, loc="lower right")
+
+        # Levels
+        levels = [0., 0.1, 0.2, 0.5]
+
+        # Plot contours
+        self.plot_density_contours(output_inner.x, output_inner.y, plot, xlog=settings_inner.xlog, ylog=settings_inner.ylog, linecolor=self.inner_color, levels=levels)
+        self.plot_density_contours(output_intermediate.x, output_intermediate.y, plot, xlog=settings_intermediate.xlog, ylog=settings_intermediate.ylog, linecolor=self.intermediate_color, levels=levels)
+        self.plot_density_contours(output_outer.x, output_outer.y, plot, xlog=settings_outer.xlog, ylog=settings_outer.ylog, linecolor=self.outer_color, levels=levels)
+        self.plot_density_contours(output_high_ssfr.x, output_high_ssfr.y, plot, xlog=settings_high_ssfr.xlog, ylog=settings_high_ssfr.ylog, linecolor=high_ssfr_color, levels=levels)
+        self.plot_density_contours(output_low_density.x, output_low_density.y, plot, xlog=settings_low_density.xlog, ylog=settings_low_density.ylog, linecolor=low_density_color, levels=levels)
+
+        # Set plot limits
         plot.set_xlim(1e-15, 5e-11)
         plot.set_ylim(1e22, 5e26)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_and_dustlum_to_dust_mass_standard_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get settings
+        settings = CorrelationPlotSettings()
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blueviolet"
+        settings.x_colname = "vSFR / Dust density"
+        settings.y_colname = "Dust luminosity density / Dust density"
+        settings.x_label = "SFR per dust mass"
+        settings.y_label = "Dust luminosity per dust mass"
+
+        # Limits
+        settings.xlimits = [2e-9, 5e-7]
+        settings.ylimits = [1e28, 1e30]
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_and_dustlum_to_dust_mass_funev_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get standard settings
+        settings = self.sfr_and_dustlum_to_dust_mass_standard_settings.copy()
+
+        # Set aux
+        settings.aux_colname = "Funev"
+        settings.aux_label = "funev"
+        settings.aux_limits = self.funev_limits_linear
+        settings.aux_log = False
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_and_dustlum_to_dust_mass_stellar_mass_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get standard settings
+        settings = self.sfr_and_dustlum_to_dust_mass_standard_settings.copy()
+
+        # Set aux
+        settings.aux_colname = "vSFR / sSFR"  # = stellar density
+        settings.aux_label = "Stellar density"
+        settings.aux_log = True
+        settings.aux_limits = [0.01, 200]
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_and_dustlum_to_dust_mass_high_funev_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get standard settings
+        settings = self.sfr_and_dustlum_to_dust_mass_standard_settings.copy()
+
+        # Set conditions
+        funev_condition = FilterCondition(lower=0.8)
+        settings.conditions = {"Funev": funev_condition}
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    def plot_special15(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Inform the user
+        log.info("Creating the SFR / dust mass vs. dust luminosity / dust mass plot ...")
+
+        weird_x = RemoveCondition(lower=1.2e-7, upper=1e-6)
+        weird_y = RemoveCondition(lower=5e28, upper=6e28)
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(self.sfr_method)
+
+        # Get settings
+        #settings = self.sfr_and_dustlum_to_dust_mass_standard_settings
+        settings = self.sfr_and_dustlum_to_dust_mass_funev_settings
+
+        # Plot
+        alpha = True
+        #output = self.plot_correlation_impl("SFR/dustlum per dust mass", scatter, plot, settings, fit=True, coefficients=("spearman"),
+        #                                    show_coefficient=True, plot_coefficient=True, figure=figure,
+        #                                    remove_xy=(weird_x, weird_y), aux_density=alpha)
+
+        high_funev_color = "dimgrey"
+        settings_high_funev = self.sfr_and_dustlum_to_dust_mass_high_funev_settings
+        settings_high_funev.color = high_funev_color
+
+        weird_x = None
+        weird_y = RemoveCondition(upper=6e28)
+
+        # Plot
+        output_high_funev = self.plot_correlation_impl("SFR/dustlum per dust mass", scatter, plot, settings_high_funev, label="High Funev",
+                                                       fit=True, fit_color=high_funev_color, coefficients=("spearman"), show_coefficient=True,
+                                                       remove_xy=(weird_x, weird_y), figure=figure)
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def vsfr_colname(self):
+        return "vSFR"
+    
+    # -----------------------------------------------------------------
+        
+    @property
+    def dustlum_density_colname(self):
+        return "Dust luminosity density"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def vsfr_limits(self):
+        return (1e-18,5e-10)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_points_fit(self):
+        return RealRange(*self.vsfr_limits).log(self.fit_npoints)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_inner_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("Radius", upper=self.inner_region_max_radius)
+
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_inner_points_fit(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_inner_points
+
+        # Fit
+        return self.get_fitted_linear("inner", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (inner region)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_outside_inner_points(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("Radius", lower=self.inner_region_max_radius, upper=self.max_radius)
+
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_outside_inner_points_fit(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_outside_inner_points
+
+        # Fit
+        return self.get_fitted_linear("outside_inner", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (outside inner region)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_intermediate_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("Radius", lower=self.inner_region_max_radius, upper=self.outer_region_min_radius)
+        
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_intermediate_points_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_intermediate_points
+
+        # Fit
+        return self.get_fitted_linear("intermediate", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (intermediate region)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_outer_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("Radius", lower=self.outer_region_min_radius, upper=self.max_radius)
+
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_outer_points_fit(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_outer_points
+
+        # Fit
+        return self.get_fitted_linear("outer", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (outer region)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_high_ssfr_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("sSFR", lower=1e-11)
+
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_high_ssfr_points_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_high_ssfr_points
+
+        # Fit
+        return self.get_fitted_linear("high sSFR", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (high sSFR regions)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_modest_density_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("vSFR / sSFR", lower=0.01, upper=1)
+        
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+        
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+    
+    @lazyproperty
+    def vsfr_dustlum_density_modest_density_points_fit(self):
+        
+        """
+        Thisf unction ...
+        :return: 
+        """
+        
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_modest_density_points
+    
+        # Fit
+        return self.get_fitted_linear("modest stellar density", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (modest stellar density regions)")
+    
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_low_density_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("vSFR / sSFR", upper=0.01)
+
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+
+        # Return
+        return vsfr, dustlum_density
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dustlum_density_low_density_points_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get points
+        fit_x, fit_y = self.vsfr_dustlum_density_low_density_points
+
+        # Fit
+        return self.get_fitted_linear("low stellar density", fit_x, fit_y, self.vsfr_points_fit, xlog=True, ylog=True,
+                                      description="vSFR - Dust luminosity density (low stellar density regions)")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_to_dust_mass_limits(self):
+        return (2e-9,5e-7)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_to_dust_mass_points_fit(self):
+        return RealRange(*self.sfr_to_dust_mass_limits).log(self.fit_npoints)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_density_colname(self):
+        return "Dust density"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_and_dustlum_to_dust_mass_high_funev_points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_ssfr_funev_mask_for_bounds("Funev", lower=0.8)
+
+        # Get data
+        vsfr = self.ssfr_funev_scatter_cells.get_array(self.vsfr_colname)[mask]
+        dustlum_density = self.ssfr_funev_scatter_cells.get_array(self.dustlum_density_colname)[mask]
+        dust_density = self.ssfr_funev_scatter_cells.get_array(self.dust_density_colname)[mask]
+
+        # Transform data
+        sfr_per_dust = vsfr / dust_density
+        dustlum_per_dust = dustlum_density / dust_density
+
+        # Remove weird datapoints
+        #weird_y = RemoveCondition(upper=6e28)
+        mask = dustlum_per_dust > 6e28
+        sfr_per_dust = sfr_per_dust[mask]
+        dustlum_per_dust = dustlum_per_dust[mask]
+
+        # Return
+        return sfr_per_dust, dustlum_per_dust
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_and_dustlum_to_dust_mass_high_funev_points_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        # Get points
+        fit_x, fit_y = self.sfr_and_dustlum_to_dust_mass_high_funev_points
+
+        # Fit
+        return self.get_fitted_linear("high Funev", fit_x, fit_y, self.sfr_to_dust_mass_points_fit, xlog=True, ylog=True,
+                                      description="SFR and Dust luminosity per dust mass (high Funev regions)")
+
+    # -----------------------------------------------------------------
+
+    def plot_special16(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Inform the user
+        log.info("Creating the SFR & dust mass correlation plots ...")
+
+        figsize = (12, 8)
+        figure = MPLFigure(size=figsize)
+        nrows = 2
+        ncols = 2
+        rows = figure.create_grid(nrows, ncols, projections="scatter_density")
+        first_row = rows[0]
+        second_row = rows[1]
+
+        # Get plots
+        first_plot = first_row[0]
+        second_plot = first_row[1]
+        third_plot = second_row[0]
+        fourth_plot = second_row[1]
+
+        # Set axis positions
+        first_plot.set_xaxis_position("top")
+        first_plot.set_yaxis_position("left")
+
+        second_plot.set_xaxis_position("top")
+        second_plot.set_yaxis_position("right")
+
+        fourth_plot.set_yaxis_position("right")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(self.sfr_method)
+
+        # Plot 1
+        settings1 = self.vsfr_dust_luminosity_funev_linear_settings
+        output1 = self.plot_correlation_impl("vSFR/dustlum with Funev", scatter, first_plot, settings1,
+                                             fit=True, aux_density=True, coefficients=("spearman"),
+                                             show_coefficient=True, plot_coefficient=True, figure=figure, add_colorbar=True,
+                                             colorbar_label_position="right", coefficients_horizontal_position="center")
+
+        # Get data for subsets
+        lowdens_color = "darkorange"
+        modestdens_color = "deepskyblue"
+        x_inner, y_inner = self.vsfr_dustlum_density_inner_points
+        #x_intermediate, y_intermediate = self.vsfr_dustlum_density_intermediate_points
+        #x_outer, y_outer = self.vsfr_dustlum_density_outer_points
+        x_outside, y_outside = self.vsfr_dustlum_density_outside_inner_points
+        x_lowdens, y_lowdens = self.vsfr_dustlum_density_low_density_points
+        x_modestdens, y_modestdens = self.vsfr_dustlum_density_modest_density_points
+
+        # Calculate coefficients of subsets
+        rho_inner, _ = spearmanr(np.log10(x_inner), np.log10(y_inner))
+        rho_outside, _ = spearmanr(np.log10(x_outside), np.log10(y_outside))
+        rho_lowdens, _ = spearmanr(np.log10(x_lowdens), np.log10(y_lowdens))
+        print("")
+        print("SPEARMAN INNER:", rho_inner)
+        print("SPEARMAN OUTSIDE:", rho_outside)
+        print("SPEARMAN LOWDENS:", rho_lowdens)
+        print("")
+
+        # Plot contours
+        levels = [0., 0.1, 0.2, 0.5]
+        inner_contour_patch = self.plot_density_contours(x_inner, y_inner, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor=self.inner_color, levels=levels)
+        #self.plot_density_contours(x_intermediate, y_intermediate, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor=self.intermediate_color)
+        #self.plot_density_contours(x_outer, y_outer, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor=self.outer_color)
+        #self.plot_density_contours(x_outside, y_outside, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor=self.outside_color, levels=levels)
+        outside_contour_patch = self.plot_density_contours(x_outside, y_outside, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor="cornflowerblue", levels=levels)
+        lowdens_contour_patch = self.plot_density_contours(x_lowdens, y_lowdens, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor=lowdens_color, levels=levels)
+        #self.plot_density_contours(x_modestdens, y_modestdens, first_plot, xlog=settings1.xlog, ylog=settings1.ylog, linecolor=modestdens_color, levels=levels)
+
+        # Plot fits
+        inner_fit_patch = first_plot.plot(self.vsfr_points_fit, self.vsfr_dustlum_density_inner_points_fit, linestyle="dotted", color=self.inner_color)
+        #first_plot.plot(self.vsfr_points_fit, self.vsfr_dustlum_density_outside_inner_points_fit, linestyle="dotted", color=self.outside_color)
+        outside_fit_patch = first_plot.plot(self.vsfr_points_fit, self.vsfr_dustlum_density_outside_inner_points_fit, linestyle="dotted", color="cornflowerblue")
+        lowdens_fit_patch = first_plot.plot(self.vsfr_points_fit, self.vsfr_dustlum_density_low_density_points_fit, linestyle="dotted", color=lowdens_color)
+        #first_plot.plot(self.vsfr_points_fit, self.vsfr_dustlum_density_modest_density_points_fit, linestyle="dotted", color=modestdens_color)
+
+        # Create legend for fits (and contours)
+        #legend_patches = [inner_fit_patch[0], outside_fit_patch[0], lowdens_fit_patch[0]]
+        #legend_patches = [inner_contour_patch, outside_contour_patch, lowdens_contour_patch]
+        from matplotlib.lines import Line2D
+        inner_patch = Line2D([], [], color=self.inner_color, linestyle="solid")
+        outside_patch = Line2D([], [], color="cornflowerblue", linestyle="solid")
+        lowdens_patch = Line2D([], [], color=lowdens_color, linestyle="solid")
+        legend_patches = [inner_patch, outside_patch, lowdens_patch]
+        legend_labels = ["Inner region", "Outside region", "Low stellar density"]
+        contours_legend = first_plot.create_legend(legend_patches, legend_labels, loc="upper left")
+        first_plot.add_artist(contours_legend)
+
+        # Plot 2
+        settings2 = self.dust_density_vsfr_standard_settings
+        output2 = self.plot_correlation_impl("Dust density / vSFR", scatter, second_plot, settings2,
+                                             fit=True, coefficients=("spearman"),
+                                             show_coefficient=True, plot_coefficient=True, figure=figure, coefficients_horizontal_position="center")
+
+        # Plot 3
+        weird_x = RemoveCondition(lower=1.2e-7, upper=1e-6)
+        weird_y = RemoveCondition(lower=5e28, upper=6e28)
+        #settings3 = self.sfr_and_dustlum_to_dust_mass_standard_settings
+        settings3 = self.sfr_and_dustlum_to_dust_mass_funev_settings
+        #settings3 = self.sfr_and_dustlum_to_dust_mass_stellar_mass_settings
+        output3 = self.plot_correlation_impl("SFR/dustlum", scatter, third_plot, settings3,
+                                             fit=True, aux_density=True, coefficients=("spearman"),
+                                             show_coefficient=True, plot_coefficient=True, figure=figure,
+                                             remove_xy=(weird_x, weird_y), log_density=True, coefficients_horizontal_position="center", log_enhance=10., add_colorbar=True, colorbar_label_position="right")
+
+        # Get data for subsets
+        high_funev_color = "royalblue"
+        x_highfunev, y_highfunev = self.sfr_and_dustlum_to_dust_mass_high_funev_points
+
+        # Calculate coefficients of subsets
+        rho_highfunev, _ = spearmanr(np.log10(x_highfunev), np.log10(y_highfunev))
+        print("")
+        print("SPEARMAN HIGH FUNEV:", rho_highfunev)
+        print("")
+
+        # Plot contours
+        levels = [0., 0.1, 0.2, 0.5]
+        highfunev_contour_patch = self.plot_density_contours(x_highfunev, y_highfunev, third_plot, xlog=settings3.xlog, ylog=settings3.ylog, linecolor=high_funev_color, levels=levels)
+
+        # Plot fit
+        highfunev_fit_patch = third_plot.plot(self.sfr_to_dust_mass_points_fit, self.sfr_and_dustlum_to_dust_mass_high_funev_points_fit, linestyle="dotted", color=high_funev_color)
+
+        # Create legend for fit of high Funev
+        high_funev_patch = Line2D([], [], color=high_funev_color, linestyle="solid")
+        legend_patches3 = [high_funev_patch]
+        legend_labels3 = ["High funev"]
+        contours_legend3 = third_plot.create_legend(legend_patches3, legend_labels3, loc="upper left")
+        third_plot.add_artist(contours_legend3)
+
+        # Plot 4
+        settings4 = self.density_vsfr_standard_settings
+        output4 = self.plot_correlation_impl("Stellar density / vSFR", scatter, fourth_plot, settings4, fit=True,
+                                             coefficients=("spearman"), show_coefficient=True, plot_coefficient=True,
+                                             figure=figure, coefficients_horizontal_position="center")
+
+        # Save or show
+        if path is not None: figure.saveto(path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    def plot_special17(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Inform the user
+        log.info("Creating the vSFR vs. dust luminosity density per stellar mass plot ...")
+
+        # Create figure
+        figsize = (10, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(self.sfr_method)
+
+        # Get settings
+        #settings = self.sfr_and_dustlum_to_dust_mass_and_stellar_mass_standard_settings
+
+        # Plot
+        alpha = True
+        #output = self.plot_correlation_impl("vSFR/sdustlum", scatter, plot, settings, fit=True, coefficients=("spearman"),
+        #                                    show_coefficient=True, plot_coefficient=True, figure=figure,
+        #                                    aux_density=alpha)
+
+        xlimits = None
+        ylimits = None
+
+        stellar_density = scatter.get_array("vSFR") / scatter.get_array("sSFR")
+
+        # Get xy points
+        x = scatter.get_array("vSFR")
+        y = scatter.get_array("Dust luminosity density") / scatter.get_array("Dust density") / stellar_density
+
+        # Plot
+        from ...magic.tools.plotting import plot_xy_astrofrog
+        x_label = "vSFR"
+        y_label = "Dust luminosity per dust mass and stellar mass"
+        xlog = True
+        ylog = True
+        output = plot_xy_astrofrog(x, y, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
+                                 xlimits=xlimits, ylimits=ylimits, show=False, plot=plot,
+                                 color="red")
 
         # Save or show
         if path is not None: figure.saveto(path)
@@ -6907,42 +7653,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_mask_for_conditions(self, scatter, conditions):
-
-        """
-        This function ...
-        :param scatter: 
-        :param conditions: 
-        :return: 
-        """
-
-        # Initialize mask
-        mask = np.ones_like(scatter.x_array, dtype=bool)
-
-        # Loop over the columns in the conditions
-        for colname in conditions:
-            if conditions[colname].lower is not None:
-                lower = conditions[colname].lower
-                if hasattr(lower, "unit"):
-                    if scatter.get_unit(colname) is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
-                    mask *= scatter.get_array(colname) > lower.to(scatter.get_unit(colname)).value
-                else: mask *= scatter.get_array(colname) > lower
-            if conditions[colname].upper is not None:
-                upper = conditions[colname].upper
-                if hasattr(upper, "unit"):
-                    if scatter.get_unit(colname) is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
-                    mask *= scatter.get_array(colname) < upper.to(scatter.get_unit(colname)).value
-                else: mask *= scatter.get_array(colname) < upper
-
-        # Return mask
-        return mask
-
-    # -----------------------------------------------------------------
-
     def plot_correlation_impl(self, name, scatter, plot, settings, show_coefficient=False, plot_coefficient=False, references=None,
                               add_colorbar=False, inset_text=None, figure=None, fit=False, fit_linestyle="solid",
                               fit_label=None, fit_color="black", fit_npoints=100, reference_colors=None, colorbar_label_position=None,
-                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None, aux_density=False):
+                              coefficients=("pearson", "spearman"), colorbar_ticks=None, legend_location=None, aux_density=False,
+                              label=None, remove_xy=None, log_density=None, coefficients_horizontal_position="left", log_enhance=50.):
 
         """
         This function ...
@@ -6966,8 +7681,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param coefficients:
         :param colorbar_ticks:
         :param legend_location:
-        :param log_density:
         :param aux_density:
+        :param label:
+        :param remove_xy:
+        :param log_density: None means auto
+        :param coefficients_horizontal_position:
+        :param log_enhance:
         :return:
         """
 
@@ -6975,7 +7694,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.debug("Plotting the " + name + " correlation ...")
 
         # Get mask
-        if settings.conditions is not None and len(settings.conditions) > 0: mask = self.get_mask_for_conditions(scatter, settings.conditions)
+        if settings.conditions is not None and len(settings.conditions) > 0: mask = get_mask_for_conditions(scatter, settings.conditions)
         else: mask = None
 
         # Set options
@@ -6983,26 +7702,25 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
             # ALso display density as transparency: use semi-uniform luminance color map!
             if aux_density:
-
                 cmap = "brg"
-                log_density = True # always use log for density
+                if log_density is None: log_density = True # always use log for density
 
             # Don't display density: just the auxilary color
             else:
-
                 cmap = "plasma"
-                log_density = False # does not matter
+                if log_density is None: log_density = False # does not matter
 
         else:
             cmap = None
-            log_density = False # don't use log density for plotting only density?
+            if log_density is None: log_density = False # don't use log density for plotting only density
 
         # Make the plot
         output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                         xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
                                         aux_colname=settings.aux_colname, aux_log=settings.aux_log, aux_limits=settings.aux_limits,
                                         valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname,
-                                        density_log=log_density, aux_density=aux_density, cmap=cmap, x_label=settings.x_label, y_label=settings.y_label)
+                                        density_log=log_density, aux_density=aux_density, cmap=cmap, label=label,
+                                        x_label=settings.x_label, y_label=settings.y_label, remove=remove_xy, log_enhance=log_enhance)
 
         print("x limits:", output.xlimits)
         print("y limits:", output.ylimits)
@@ -7032,11 +7750,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Set nice ticks
         if settings.xlog:
-            if settings.xlimits is not None and settings.xlimits[1]/settings.xlimits[0] > 1e3: log_subs = (1.,) # high dynamic range
+            #if settings.xlimits is not None and settings.xlimits[1]/settings.xlimits[0] > 1e3: log_subs = (1.,) # high dynamic range
+            if output.xlimits[1]/output.xlimits[0] > 1e3: log_subs = (1.,) # high dynamic range
             else: log_subs = (1.,2.,5.,)
             plot.set_xticks(log_subs=log_subs)
         if settings.ylog:
-            if settings.ylimits is not None and settings.ylimits[1]/settings.ylimits[0] > 1e3: log_subs = (1.,) # high dynamic ranges
+            #if settings.ylimits is not None and settings.ylimits[1]/settings.ylimits[0] > 1e3: log_subs = (1.,) # high dynamic ranges
+            if output.ylimits[1]/output.ylimits[0] > 1e3: log_subs = (1.,) # high dynamic ranges
             else: log_subs = (1.,2.,5.,)
             plot.set_yticks(log_subs=log_subs)
         
@@ -7058,7 +7778,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                 if show_coefficient: print("Correlation coefficient (Pearson): " + str(coeff_r))
                 if plot_coefficient:
                     #plot.text(0.5, 0.08, , transform=output.axes.transAxes, color="black", horizontalalignment="center")
-                    plot.add_text("r = " + tostr(coeff_r, round=True, decimal_places=2), horizontal_position="left")
+                    plot.add_text("r = " + tostr(coeff_r, round=True, decimal_places=2), horizontal_position=coefficients_horizontal_position)
                     
             if "spearman" in coefficients:
             
@@ -7067,7 +7787,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                 if show_coefficient: print("Correlation coefficient (Spearman): " + str(coeff_rho))
                 if plot_coefficient:
                     #plot.text(0.5, 0.04, "$\\rho$ = " + tostr(coeff_rho, round=True, decimal_places=2), transform=output.axes.transAxes, color="black", horizontalalignment="center")
-                    plot.add_text("$\\rho$ = " + tostr(coeff_rho, round=True, decimal_places=2), horizontal_position="left", y_shift=-0.05)
+                    if "pearson" in coefficients: y_shift = -0.05 # if pearson coefficient is also plotted
+                    else: y_shift = 0
+                    plot.add_text("$\\rho$ = " + tostr(coeff_rho, round=True, decimal_places=2), horizontal_position=coefficients_horizontal_position, y_shift=y_shift)
 
             if show_coefficient: print("")
 
@@ -7075,8 +7797,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         if fit:
 
             # Construct points to create fit
-            if settings.xlog: x_grid = RealRange(*settings.xlimits).log(fit_npoints)
-            else: x_grid = RealRange(*settings.xlimits).linear(fit_npoints)
+            if settings.xlog: x_grid = RealRange(*output.xlimits).log(fit_npoints)
+            else: x_grid = RealRange(*output.xlimits).linear(fit_npoints)
 
             # Make the fit
             fitted, slope, intercept = get_linear_fitted_values(output.x, output.y, x_grid, xlog=settings.xlog, ylog=settings.ylog, return_parameters=True)
@@ -7088,6 +7810,50 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Return the plotting output
         return output
+
+    # -----------------------------------------------------------------
+
+    def plot_density_contours(self, x, y, plot, nbins=100, xlog=False, ylog=False, linecolor="black", linestyle="solid", levels=None):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param plot:
+        :param nbins:
+        :param xlog:
+        :param ylog:
+        :param linecolor:
+        :param linestyle:
+        :param levels:
+        :return:
+        """
+
+        from matplotlib.colors import LogNorm
+
+        # Convert
+        if xlog: x = np.log10(x)
+        if ylog: y = np.log10(y)
+
+        # Calcualte histogram
+        counts, xbins, ybins = np.histogram2d(x, y, bins=nbins, normed=LogNorm())
+        #print(counts)
+        #print(np.min(counts), np.max(counts))
+
+        # Make densities relative
+        densities = counts - np.min(counts)
+        densities /= np.max(densities)
+
+        # Convert
+        if xlog: xbins = 10**xbins
+        if ylog: ybins = 10**ybins
+
+        # Plot contours
+        extent = [xbins.min(), xbins.max(), ybins.min(), ybins.max()]
+        patch = plot.contour(xbins[:-1], ybins[:-1], densities.transpose(), levels=levels, extent=extent, linewidths=1, colors=linecolor, linestyles=linestyle)
+
+        # Return
+        return patch
 
     # -----------------------------------------------------------------
 
@@ -7441,7 +8207,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "vSFR"
 
         # Set conditions
-        radius_condition = Condition(upper=self.inner_region_max_radius.to("pc").value)
+        radius_condition = FilterCondition(upper=self.inner_region_max_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
@@ -7473,7 +8239,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #settings.aux_colname = "Dust density"
 
         # Set conditions
-        radius_conditions = Condition(lower=self.inner_region_max_radius.to("pc").value, upper=self.outer_region_min_radius.to("pc").value)
+        radius_conditions = FilterCondition(lower=self.inner_region_max_radius.to("pc").value, upper=self.outer_region_min_radius.to("pc").value)
         settings.conditions = {"Radius": radius_conditions}
 
         # Logscales?
@@ -7505,7 +8271,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "Dust density"
 
         # Set conditions
-        radius_condition = Condition(lower=self.inner_region_max_radius.to("pc").value)
+        radius_condition = FilterCondition(lower=self.inner_region_max_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
@@ -7537,7 +8303,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.aux_colname = "Dust density"
 
         # Set conditions
-        radius_condition = Condition(lower=self.outer_region_min_radius.to("pc").value)
+        radius_condition = FilterCondition(lower=self.outer_region_min_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Logscales?
@@ -7987,7 +8753,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = self.get_temperature_funev_preset(config.preset)
 
         # Create the figure
-        figsize = (12, 6,)
+        figsize = (10, 6,)
         figure = MPLFigure(size=figsize)
 
         # Create plot
@@ -8179,7 +8945,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.y_colname = "Dust luminosity density"
 
         # Limits
-        settings.xlimits = self.ssfr_limits
+        #settings.xlimits = self.ssfr_limits
         settings.ylimits = [5e19,5e26]
 
         # Return
@@ -8241,7 +9007,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Set settings
         settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
-        # vSFR auxilary axis
+        # Funev auxilary axis
         settings.aux_colname = "Funev"
         settings.aux_label = "funev"
         settings.aux_log = False
@@ -8284,7 +9050,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # Set conditions
-        radius_condition = Condition(upper=self.inner_region_max_radius.to("pc").value)
+        radius_condition = FilterCondition(upper=self.inner_region_max_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Return
@@ -8304,7 +9070,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # Set conditions
-        radius_condition = Condition(lower=self.outer_region_min_radius.to("pc").value)
+        radius_condition = FilterCondition(lower=self.outer_region_min_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Return
@@ -8324,7 +9090,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # Set conditions
-        radius_conditions = Condition(lower=self.inner_region_max_radius.to("pc").value,
+        radius_conditions = FilterCondition(lower=self.inner_region_max_radius.to("pc").value,
                                       upper=self.outer_region_min_radius.to("pc").value)
         settings.conditions = {"Radius": radius_conditions}
 
@@ -8345,10 +9111,50 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings = self.vsfr_dust_luminosity_standard_settings.copy()
 
         # Set conditions
-        radius_condition = Condition(lower=self.inner_region_max_radius.to("pc").value)
+        radius_condition = FilterCondition(lower=self.inner_region_max_radius.to("pc").value)
         settings.conditions = {"Radius": radius_condition}
 
         # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_high_ssfr_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Set conditions
+        ssfr_condition = FilterCondition(lower=1e-11)
+        settings.conditions = {"sSFR": ssfr_condition}
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def vsfr_dust_luminosity_low_density_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = self.vsfr_dust_luminosity_standard_settings.copy()
+
+        # Set conditions
+        density_condition = FilterCondition(upper=0.01)
+        settings.conditions = {"vSFR / sSFR": density_condition} # = stellar density
+        
+        # Return settings
         return settings
 
     # -----------------------------------------------------------------
@@ -8385,6 +9191,104 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                             settings, show_coefficient=True,
                                             plot_coefficient=config.coefficient, aux_density=config.alpha, figure=figure,
                                             add_colorbar=True)
+
+        # Save or show
+        if config.path is not None: figure.saveto(config.path)
+        else: figure.show()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_ssfr_specific_dust_luminosity_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # SFR method
+        definition.add_positional_optional("sfr_method", "string", "method for the SFR estimation", self.default_sfr_method, choices=self.sfr_methods)
+
+        # Use preset?
+        #definition.add_optional("preset", "string", "use a plotting preset", default="standard", choices=self.vsfr_dust_luminosity_preset_names)
+
+        # Path
+        definition.add_optional("path", "new_path", "plot to file")
+
+        # Plot p value
+        definition.add_flag("coefficient", "show the correlation coefficient on the plot")
+
+        # Use alpha
+        definition.add_flag("alpha", "enable density alpha for plots with auxilary color axis")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_specific_dust_luminosity_standard_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set settings
+        settings = CorrelationPlotSettings()
+
+        # Logscales?
+        settings.xlog = True
+        settings.ylog = True
+        settings.color = "blueviolet"
+        settings.x_colname = "sSFR"
+        settings.y_colname = "Dust luminosity density / Dust density"
+
+        # Limits
+        settings.xlimits = self.ssfr_limits
+        #settings.ylimits = [5e19, 5e26]
+
+        # Return
+        return settings
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_specific_dust_luminosity_command(self, command, **kwargs):
+        
+        """
+        This function ...
+        :param command: 
+        :param kwargs: 
+        :return: 
+        """
+
+        import mpl_scatter_density  # NOQA
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_ssfr_specific_dust_luminosity_definition, **kwargs)
+
+        # Get settings
+        #settings = self.get_ssfr_specific_dust_luminosity_preset(config.preset)
+        settings = self.ssfr_specific_dust_luminosity_standard_settings
+
+        # Create the figure
+        figsize = (12, 6,)
+        figure = MPLFigure(size=figsize)
+
+        # Create plot
+        plot = figure.create_one_plot(projection="scatter_density")
+
+        # Load the data
+        scatter = self.get_cells_ssfr_funev_scatter(config.sfr_method)
+
+        # Plot
+        output = self.plot_correlation_impl("sSFR - Specific dust luminosity", scatter, plot,
+                                            settings, show_coefficient=True,
+                                            plot_coefficient=config.coefficient, aux_density=config.alpha,
+                                            figure=figure, add_colorbar=True)
 
         # Save or show
         if config.path is not None: figure.saveto(config.path)
@@ -8706,8 +9610,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         settings.y_colname = "vSFR"
 
         # Limits
-        settings.xlimits = [1e-7, 1e-3]
-        settings.ylimits = [1e-16, 1e-10]
+        settings.xlimits = [5e-7, 1e-3]
+        settings.ylimits = [1e-15, 1e-10]
         
         # Return
         return settings

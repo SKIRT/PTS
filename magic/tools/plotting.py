@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import warnings
+from abc import ABCMeta
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -2180,7 +2181,7 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
                            colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
                            aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, valid_points=None, x_colname=None,
                            y_colname=None, legend_location=None, density_log=False, aux_density=False, cmap=None,
-                           x_label=None, y_label=None):
+                           x_label=None, y_label=None, label=None, remove=None, log_enhance=50.):
 
     """
     This function ...
@@ -2212,6 +2213,9 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
     :param cmap:
     :param x_label:
     :param y_label:
+    :param label:
+    :param remove:
+    :param log_enhance:
     :return:
     """
 
@@ -2232,6 +2236,38 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
         y = y[valid_points]
         if aux is not None: aux = aux[valid_points]
 
+    # Remove?
+    if remove is not None:
+
+        remove_x = remove[0]
+        remove_y = remove[1]
+
+        # Initialize remove mask
+        remove = np.ones_like(x, dtype=bool)
+
+        if remove_x is not None:
+
+            if remove_x.lower is not None:
+                remove *= x > remove_x.lower
+
+            if remove_x.upper is not None:
+                remove *= x < remove_x.upper
+
+        if remove_y is not None:
+
+            if remove_y.lower is not None:
+                remove *= y > remove_y.lower
+
+            if remove_y.upper is not None:
+                remove *= y < remove_y.upper
+
+        # Add condition
+        # mask *= np.logical_not(remove)
+        mask = np.logical_not(remove)
+        x = x[mask]
+        y = y[mask]
+        if aux is not None: aux = aux[mask]
+
     if aux is not None:
         aux_min = np.nanmin(aux)
         aux_max = np.nanmax(aux)
@@ -2243,7 +2279,7 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
                              xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
                              color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log,
                              aux_limits=aux_limits, legend_location=legend_location, density_log=density_log, aux_density=aux_density,
-                             cmap=cmap)
+                             cmap=cmap, label=label, log_enhance=log_enhance)
 
 # -----------------------------------------------------------------
 
@@ -2990,7 +3026,7 @@ def vmax_function(array):
 def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
                       xlimits=None, ylimits=None, show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None, color=None,
                       cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, density_log=False,
-                      legend_location=None, aux_density=True):
+                      legend_location=None, aux_density=True, label=None, log_enhance=50.):
 
     """
     This function is a scatter density plotting function, using Astrofrog's matplotlib scatter density package
@@ -3020,6 +3056,8 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :param density_log:
     :param legend_location:
     :param aux_density:
+    :param label:
+    :param log_enhance:
     :return:
     """
 
@@ -3077,6 +3115,7 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         # Checks
         if not types.is_dictionary(y): raise ValueError("The type of x and y data must be equal")
         if not sequences.same_contents(x.keys(), y.keys()): raise ValueError("The curve names must agree in x and y data")
+        if label is not None: raise ValueError("Cannot specify label with multiple datasets")
 
         if colormaps:
             colors = None
@@ -3157,6 +3196,8 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         if not sequences.equal_sizes(x, y): raise ValueError("The number of x and y points must agree")
 
         # Clean xy data
+        #print(x.shape, y.shape)
+        #if aux is not None: print(aux.shape)
         x, y, xlimits, ylimits, valid = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog, return_valid=True, get_limits=True)
 
         # Set valid mask
@@ -3188,7 +3229,10 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
             output.aux_limits = (min_aux, max_aux,)
 
             # Plot
-            scatter = axes.scatter_density(x, y, dpi=dpi, vmin=min_aux, vmax=max_aux, c=aux, cmap=cmap, norm=norm, c_with_alpha=aux_density, c_alpha_logdensity=density_log)
+            #print("label", label)
+            scatter = axes.scatter_density(x, y, dpi=dpi, vmin=min_aux, vmax=max_aux, c=aux, cmap=cmap, norm=norm, label=label,
+                                           c_with_alpha=aux_density, c_alpha_logdensity=density_log, c_alpha_log_enhance=log_enhance)
+            scatter_proxy = create_marker_patch(label, "o", get_cmap(cmap)(0), edgewidth=0)
 
             # Set colormap and other
             output.cmap = cmap
@@ -3205,13 +3249,17 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
         else:
 
             if color is None: color = "blue"
-            scatter = axes.scatter_density(x, y, color=color, dpi=dpi, vmin=0., vmax=vmax_function, c_alpha_logdensity=density_log)
+            #print("label", label)
+            scatter = axes.scatter_density(x, y, color=color, dpi=dpi, vmin=0., vmax=vmax_function, label=label,
+                                           c_alpha_logdensity=density_log)
+            scatter_proxy = create_marker_patch(label, "o", color, edgewidth=0)
 
             # Set color
             output.color = color
 
         # Set scatter
         output.scatter = scatter
+        output.scatter_proxy = scatter_proxy
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
@@ -4283,5 +4331,223 @@ def align_marker(marker, halign='center', valign='middle',):
     m_arr[:, 1] += valign / 2
 
     return Path(m_arr, bm.get_path().codes)
+
+# -----------------------------------------------------------------
+
+def create_marker_patch(label, marker, color, edgecolor="black", edgewidth=1, size=7):
+
+    """
+    This function ...
+    :param marker:
+    :param color
+    :param edgecolor:
+    :param edgewidth:
+    :param size:
+    :param label:
+    :return:
+    """
+
+    from matplotlib.lines import Line2D
+
+    # Create and return
+    return Line2D([], [], marker=marker, markersize=size, label=label, linewidth=0,
+                  markeredgecolor=edgecolor, markerfacecolor=color, markeredgewidth=edgewidth)
+
+# -----------------------------------------------------------------
+
+class Condition(object):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, lower=None, upper=None, colname=None):
+
+        """
+        The constructor ...
+        :param lower:
+        :param upper:
+        :param colname:
+        """
+
+        # Set
+        self.lower = lower
+        self.upper = upper
+
+        # Set colname
+        self.colname = colname
+
+# -----------------------------------------------------------------
+
+class FilterCondition(Condition):
+
+    """
+    This class ...
+    """
+
+# -----------------------------------------------------------------
+
+class RemoveCondition(Condition):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, lower=None, upper=None, zeroes=False, nans=False, colname=None):
+        """
+        This function ...
+        :param lower:
+        :param upper:
+        :param zeroes:
+        :param nans:
+        :param colname:
+        """
+
+        # Call the constructor of the base class
+        super(RemoveCondition, self).__init__(lower=lower, upper=upper, colname=colname)
+
+        # Set flags
+        self.zeroes = zeroes
+        self.nans = nans
+
+# -----------------------------------------------------------------
+
+class MultiRemoveCondition(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *conditions):
+        """
+        This function ...
+        :param conditions:
+        """
+
+        # Set the conditions
+        self.conditions = conditions
+
+# -----------------------------------------------------------------
+
+def get_mask_for_conditions(scatter, conditions):
+
+    """
+    This function ...
+    :param scatter:
+    :param conditions:
+    :return:
+    """
+
+    # Initialize mask
+    mask = np.ones_like(scatter.x_array, dtype=bool)
+
+    # Loop over the columns in the conditions
+    for key in conditions:
+
+        # Get condition and actual colname (in case dictionary keys are just labels for the conditions)
+        condition = conditions[key]
+
+        # Filter condition (positive condition)
+        if isinstance(condition, FilterCondition):
+
+            # Get colname
+            if condition.colname is not None: colname = condition.colname
+            else: colname = key
+
+            # Get column array (potentially with div/mul/add/sub symbol)
+            array, array_unit = get_aux(scatter, colname)
+
+            if condition.lower is not None:
+
+                lower = condition.lower
+                if hasattr(lower, "unit"):
+                    if array_unit is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
+                    mask *= array > lower.to(array_unit).value
+                else: mask *= array > lower
+
+            if condition.upper is not None:
+
+                upper = condition.upper
+                if hasattr(upper, "unit"):
+                    if array_unit is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
+                    mask *= array < upper.to(array_unit).value
+                else: mask *= array < upper
+
+        # Remove condition (negative condition)
+        elif isinstance(condition, RemoveCondition):
+
+            # Get colname
+            if condition.colname is not None: colname = condition.colname
+            else: colname = key
+
+            # Get column array
+            array, array_unit = get_aux(scatter, colname)
+
+            # Initialize remove mask
+            remove = np.ones_like(scatter.x_array, dtype=bool)
+
+            if condition.lower is not None:
+
+                lower = condition.lower
+                if hasattr(lower, "unit"):
+                    if array_unit is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
+                    remove *= array > lower.to(array_unit).value
+                else: remove *= array > lower
+
+            if condition.upper is not None:
+
+                upper = condition.upper
+                if hasattr(upper, "unit"):
+                    if array_unit is None: raise ValueError("Condition for '" + colname + "' has unit but column has no unit")
+                    remove *= array < upper.to(array_unit).value
+                else: remove *= array < upper
+
+            # Add condition
+            mask *= np.logical_not(remove)
+
+        # Multi-remove condition
+        elif isinstance(condition, MultiRemoveCondition):
+
+            # Initialize remove mask
+            remove = np.ones_like(scatter.x_array, dtype=bool)
+
+            # Loop over the sub-conditions
+            for cond in condition.conditions:
+
+                # Get column name
+                coln = cond.colname
+                if coln is None: raise ValueError("Column name not defined for some sub-conditions")
+
+                # Get column array
+                array, array_unit = get_aux(scatter, coln)
+
+                if cond.lower is not None:
+
+                    lower = cond.lower
+                    if hasattr(lower, "unit"):
+                        if array_unit is None: raise ValueError("Condition for '" + coln + "' has unit but column has no unit")
+                        remove *= array > lower.to(array_unit).value
+                    else: remove *= array > lower
+
+                if cond.upper is not None:
+
+                    upper = cond.upper
+                    if hasattr(upper, "unit"):
+                        if array_unit is None: raise ValueError("Condition for '" + coln + "' has unit but column has no unit")
+                        remove *= array < upper.to(array_unit).value
+                    else: remove *= array < upper
+
+            # Add condition
+            mask *= np.logical_not(remove)
+
+        # Invalid
+        else: raise ValueError("Invalid type for condition")
+
+    # Return mask
+    return mask
 
 # -----------------------------------------------------------------

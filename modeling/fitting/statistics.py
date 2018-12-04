@@ -92,37 +92,16 @@ _residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
 
-# Define commands
-commands = OrderedDict()
-
-# Standard commands
-commands[_help_command_name] = ("show_help", False, "show help", None)
-commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
-commands[_status_command_name] = ("show_status_command", True, "show generation status", None)
-
-# Show stuff
-commands[_generations_command_name] = ("show_generations", False, "show generations", None)
-commands[_simulations_command_name] = ("show_simulations_command", True, "show simulations of a generation", "generation")
-commands[_best_command_name] = ("show_best_command", True, "show best models", "generation")
-commands[_counts_command_name] = ("show_counts_command", True, "show counts statistics", "generation")
-commands[_parameters_command_name] = ("show_parameters_command", True, "show parameters statistics", "generation")
-commands[_methods_command_name] = ("show_methods_command", True, "show the fitting method used for the simulations of a generation", "generation")
-
-# Commands with subcommands
-commands[_compare_command_name] = (None, None, "compare simulations", None)
-commands[_closest_command_name] = (None, None, "compare closest simulations between generations", None)
-commands[_plot_command_name] = (None, None, "plotting", None)
-
-# -----------------------------------------------------------------
-
 # Compare commands
 compare_commands = OrderedDict()
+compare_commands.description = "compare simulations"
 compare_commands[_parameters_command_name] = ("compare_parameters_command", True, "compare parameters between two simulations", "two_generation_simulations")
 compare_commands[_seds_command_name] = ("compare_seds_command", True, "compare SEDs between two simulations", "two_generation_simulations")
 compare_commands[_fluxes_command_name] = ("compare_fluxes_command", True, "compare fluxes between two simulations", "two_generation_simulations")
 
 # Closest commands
 closest_commands = OrderedDict()
+closest_commands.description = "compare closest simulations between generations"
 closest_commands[_parameters_command_name] = ("show_closest_parameters_command", True, "compare closest simulation parameters between generations", "two_generations")
 closest_commands[_seds_command_name] = ("plot_closest_seds_command", True, "compare simulated SEDs of closest simulations between generations", "two_generations")
 closest_commands[_fluxes_command_name] = ("plot_closest_fluxes_command", True, "compare mock fluxes of closest simulations between generations", "two_generations")
@@ -131,6 +110,7 @@ closest_commands[_fluxes_command_name] = ("plot_closest_fluxes_command", True, "
 
 # Plot commands
 plot_commands = OrderedDict()
+plot_commands.description = "plot stuff"
 
 # Probabilities etc.
 plot_commands[_terms_command_name] = ("plot_terms_command", True, "plot the chi squared terms", "generation_simulation")
@@ -160,11 +140,26 @@ plot_commands[_filters_command_name] = ("plot_filters", False, "plot the fitting
 
 # -----------------------------------------------------------------
 
-# Set subcommands
-subcommands = OrderedDict()
-subcommands[_compare_command_name] = compare_commands
-subcommands[_closest_command_name] = closest_commands
-subcommands[_plot_command_name] = plot_commands
+# Define commands
+commands = OrderedDict()
+
+# Standard commands
+commands[_help_command_name] = ("show_help", False, "show help", None)
+commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
+commands[_status_command_name] = ("show_status_command", True, "show generation status", None)
+
+# Show stuff
+commands[_generations_command_name] = ("show_generations", False, "show generations", None)
+commands[_simulations_command_name] = ("show_simulations_command", True, "show simulations of a generation", "generation")
+commands[_best_command_name] = ("show_best_command", True, "show best models", "generation")
+commands[_counts_command_name] = ("show_counts_command", True, "show counts statistics", "generation")
+commands[_parameters_command_name] = ("show_parameters_command", True, "show parameters statistics", "generation")
+commands[_methods_command_name] = ("show_methods_command", True, "show the fitting method used for the simulations of a generation", "generation")
+
+# Commands with subcommands
+commands[_compare_command_name] = compare_commands
+commands[_closest_command_name] = closest_commands
+commands[_plot_command_name] = plot_commands
 
 # -----------------------------------------------------------------
 
@@ -203,7 +198,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
     """
 
     _commands = commands
-    _subcommands = subcommands
     _log_section = "FITTING STATISTICS"
 
     # -----------------------------------------------------------------
@@ -2199,6 +2193,64 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_continuous_most_probable_parameter_value(self, generation_name, label):
+
+        """
+        This function ...
+        :param generation_name:
+        :param label:
+        :return:
+        """
+
+        return self.get_parameter_probabilities_table(generation_name, label).continuous_most_probable_value
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_continuous_most_probable_parameter_values(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        values = OrderedDict()
+        for label in self.parameter_labels: values[label] = self.get_continuous_most_probable_parameter_value(generation_name, label)
+        return values
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_most_probable_parameter_stddev(self, generation_name, label):
+
+        """
+        This function ...
+        :param generation_name:
+        :param label:
+        :return:
+        """
+
+        return self.get_parameter_probabilities_table(generation_name, label).most_probable_value_stddev
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_most_probable_parameter_stddevs(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        stddevs = OrderedDict()
+        for label in self.parameter_labels: stddevs[label] = self.get_most_probable_parameter_stddev(generation_name, label)
+        return stddevs
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_most_probable_parameter_labels_for_simulation(self, generation_name, simulation_name):
 
         """
@@ -2574,11 +2626,15 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
             # Get most probable parameter value
             most_probable_value = self.get_most_probable_parameter_value(generation_name, label)
+            continuous_most_probable_value = self.get_continuous_most_probable_parameter_value(generation_name, label)
+            most_probable_stddev = self.get_most_probable_parameter_stddev(generation_name, label)
 
             # Show
             print("    * Initial guess value: " + tostr(self.initial_parameter_values[label], ndigits=3))
             print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
             print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(self.parameter_units[label]))
+            print("    * Continuous most probable value: " + tostr(continuous_most_probable_value, ndigits=3) + " " + tostr(self.parameter_units[label]))
+            print("    * Most probable value stddev: " + tostr(most_probable_stddev, ndigits=3) + " " + tostr(self.parameter_units[label]))
             if nsimulations > 1: print("    * Most counted in " + str(nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(self.parameter_units[label]))
 
         print("")
@@ -3912,6 +3968,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         definition.add_positional_optional("parameters", "string_list", "parameters for which to plot the PDF (in this order)", self.parameter_labels)
         definition.add_optional("path", "string", "save the plot file")
         definition.add_flag("logprob", "use logarithmic scale for the probability axis")
+        definition.add_flag("continuous", "use continuous most probable parameter values")
 
         # Return the definition
         return definition
@@ -3932,12 +3989,12 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         ngenerations = len(generation_names)
 
         # Plot
-        if ngenerations == 1: self.plot_pdfs_generation(generation_names[0], path=config.path, labels=config.parameters, logprob=config.logprob)
-        else: self.plot_pdfs_generations(generation_names, path=config.path, labels=config.parameters, logprob=config.logprob)
+        if ngenerations == 1: self.plot_pdfs_generation(generation_names[0], path=config.path, labels=config.parameters, logprob=config.logprob, continuous_most_prob=config.continuous)
+        else: self.plot_pdfs_generations(generation_names, path=config.path, labels=config.parameters, logprob=config.logprob, continuous_most_prob=config.continuous)
 
     # -----------------------------------------------------------------
 
-    def plot_pdfs_generation(self, generation_name, path=None, labels=None, logprob=False):
+    def plot_pdfs_generation(self, generation_name, path=None, labels=None, logprob=False, continuous_most_prob=False):
 
         """
         This function ...
@@ -3945,6 +4002,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         :param path:
         :param labels:
         :param logprob:
+        :param continuous_most_prob:
         :return:
         """
 
@@ -3971,7 +4029,8 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Get parameters of best simulation
         best = self.get_best_simulation_parameters(generation_name)
-        most_prob = self.get_most_probable_parameter_values(generation_name)
+        if continuous_most_prob: most_prob = self.get_continuous_most_probable_parameter_values(generation_name)
+        else: most_prob = self.get_most_probable_parameter_values(generation_name)
 
         # Keep dictionary for magnitude scale for the different panels (parameters)
         magnitudes_panels = dict()
@@ -4021,7 +4080,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_pdfs_generations(self, generation_names, path=None, labels=None, logprob=False):
+    def plot_pdfs_generations(self, generation_names, path=None, labels=None, logprob=False, continuous_most_prob=False):
 
         """
         This function ...
@@ -4029,6 +4088,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         :param path:
         :param labels:
         :param logprob:
+        :param continuous_most_prob:
         :return:
         """
 
@@ -4064,7 +4124,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Get parameters of best simulation OF THE LAST GENERATION
         last_generation_name = generation_names[-1]
         best = self.get_best_simulation_parameters(last_generation_name)
-        most_prob = self.get_most_probable_parameter_values(last_generation_name)
+
+        # Get most probable parameter values
+        if continuous_most_prob: most_prob = self.get_continuous_most_probable_parameter_values(last_generation_name)
+        else: most_prob = self.get_most_probable_parameter_values(last_generation_name)
+        #print(most_prob)
 
         # Make distributions
         if labels is None: labels = self.parameter_labels

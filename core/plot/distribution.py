@@ -840,48 +840,24 @@ class DistributionPlotter(Configurable):
 
     @property
     def npanels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.distributions)
 
     # -----------------------------------------------------------------
 
     @property
     def panels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distributions.keys()
 
     # -----------------------------------------------------------------
 
     @property
     def has_single_panel(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.npanels == 1
 
     # -----------------------------------------------------------------
 
     @property
     def single_panel(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_single_panel: raise ValueError("Not a single panel")
         return self.panels[0]
 
@@ -901,12 +877,6 @@ class DistributionPlotter(Configurable):
 
     @property
     def ndistributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         total = 0
         for panel in self.panels: total += self.ndistributions_for_panel(panel)
         return total
@@ -915,24 +885,12 @@ class DistributionPlotter(Configurable):
 
     @property
     def has_single_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ndistributions == 1
 
     # -----------------------------------------------------------------
 
     @property
     def single_distribution_label(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_single_distribution: raise ValueError("Not a single distribution")
         return self.distributions[self.single_panel].keys()[0]
 
@@ -940,24 +898,12 @@ class DistributionPlotter(Configurable):
 
     @property
     def single_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distributions[self.single_panel][self.single_distribution_label]
 
     # -----------------------------------------------------------------
 
     @property
     def no_distributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ndistributions == 0
 
     # -----------------------------------------------------------------
@@ -1037,12 +983,6 @@ class DistributionPlotter(Configurable):
 
     @property
     def do_normalize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.normalize is not None
 
     # -----------------------------------------------------------------
@@ -1175,12 +1115,6 @@ class DistributionPlotter(Configurable):
 
     @property
     def xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_single_panel: return self.config.plot.xsize
         else: return self.config.plot.xsize * self.npanels
 
@@ -1188,24 +1122,12 @@ class DistributionPlotter(Configurable):
 
     @property
     def ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.plot.ysize
 
     # -----------------------------------------------------------------
 
     @property
     def figsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.xsize, self.ysize)
 
     # -----------------------------------------------------------------

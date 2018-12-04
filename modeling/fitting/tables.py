@@ -26,6 +26,8 @@ from ...core.units.parsing import parse_unit as u
 from ...core.tools import time
 from ...core.tools import sequences
 from ...core.basics.distribution import Distribution
+from ...core.tools import numbers
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -88,12 +90,6 @@ class RunsTable(SmartTable):
 
     @property
     def run_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Run name"])
 
     # -----------------------------------------------------------------
@@ -181,12 +177,6 @@ class BestParametersTable(SmartTable):
 
     @property
     def generation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Generation name"])
 
     # -----------------------------------------------------------------
@@ -373,24 +363,12 @@ class GenerationsTable(SmartTable):
 
     @property
     def generation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Generation name"])
 
     # -----------------------------------------------------------------
 
     @property
     def last_generation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if len(self) > 0: return self["Generation name"][-1]
         else: return None
 
@@ -420,12 +398,6 @@ class GenerationsTable(SmartTable):
 
     @property
     def ngrid_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.grid_generations)
 
     # -----------------------------------------------------------------
@@ -454,12 +426,6 @@ class GenerationsTable(SmartTable):
 
     @property
     def ngenetic_generations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.genetic_generations)
 
     # -----------------------------------------------------------------
@@ -508,12 +474,6 @@ class GenerationsTable(SmartTable):
 
     @property
     def ngenetic_generations_with_initial(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.genetic_generations_with_initial)
 
     # -----------------------------------------------------------------
@@ -878,24 +838,12 @@ class IndividualsTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
 
     @property
     def individual_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Individual name"])
 
     # -----------------------------------------------------------------
@@ -1013,12 +961,6 @@ class ParametersTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
@@ -1043,12 +985,6 @@ class ParametersTable(SmartTable):
 
     @property
     def parameter_units(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         units = dict()
         for label in self.parameter_labels: units[label] = self.unit_for(label)
         return units
@@ -1245,24 +1181,12 @@ class ChiSquaredTable(SmartTable):
 
     @property
     def worst_simulation_index(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.argmax(self["Chi squared"])
 
     # -----------------------------------------------------------------
 
     @property
     def worst_simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self["Simulation name"][self.worst_simulation_index]
 
     # -----------------------------------------------------------------
@@ -1288,36 +1212,18 @@ class ChiSquaredTable(SmartTable):
 
     @property
     def worst_chi_squared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.max(self["Chi squared"])
 
     # -----------------------------------------------------------------
 
     @property
     def best_simulation_index(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.argmin(self["Chi squared"])
 
     # -----------------------------------------------------------------
 
     @property
     def best_simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self["Simulation name"][self.best_simulation_index]
 
     # -----------------------------------------------------------------
@@ -1342,24 +1248,12 @@ class ChiSquaredTable(SmartTable):
 
     @property
     def best_chi_squared(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return np.min(self["Chi squared"])
 
     # -----------------------------------------------------------------
 
     @property
     def best_simulation_name_and_chi_squared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         index = self.best_simulation_index
         return self["Simulation name"][index], self["Chi squared"][index]
 
@@ -1393,24 +1287,12 @@ class ChiSquaredTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
 
     @property
     def chi_squared_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Chi squared"])
 
     # -----------------------------------------------------------------
@@ -1525,12 +1407,6 @@ class ChiSquaredTable(SmartTable):
 
     @property
     def distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Distribution.from_values("Chi squared", self["Chi squared"])
 
 # -----------------------------------------------------------------
@@ -1612,36 +1488,18 @@ class ModelProbabilitiesTable(SmartTable):
 
     @property
     def simulation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
 
     @property
     def probabilities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self["Probability"])
 
     # -----------------------------------------------------------------
 
     @property
     def nsimulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self["Simulation name"])
 
     # -----------------------------------------------------------------
@@ -1688,48 +1546,24 @@ class ModelProbabilitiesTable(SmartTable):
 
     @property
     def all_zero(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.all_zero(self["Probability"])
 
     # -----------------------------------------------------------------
 
     @property
     def all_zero_but_one(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nzeros == self.nsimulations - 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_zeros(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.has_zero(self.probabilities)
 
     # -----------------------------------------------------------------
 
     @property
     def nzeros(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.nzeros(self.probabilities)
 
 # -----------------------------------------------------------------
@@ -1782,24 +1616,36 @@ class ParameterProbabilitiesTable(SmartTable):
 
     @property
     def most_probable_index(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.argmax(self["Probability"])
 
     # -----------------------------------------------------------------
 
     @property
     def most_probable_value(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self["Value"][self.most_probable_index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def values(self):
+        return self.get_array("Value")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def probabilities(self):
+        return self.get_array("Probability")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def continuous_most_probable_value(self):
+        return numbers.weighed_arithmetic_mean_numpy(self.values, self.probabilities)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def most_probable_value_stddev(self):
+        return numbers.weighed_standard_deviation_numpy(self.values, self.probabilities, mean=self.continuous_most_probable_value)
 
 # -----------------------------------------------------------------

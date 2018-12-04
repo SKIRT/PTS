@@ -1328,6 +1328,20 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
+    def contour(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Plot
+        return self._plot.contour(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
     def errorbar(self, x, y, **kwargs):
 
         """
@@ -2572,7 +2586,7 @@ class MPLFigure(Figure):
             y_shift = 0.12
             if label_position is None: plot.add_text(label, vertical_position=position, y_shift=y_shift)
             elif label_position == "right":
-                x = left + width
+                x = left + width*2
                 if position == "top":
                     y = 0.95 + y_shift
                     alignment = "top"
@@ -2580,6 +2594,7 @@ class MPLFigure(Figure):
                     y = 0.05 + y_shift
                     alignment = "bottom"
                 else: raise ValueError("Invalid position: '" + position + "'")
+                print("LABEL X (right)", x, left, width)
                 plot.text(x, y, label, horizontalalignment='right', verticalalignment=alignment, transform=plot.axes.transAxes)
             elif label_position == "left":
                 x = left
@@ -2590,6 +2605,7 @@ class MPLFigure(Figure):
                     y = 0.05 + y_shift
                     alignment = "bottom"
                 else: raise ValueError("Invalid position: '" + position + "'")
+                print("LABEL X (left)", x, left)
                 plot.text(x, y, label, horizontalalignment='left', verticalalignment=alignment, transform=plot.axes.transAxes)
             else: raise ValueError("Invalid value for 'label_position'")
 
