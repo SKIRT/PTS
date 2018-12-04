@@ -1515,7 +1515,7 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def get_min_positive_wavelength(self, lower=None, upper=None):
+    def get_min_positive_wavelength_index(self, lower=None, upper=None):
 
         """
         This function returns the minimum wavelength for which the photometry is positive, with additional (optional) conditions
@@ -1527,7 +1527,24 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def get_max_positive_wavelength(self, lower=None, upper=None):
+    def get_min_positive_wavelength(self, lower=None, upper=None):
+
+        """
+        This function ...
+        :param lower:
+        :param upper:
+        :return:
+        """
+
+        # Get the index
+        index = self.get_min_positive_wavelength_index(lower=lower, upper=upper)
+
+        # Return the wavelength
+        return self.get_wavelength(index)
+
+    # -----------------------------------------------------------------
+
+    def get_max_positive_wavelength_index(self, lower=None, upper=None):
 
         """
         This function returns the maximum wavelength for which the photometry is positive, with additional (optional) conditions
@@ -1536,6 +1553,23 @@ class WavelengthCurve(Curve):
 
         # Return the max index
         return max(self.get_positive_wavelength_indices(lower=lower, upper=upper))
+
+    # -----------------------------------------------------------------
+
+    def get_max_positive_wavelength(self, lower=None, upper=None):
+        
+        """
+        Thisf unction ...
+        :param lower: 
+        :param upper: 
+        :return: 
+        """
+        
+        # Get the index
+        index = self.get_max_positive_wavelength_index(lower=lower, upper=upper)
+        
+        # Return the wavelength
+        return self.get_wavelength(index)
 
 # -----------------------------------------------------------------
 
