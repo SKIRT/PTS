@@ -827,8 +827,26 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def fitting_filters(self):
+        return self.fitting_run.fitting_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fitting_filters(self):
+        return self.has_fitting_run and self.fitting_filters is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def from_fitting(self):
         return self.analysis_run.from_fitting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fitting_run(self):
+        return self.from_fitting
 
     # -----------------------------------------------------------------
 
@@ -1403,6 +1421,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @property
     def asymptotic_sed(self):
         return self.modeling_environment.asymptotic_sed
+
+    # -----------------------------------------------------------------
+
+    def get_reference_sed_splitted(self, label, additional_error=None):
+
+        """
+        This function ...
+        :param label:
+        :param additional_error:
+        :return:
+        """
+
+        # Has fitting filters: split
+        if self.has_fitting_filters:
+
+            # Fitting filters part
+            fitting_filters = tuple(self.fitting_filters)
+            fitting = self.get_reference_sed(clipped_name, additional_error=additional_error, filters=fitting_filters)
+
+            # Other filters
+            first_three_hfi_filter_names = ["Planck 350", "Planck 550", "Planck 850"]
+            first_three_hfi_filters = [parse_filter(filter_name) for filter_name in first_three_hfi_filter_names]
+            other_filters = tuple(first_three_hfi_filters + self.jhk_filters)
+            other = self.get_reference_sed(clipped_name, additional_error=additional_error, filters=other_filters)
+
+            # Return
+            return fitting, other
+
+        # No fitting filters: complete SED
+        else: return self.get_reference_sed(label, additional_error=additional_error), None
 
     # -----------------------------------------------------------------
 
@@ -4097,8 +4145,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        # Define seperate filter tuples
-        fitting_filters = tuple(self.fitting_run.fitting_filters)
+        # Define filters
+        fitting_filters = tuple(self.fitting_filters)
 
         # Get SED
         fitting = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters)  # 10 % additional errorbars
@@ -4117,7 +4165,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Define seperate filter tuples
-        fitting_filters = tuple(self.fitting_run.fitting_filters)
+        fitting_filters = tuple(self.fitting_filters)
         hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
 
         # Add observed fluxes
@@ -4378,20 +4426,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         seds1 = OrderedDict()
 
         # Define seperate filter tuples
-        fitting_filters = tuple(self.fitting_run.fitting_filters)
-        hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
-
-        # Set options
-        plot_options1 = dict()
-        plot_options1["Total"] = {"residuals": True, "residual_color": "darkgrey"}
-        plot_options1["Old"] = {"residuals": False}
-        plot_options1["Young"] = {"residuals": False}
-        plot_options1["Ionizing"] = {"residuals": False}
-        plot_options1["Mock fluxes"] = {"only_residuals": True, "as_reference": False}
-        plot_options1["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
-        plot_options1["Summed"] = {"ghost": True}
-        #plot_options1["Summed_nosfr"] = {"ghost": True, "residuals": False}
-        #plot_options1["Summed_nosfr_mir"] = {"ghost": True, "residuals": False, "linestyle": ":", "color": "deeppink"}
+        #fitting_filters = tuple(self.fitting_filters)
+        #hfi_and_2mass_filters = tuple(self.hfi_filters + self.jhk_filters)
 
         # Add component simulation SEDs
         total_sed = self.get_simulation_sed(total)
@@ -4414,9 +4450,26 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Add mock fluxes
         seds1["Mock fluxes"] = self.mock_fluxes
 
+        # Get observed fluxes
+        observation_fitting, observation_other = self.get_reference_sed_splitted(clipped_name, additional_error=0.1)
+
         # Add observed fluxes
-        seds1["Observation (fitting)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters) # 10 % additional errorbars
-        seds1["Observation (other)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=hfi_and_2mass_filters)
+        if observation_other is not None:
+            seds1["Observation (fitting)"] = observation_fitting
+            seds1["Observation (other)"] = observation_other
+        else: seds1["Observation"] = observation_fitting
+
+        # Set options
+        plot_options1 = dict()
+        plot_options1["Total"] = {"residuals": True, "residual_color": "darkgrey"}
+        plot_options1["Old"] = {"residuals": False}
+        plot_options1["Young"] = {"residuals": False}
+        plot_options1["Ionizing"] = {"residuals": False}
+        plot_options1["Mock fluxes"] = {"only_residuals": True, "as_reference": False}
+        if observation_other is not None: plot_options1["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
+        plot_options1["Summed"] = {"ghost": True}
+        # plot_options1["Summed_nosfr"] = {"ghost": True, "residuals": False}
+        # plot_options1["Summed_nosfr_mir"] = {"ghost": True, "residuals": False, "linestyle": ":", "color": "deeppink"}
 
         # Plot FIRST
         plot_seds(seds1, figure=figure, main_plot=main_plots[0], residual_plots=residual_plots[0], show=False,  # don't show yet
@@ -6136,12 +6189,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Initialize dictionary for the SEDs (observed and simulated)
         seds = OrderedDict()
 
-        # Define seperate filter tuples
-        first_three_hfi_filter_names =["Planck 350", "Planck 550", "Planck 850"]
-        first_three_hfi_filters = [parse_filter(filter_name) for filter_name in first_three_hfi_filter_names]
-        fitting_filters = tuple(self.fitting_run.fitting_filters)
-        hfi_and_2mass_filters = tuple(first_three_hfi_filters + self.jhk_filters)
-
         # Get SEDs
         total_observed_stellar_sed = self.get_observed_stellar_sed("total")
         # Add component simulation SEDs
@@ -6204,9 +6251,14 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Add mock fluxes
         seds["Mock fluxes"] = self.mock_fluxes
 
+        # Get reference SEDs
+        observation_fitting, observation_other = self.get_reference_sed_splitted(clipped_name, additional_error=0.1)
+
         # Add observed fluxes
-        seds["Observation (fitting)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=fitting_filters)  # 10 % additional errorbars
-        seds["Observation (other)"] = self.get_reference_sed(clipped_name, additional_error=0.1, filters=hfi_and_2mass_filters)
+        if observation_other is not None:
+            seds["Observation (fitting)"] = observation_fitting
+            seds["Observation (other)"] = observation_other
+        else: seds["Observation"] = observation_fitting
 
         #for name in seds:
         #    print(name, seds[name].colnames)
@@ -6238,7 +6290,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #plot_options["Ionizing_internal"] = {"above": "Ionizing", "residuals": False, "color": "deepskyblue"}
 
         plot_options["Mock fluxes"] = {"only_residuals": True, "as_reference": False}
-        plot_options["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
+
+        if observation_other is not None: plot_options["Observation (other)"] = {"as_reference": False, "color": "g", "join_residuals": "Observation (fitting)"}
+
         plot_options["Observed stellar"] = {"residuals": False, "color": "black"}
 
         plot_options["Absorbed"] = {"above": "Observed stellar", "above_name": "Intrinsic stellar", "residuals": False, "color": absorbed_color}
