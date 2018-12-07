@@ -346,72 +346,36 @@ class AlphaMask(object):
 
     @property
     def shape(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PixelShape.from_tuple(self.data.shape)
 
     # -----------------------------------------------------------------
 
     @property
     def xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.shape[1]
 
     # -----------------------------------------------------------------
 
     @property
     def ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.shape[0]
 
     # -----------------------------------------------------------------
 
     @property
     def x_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * (self.xsize - 1)
 
     # -----------------------------------------------------------------
 
     @property
     def y_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * (self.ysize - 1)
 
     # -----------------------------------------------------------------
 
     @property
     def center(self):
-
-        """
-        Thisf unction ....
-        :return:
-        """
-
         from ..basics.coordinate import PixelCoordinate
         return PixelCoordinate(self.x_center, self.y_center)
 
@@ -419,61 +383,30 @@ class AlphaMask(object):
 
     @property
     def data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._data
 
     # -----------------------------------------------------------------
 
     @property
     def wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._wcs
 
     # -----------------------------------------------------------------
 
     @wcs.setter
     def wcs(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
         self._wcs = value
 
     # -----------------------------------------------------------------
 
     @property
     def has_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wcs is not None
 
     # -----------------------------------------------------------------
 
     @property
     def pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Return the pixelscale of the WCS is WCS is defined
         if self.wcs is not None: return self.wcs.pixelscale
         else: return self._pixelscale  # return the pixelscale
@@ -482,13 +415,6 @@ class AlphaMask(object):
 
     @pixelscale.setter
     def pixelscale(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
         from ..basics.pixelscale import Pixelscale
         if not isinstance(value, Pixelscale): value = Pixelscale(value)
         self._pixelscale = value
@@ -497,48 +423,24 @@ class AlphaMask(object):
 
     @property
     def has_pixelscale(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.pixelscale is not None
 
     # -----------------------------------------------------------------
 
     @property
     def x_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.pixelscale.x
 
     # -----------------------------------------------------------------
 
     @property
     def y_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.pixelscale.y
 
     # -----------------------------------------------------------------
 
     @property
     def has_angular_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ...core.tools import types
         if not self.has_pixelscale: raise ValueError("No pixelscale")
         return types.is_angle(self.x_pixelscale)
@@ -547,12 +449,6 @@ class AlphaMask(object):
 
     @property
     def has_physical_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ...core.tools import types
         if not self.has_pixelscale: raise ValueError("No pixelscale")
         return types.is_length_quantity(self.x_pixelscale)
@@ -561,35 +457,17 @@ class AlphaMask(object):
 
     @property
     def average_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.wcs is not None: return self.wcs.average_pixelscale
         else: return self._pixelscale.average if self._pixelscale is not None else None
 
     # -----------------------------------------------------------------
 
     def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return copy.deepcopy(self)
 
     # -----------------------------------------------------------------
 
     def as_real(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.astype(float) / max_alpha
 
     # -----------------------------------------------------------------
@@ -740,36 +618,18 @@ class AlphaMask(object):
 
     @property
     def min(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return np.min(self.data)
 
     # -----------------------------------------------------------------
 
     @property
     def max(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return np.max(self.data)
 
     # -----------------------------------------------------------------
 
     @property
     def transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .mask import Mask
         return Mask(self.data == min_alpha, wcs=self.wcs, pixelscale=self.pixelscale)
 
@@ -777,12 +637,6 @@ class AlphaMask(object):
 
     @property
     def transparent_filled(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
         transparent = self.transparent
         transparent.fill_holes(connectivity=4)
         return transparent
@@ -791,12 +645,6 @@ class AlphaMask(object):
 
     @property
     def semitransparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .mask import Mask
         #return Mask(min_alpha < self.data < max_alpha, wcs=self.wcs, pixelscale=self.pixelscale)
         above = self.data > min_alpha
@@ -821,12 +669,6 @@ class AlphaMask(object):
 
     @property
     def opaque(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .mask import Mask
         return Mask(self.data == max_alpha, wcs=self.wcs, pixelscale=self.pixelscale)
 
@@ -834,12 +676,6 @@ class AlphaMask(object):
 
     @property
     def opaque_filled(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         opaque = self.opaque
         opaque.fill_holes(connectivity=4)
         return opaque
@@ -1074,24 +910,12 @@ class AlphaMask(object):
 
     @property
     def between_min_max(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.between_levels(self.lowest_level, self.highest_level, include_min=False, include_max=True)
 
     # -----------------------------------------------------------------
 
     @property
     def between_min_max_filled(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         between = self.between_min_max
         between.fill_holes(connectivity=4)
         return between
@@ -1100,72 +924,36 @@ class AlphaMask(object):
 
     @property
     def levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(np.unique(self.data))
 
     # -----------------------------------------------------------------
 
     @property
     def nlevels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.levels)
 
     # -----------------------------------------------------------------
 
     @property
     def lowest_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return min(self.levels)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return max(self.levels)
 
     # -----------------------------------------------------------------
 
     @property
     def at_lowest_level(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.equal(self.lowest_level)
 
     # -----------------------------------------------------------------
 
     @property
     def at_highest_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.equal(self.highest_level)
 
     # -----------------------------------------------------------------
@@ -1201,36 +989,18 @@ class AlphaMask(object):
 
     @property
     def lowest_level_not_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.levels_between_transparent_opaque[0]
 
     # -----------------------------------------------------------------
 
     @property
     def highest_level_not_opaque(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.levels_between_transparent_opaque[-1]
 
     # -----------------------------------------------------------------
 
     @property
     def levels_semitransparent(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.levels_between_transparent_opaque
 
     # -----------------------------------------------------------------

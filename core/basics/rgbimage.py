@@ -552,17 +552,25 @@ def set_transparent_color(image, color, tolerance=None):
 
     # Get color
     red, blue, green = color
+    #print(red, blue, green)
+    #print(image[:, :, 0])
+    #print(image[:, :, 1])
+    #print(image[:, :, 2])
 
     # With tolerance
     if tolerance is not None:
         offset = tolerance * 256
         where = np.where(np.isclose(red, image[:, :, 0], atol=offset) * np.isclose(blue, image[:, :, 1], atol=offset) * np.isclose(green, image[:, :, 2], atol=offset))
+        #print(where)
 
     # Exact
     else: where = np.where((image[:, :, 0] == red) * (image[:, :, 1] == blue) * (image[:, :, 2] == green))
 
     # Set transparent
     for x, y in zip(where[0], where[1]): image[x, y, 3] = 0
+
+    # Return the new image
+    return image
 
 # -----------------------------------------------------------------
 
@@ -621,6 +629,9 @@ def set_transparency_gradient(image, color, scale, scale_value=0.5):
 
     # Return the mask
     #return new_transparency
+
+    # Return the image
+    return image
 
 # -----------------------------------------------------------------
 

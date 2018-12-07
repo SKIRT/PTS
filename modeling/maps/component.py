@@ -1097,9 +1097,7 @@ class MapMakerBase(GalaxyModelingComponent):
             write_dict(self.methods, methods_path)
 
     # -----------------------------------------------------------------
-
     # PLOTTING
-
     # -----------------------------------------------------------------
 
     @property
@@ -2800,216 +2798,108 @@ class MapMakerBase(GalaxyModelingComponent):
 
     @property
     def maps_colours_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_colours_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_colours_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_colours_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_ssfr_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_ssfr_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_ssfr_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_ssfr_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_tir_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_tir_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_tir_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
         return self.collection.maps_tir_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_attenuation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_attenuation_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_attenuation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_attenuation_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_old_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_old_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_old_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_old_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_young_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_young_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_young_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_young_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_ionizing_path(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.collection.maps_ionizing_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_ionizing_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
         return self.collection.maps_ionizing_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_dust_path(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.collection.maps_dust_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_dust_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
         return self.collection.maps_dust_name
 
     # -----------------------------------------------------------------
 
     @property
     def maps_sub_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_sub_paths
 
     # -----------------------------------------------------------------
 
     @property
     def maps_sub_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.collection.maps_sub_names
 
     # -----------------------------------------------------------------
@@ -3106,53 +2996,27 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     def load_collection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return MapsCollection(self.maps_raw_path)
 
     # -----------------------------------------------------------------
 
     def load_static_collection(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return StaticMapsCollection(self.maps_raw_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ComponentMapsSelection(self.maps_components_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def static_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return StaticComponentMapsSelection(self.maps_components_path)
 
     # -----------------------------------------------------------------
-
     # MAPS
-
     # -----------------------------------------------------------------
 
     def get_component_old_map_paths(self):
@@ -3780,7 +3644,9 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(MapMakingComponent, self).__init__(*args, **kwargs)
+        #super(MapMakingComponent, self).__init__(*args, **kwargs)
+        MapsComponent.__init__(self, no_config=True)
+        MapMakerBase.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 
@@ -3801,7 +3667,9 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(MapMakingComponent, self).setup(**kwargs)
+        #super(MapMakingComponent, self).setup(**kwargs)
+        MapMakerBase.setup(self, **kwargs)
+        MapsComponent.setup(self, **kwargs)
 
         # Perform some checks to see whether previous output is present
         if self.config.checks: self.perform_checks()
@@ -4990,36 +4858,18 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
 
     @property
     def tir_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "log"
 
     # -----------------------------------------------------------------
 
     @property
     def tir_cmap(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return "viridis"
 
     # -----------------------------------------------------------------
 
     @property
     def tir_js9_cmap(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return "viridis"
 
     # -----------------------------------------------------------------
@@ -5055,48 +4905,24 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
 
     @property
     def attenuation_scale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "linear"
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "cool"
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_js9_cmap(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return "cool"
 
     # -----------------------------------------------------------------
 
     @property
     def tir_to_fuv_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "ds9heat"
 
     # -----------------------------------------------------------------
@@ -5136,24 +4962,12 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
 
     @property
     def old_scale(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return "log"
 
     # -----------------------------------------------------------------
 
     @property
     def old_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # return "Wistia"
         return "afmhot"
 
@@ -5161,12 +4975,6 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
 
     @property
     def old_js9_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "heat"
 
     # -----------------------------------------------------------------
@@ -5356,24 +5164,12 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
 
     @property
     def ionizing_scale(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return "log"
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # return "ds9he"
         return "summer"
 
@@ -5381,36 +5177,18 @@ class MapMakingComponent(MapMakerBase, MapsComponent):
 
     @property
     def ionizing_js9_cmap(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "cool"
 
     # -----------------------------------------------------------------
 
     @property
     def halpha_to_hot_cmap(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return "jet"
 
     # -----------------------------------------------------------------
 
     @property
     def halpha_to_hot_vmax(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return 1.
 
     # -----------------------------------------------------------------

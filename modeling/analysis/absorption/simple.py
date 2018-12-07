@@ -110,7 +110,7 @@ class AbsorptionBase(object):
 
     @lazyproperty
     def observed_stellar_sed_extrapolate_from(self):
-        return q("15 micron")
+        return q("10 micron")
 
     # -----------------------------------------------------------------
 

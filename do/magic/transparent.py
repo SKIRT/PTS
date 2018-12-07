@@ -64,13 +64,23 @@ for filename in filenames:
     # Invalid
     else: raise ValueError("Invalid input")
 
+    # Check dimensions
+    if image.shape[2] == 3:
+        shape = list(image.shape)
+        old_image = image
+        shape[2] = 4
+        shape = tuple(shape)
+        image = np.ones(shape) * 255
+        image[:, :, :3] = old_image
+
     # Set transparent
     if config.gradient: set_transparency_gradient(image, (red, blue, green,), config.scale)
     else: set_transparent_color(image, (red, blue, green,), tolerance=config.tolerance)
 
     # Determine output name
     name = fs.strip_extension(fs.name(filename))
-    extension = fs.get_extension(filename)
+    #extension = fs.get_extension(filename)
+    extension = "png" # because transparancy has to be supported
     newname = name + "_transparent." + extension
 
     # Write the inverted image

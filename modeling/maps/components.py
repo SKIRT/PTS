@@ -45,6 +45,7 @@ from ...core.tools.serialization import write_dict, load_dict
 from ...magic.basics.mask import MaskBase
 from ...magic.region.region import PixelRegion
 from ...magic.tools import plotting
+from .collection import MapsCollection, StaticMapsCollection
 
 # -----------------------------------------------------------------
 
@@ -235,7 +236,7 @@ class ComponentMapsMaker(MapsSelectionComponent):
         self.load_selection()
 
         # 3. Set the S/N levels
-        self.set_levels()
+        #self.set_levels()
 
         # 4. Set rerun
         if self.rerun or self.rerun_all: self.set_rerun()
@@ -272,6 +273,16 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # 15. Plot
         if self.config.plot: self.plot()
+
+    # -----------------------------------------------------------------
+
+    def load_collection(self):
+        return MapsCollection(self.maps_raw_path)
+
+    # -----------------------------------------------------------------
+
+    def load_static_collection(self):
+        return StaticMapsCollection(self.maps_raw_path)
 
     # -----------------------------------------------------------------
 

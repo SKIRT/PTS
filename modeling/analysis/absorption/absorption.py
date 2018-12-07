@@ -2632,7 +2632,6 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     def extra_emission_seds(self):
         return self.extra_absorption.emission_seds
 
-
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 

@@ -12,6 +12,14 @@ from __future__ import print_function
 
 # Import standard modules
 from collections import OrderedDict
+from matplotlib import colors as mcolors
+
+# Get matplotlib colors
+mpl_colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
+
+# Sort colors by hue, saturation, value and name.
+#by_hsv = sorted((tuple(mcolors.rgb_to_hsv(mcolors.to_rgba(color)[:3])), name) for name, color in colors.items())
+#mpl_color_names = [name for hsv, name in by_hsv]
 
 # -----------------------------------------------------------------
 
@@ -314,78 +322,43 @@ class Colour(object):
         """
 
         if name.lower() in predefined: return cls.from_hex(predefined[name.lower()][0])
+        elif name in mpl_colors: return cls.from_hex(mpl_colors[name])
         else: raise ValueError("Colour '" + name + "' not recognized")
 
     # -----------------------------------------------------------------
 
     @property
     def rgb(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.red, self.green, self.blue
 
     # -----------------------------------------------------------------
 
     @property
     def hex(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return rgb_to_hex([self.red, self.green, self.blue])
 
     # -----------------------------------------------------------------
 
     @property
     def hex1(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.hex[1:3]
 
     # -----------------------------------------------------------------
 
     @property
     def hex2(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.hex[3:5]
 
     # -----------------------------------------------------------------
 
     @property
     def hex3(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.hex[5:]
 
     # -----------------------------------------------------------------
 
     @property
     def hex_slashes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.hex1 + "/" + self.hex2 + "/" + self.hex3
 
     # -----------------------------------------------------------------

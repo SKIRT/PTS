@@ -1029,7 +1029,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         log.debug("Creating " + name + " sSFR - Funev pixel scatter ...")
 
         # Create and return
-        return create_pixel_scatter(self.ssfr_name, self.funev_name, ssfr_frame, funev_frame, self.ssfr_description, self.funev_description)
+        return create_pixel_scatter(self.ssfr_name, self.funev_name, ssfr_frame, funev_frame, self.ssfr_description, self.funev_description, x_unit="1/yr")
 
     # -----------------------------------------------------------------
 
