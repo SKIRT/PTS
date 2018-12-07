@@ -59,7 +59,7 @@ from ..config.analyse_cell_energy import definition as analyse_cell_energy_defin
 from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
-from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube, plot_curve, plot_curves, plot_scatters_astrofrog, plot_scatter_astrofrog
+from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube, plot_curve, plot_curves, plot_scatters_density, plot_scatter_density
 from ...core.filter.filter import Filter, parse_filter
 from ...core.tools import types
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
@@ -5758,8 +5758,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Inform the user
         log.info("Creating the sSFR - Funev correlation plot ...")
 
-        import mpl_scatter_density  # NOQA
-
         # Create the figure
         figsize = (12, 6,)
         figure = MPLFigure(size=figsize)
@@ -5771,8 +5769,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Make the first plot
         xlog = True
         ylog = False
-        #plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
-        output0 = plot_scatters_astrofrog(self.ssfr_funev_pixel_scatters, xlimits=self.ssfr_limits, ylimits=self.funev_limits_linear, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0, colors=self.ssfr_funev_pixel_colors)
+        output0 = plot_scatters_density(self.ssfr_funev_pixel_scatters, xlimits=self.ssfr_limits, ylimits=self.funev_limits_linear, xlog=xlog, ylog=ylog, colormaps=False, plot=plot0, colors=self.ssfr_funev_pixel_colors)
 
         # Plot fits
         plot0.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color)
@@ -5784,7 +5781,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         plot0.legend(loc="lower right")
 
         # Make the second plot
-        output1 = plot_scatter_astrofrog(self.ssfr_funev_scatter_cells, xlimits=self.ssfr_limits, ylimits=self.funev_limits_linear, xlog=True, ylog=False, plot=plot1, color="red")
+        output1 = plot_scatter_density(self.ssfr_funev_scatter_cells, xlimits=self.ssfr_limits, ylimits=self.funev_limits_linear, xlog=True, ylog=False, plot=plot1, color="red")
         plot1.set_yaxis_right()
 
         # Plot fits
@@ -5808,8 +5805,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Inform the user
         log.info("Creating the advanced sSFR - Funev correlation plots ...")
-
-        import mpl_scatter_density # NOQA
 
         # Create the figure
         #figsize = (35, 6,)
@@ -5984,8 +5979,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Inform the user
         log.info("Creating the better paper sSFR - Funev correlation plots ...")
-
-        import mpl_scatter_density  # NOQA
 
         # Create the figure
         #figsize = (30, 20)
@@ -6397,8 +6390,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Inform the user
         log.info("Creating the sSFR-Funev (pixels+cells) correlation plot ...")
 
-        import mpl_scatter_density  # NOQA
-
         # Create the figure
         figsize = (8, 6,)
         figure = MPLFigure(size=figsize)
@@ -6414,8 +6405,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         xlimits = (5e-14, 2e-10,)
         ylimits = (0.01,1,)
 
-        # plot_scatters_astrofrog(scatters1, xlimits=config.xlimits, ylimits=config.ylimits, xlog=config.xlog, ylog=False, path=config.path, colormaps=False)
-        output0 = plot_scatters_astrofrog(self.ssfr_funev_all_scatters, xlimits=xlimits,
+        output0 = plot_scatters_density(self.ssfr_funev_all_scatters, xlimits=xlimits,
                                           ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False,
                                           plot=plot, colors=self.ssfr_funev_all_colors, dpi=72, density_log=True)
 
@@ -6492,8 +6482,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create the figure
         figsize = (10, 7)
         figure = MPLFigure(size=figsize)
-
-        import mpl_scatter_density # NOQA
 
         # Create plots
         nrows = 2
@@ -6662,8 +6650,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param path:
         :return:
         """
-
-        import mpl_scatter_density  # NOQA
 
         # Inform the user
         log.info("Creating the vSFR vs. dust luminosity plot ...")
@@ -6834,8 +6820,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param path:
         :return:
         """
-
-        import mpl_scatter_density  # NOQA
 
         # Inform the user
         log.info("Creating the SFR / dust mass vs. dust luminosity / dust mass plot ...")
@@ -7238,8 +7222,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Inform the user
         log.info("Creating the SFR & dust mass correlation plots ...")
 
@@ -7386,8 +7368,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Inform the user
         log.info("Creating the vSFR vs. dust luminosity density per stellar mass plot ...")
 
@@ -7420,12 +7400,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         y = scatter.get_array("Dust luminosity density") / scatter.get_array("Dust density") / stellar_density
 
         # Plot
-        from ...magic.tools.plotting import plot_xy_astrofrog
+        from ...magic.tools.plotting import plot_xy_scatter_density
         x_label = "vSFR"
         y_label = "Dust luminosity per dust mass and stellar mass"
         xlog = True
         ylog = True
-        output = plot_xy_astrofrog(x, y, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
+        output = plot_xy_scatter_density(x, y, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
                                  xlimits=xlimits, ylimits=ylimits, show=False, plot=plot,
                                  color="red")
 
@@ -7715,7 +7695,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             if log_density is None: log_density = False # don't use log density for plotting only density
 
         # Make the plot
-        output = plot_scatter_astrofrog(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
+        output = plot_scatter_density(scatter, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                         xlog=settings.xlog, ylog=settings.ylog, plot=plot, color=settings.color,
                                         aux_colname=settings.aux_colname, aux_log=settings.aux_log, aux_limits=settings.aux_limits,
                                         valid_points=mask, x_colname=settings.x_colname, y_colname=settings.y_colname,
@@ -7726,7 +7706,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         print("y limits:", output.ylimits)
 
         # Plot references?
-        if references is not None: references_output = plot_scatters_astrofrog(references, xlimits=settings.xlimits, ylimits=settings.ylimits,
+        if references is not None: references_output = plot_scatters_density(references, xlimits=settings.xlimits, ylimits=settings.ylimits,
                                                                                xlog=settings.xlog, ylog=settings.ylog, plot=output.plot,
                                                                                colors=reference_colors, legend_location=legend_location,
                                                                                density_log=log_density)
@@ -8400,8 +8380,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Get config
         config = self.get_config_from_command(command, self.plot_ssfr_funev_definition, **kwargs)
 
@@ -8592,8 +8570,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return: 
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Get config
         config = self.get_config_from_command(command, self.plot_vsfr_funev_definition, **kwargs)
 
@@ -8744,8 +8720,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Get config
         config = self.get_config_from_command(command, self.plot_temperature_funev_definition, **kwargs)
 
@@ -8837,8 +8811,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param kwargs:
         :return:
         """
-
-        import mpl_scatter_density  # NOQA
 
         # Get config
         config = self.get_config_from_command(command, self.plot_density_funev_definition, **kwargs)
@@ -9168,8 +9140,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Get config
         config = self.get_config_from_command(command, self.plot_vsfr_dust_luminosity_definition, **kwargs)
 
@@ -9264,8 +9234,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param kwargs: 
         :return: 
         """
-
-        import mpl_scatter_density  # NOQA
 
         # Get config
         config = self.get_config_from_command(command, self.plot_ssfr_specific_dust_luminosity_definition, **kwargs)
@@ -9440,8 +9408,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
-        import mpl_scatter_density  # NOQA
-
         # Get config
         config = self.get_config_from_command(command, self.plot_density_vsfr_definition, **kwargs)
 
@@ -9532,8 +9498,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param kwargs: 
         :return: 
         """
-        
-        import mpl_scatter_density  # NOQA
 
         # Get config
         config = self.get_config_from_command(command, self.plot_dust_luminosity_temperature_definition, **kwargs)
@@ -9626,8 +9590,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param kwargs:
         :return:
         """
-
-        import mpl_scatter_density  # NOQA
 
         # Get config
         config = self.get_config_from_command(command, self.plot_dust_density_vsfr_definition, **kwargs)

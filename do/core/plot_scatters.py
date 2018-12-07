@@ -20,7 +20,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.basics.scatter import Scatter2D
 from pts.core.basics.plot import MPLFigure
 from pts.core.tools import filesystem as fs
-from pts.magic.tools.plotting import plot_scatters, plot_densities, plot_scatters_astrofrog
+from pts.magic.tools.plotting import plot_scatters, plot_densities, plot_scatters_density
 
 # -----------------------------------------------------------------
 

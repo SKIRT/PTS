@@ -37,6 +37,7 @@ from photutils import CircularAperture
 from ...core.tools import types, sequences
 from ...core.basics.log import log
 from ...core.basics import containers
+from . import scatter_density # NOQA
 
 # -----------------------------------------------------------------
 
@@ -2177,11 +2178,11 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
 
 # -----------------------------------------------------------------
 
-def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
-                           colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
-                           aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, valid_points=None, x_colname=None,
-                           y_colname=None, legend_location=None, density_log=False, aux_density=False, cmap=None,
-                           x_label=None, y_label=None, label=None, remove=None, log_enhance=50.):
+def plot_scatter_density(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, show=None,
+                         colormaps=False, axes=None, plot=None, color=None, dpi=None, aux_colname=None, aux=None,
+                         aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, valid_points=None, x_colname=None,
+                         y_colname=None, legend_location=None, density_log=False, aux_density=False, cmap=None,
+                         x_label=None, y_label=None, label=None, remove=None, log_enhance=50.):
 
     """
     This function ...
@@ -2275,11 +2276,11 @@ def plot_scatter_astrofrog(scatter, title=None, path=None, xlog=False, ylog=Fals
         print("aux max:", aux_max)
 
     # Plot
-    return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
-                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
-                             color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log,
-                             aux_limits=aux_limits, legend_location=legend_location, density_log=density_log, aux_density=aux_density,
-                             cmap=cmap, label=label, log_enhance=log_enhance)
+    return plot_xy_scatter_density(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
+                                     xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, axes=axes, plot=plot,
+                                     color=color, dpi=dpi, aux=aux, aux_name=aux_name, aux_unit=aux_unit, aux_log=aux_log,
+                                     aux_limits=aux_limits, legend_location=legend_location, density_log=density_log, aux_density=aux_density,
+                                     cmap=cmap, label=label, log_enhance=log_enhance)
 
 # -----------------------------------------------------------------
 
@@ -2318,7 +2319,7 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
 
 # -----------------------------------------------------------------
 
-def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+def plot_scatters_density(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                             show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None,
                             legend_location=None, density_log=False):
 
@@ -2346,9 +2347,9 @@ def plot_scatters_astrofrog(scatters, title=None, path=None, xlog=False, ylog=Fa
     x, y, x_label, y_label = get_multiple_xy(scatters, return_labels=True)
 
     # Plot
-    return plot_xy_astrofrog(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
-                             xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, colors=colors,
-                             axes=axes, plot=plot, dpi=dpi, legend_location=legend_location, density_log=density_log)
+    return plot_xy_scatter_density(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
+                                   xlimits=xlimits, ylimits=ylimits, show=show, colormaps=colormaps, colors=colors,
+                                   axes=axes, plot=plot, dpi=dpi, legend_location=legend_location, density_log=density_log)
 
 # -----------------------------------------------------------------
 # PLOTTING DENSITY
@@ -2629,46 +2630,16 @@ def _plot_xy(x, y, label=None, connect=True, density=False, plot=None, cmap=None
         if plot is not None: plot.plot(x, y, label=label, color=color)
         else: plt.plot(x, y, label=label, color=color)
 
-    # Points with density
-    elif density:
+    # Scatter points with density
+    elif density: _plot_xy_density(x, y, )
 
-        # Give warning
-        warnings.warn("Calculating density of points: this can take a while ...")
-
-        # Calculate the point density
-        xy = np.vstack([x, y])
-        z = gaussian_kde(xy)(xy)
-
-        # Sort the points by density, so that the densest points are plotted last
-        idx = z.argsort()
-        xi, yi, zi = x[idx], y[idx], z[idx]
-
-        # Get alpha
-        alpha = alpha_from_densities(zi)
-
-        # Set default colormap
-        if cmap is None: cmap = "viridis"
-
-        # Plot
-        if plot is not None: s = plot.scatter(xi, yi, c=zi, s=size, edgecolor='', cmap=cmap)
-        else: s = plt.scatter(xi, yi, c=zi, s=size, edgecolor='', cmap=cmap)
-
-        # SET EVERYTHING (can probably delete some of these lines)
-        cols = s.get_facecolors()
-        print(cols)
-        edgecols = cols.copy()
-        edgecols[:, 3] = edgecols[:, 3] / 5.
-        cols[:, 3] = alpha
-        s.set_facecolor(cols)
-        s.set_edgecolor(edgecols)
-        s._facecolors = cols
-        s._edgecolors = edgecols
-
-    # Just points
+    # Scatter points
     else:
 
+        # Cannot specify cmap
         if cmap is not None: raise ValueError("Cannot specify a colormap when density is not plotted")
 
+        # Plot scatter
         if plot is not None: plot.scatter(x, y, label=label, c=color, s=size)
         else: plt.scatter(x, y, label=label, c=color, s=size)
 
@@ -2733,6 +2704,7 @@ def _plot_xy_density(x, y, axes, method="kde", min_count=1, rug=False, nbins=100
     :return:
     """
 
+    # Contours
     if method == "contours":
 
         import seaborn as sns
@@ -2744,18 +2716,7 @@ def _plot_xy_density(x, y, axes, method="kde", min_count=1, rug=False, nbins=100
             sns.rugplot(x, color="g", ax=axes)
             sns.rugplot(y, vertical=True, ax=axes)
 
-    # Density without contours, Seaborn
-    elif method == "seaborn":
-
-        import seaborn as sns
-
-        # f, ax = plt.subplots(figsize=(6, 6))
-
-        cmap = sns.cubehelix_palette(as_cmap=True, dark=0, light=1, reverse=True)
-
-        sns.kdeplot(x, y, cmap=cmap, n_levels=60, shade=True)
-
-    # Density without contours, Matplotlib
+    # Density field
     elif method == "kde":
 
         # Warning
@@ -2765,70 +2726,8 @@ def _plot_xy_density(x, y, axes, method="kde", min_count=1, rug=False, nbins=100
         xi, yi = np.mgrid[x.min():x.max():nbins * 1j, y.min():y.max():nbins * 1j]
         zi = k(np.vstack([xi.flatten(), yi.flatten()]))
 
-        # Plot
+        # Plot density field
         axes.pcolormesh(xi, yi, zi.reshape(xi.shape), cmap=cmap)
-
-    # Hexbin
-    elif method == "hexbin":
-
-        #c = [1] * len(x)
-
-        xscale = "log" if xlog else "linear"
-        yscale = "log" if ylog else "linear"
-
-        if xlimits is not None and ylimits is not None:
-            extent = [xlimits[0], xlimits[1], ylimits[0], ylimits[1]]
-            if xlog:
-                extent[0] = np.log10(extent[0])
-                extent[1] = np.log10(extent[1])
-            if ylog:
-                extent[2] = np.log10(extent[2])
-                extent[3] = np.log10(extent[3])
-        else: extent = None
-
-        # Get counts per bin
-        #sdens = axes.hexbin(x, y, C=x, mincnt=min_count, reduce_C_function=len, alpha=0.001, gridsize=nbins, xscale=xscale, yscale=yscale, extent=extent)
-        #print(x)
-        #print(y)
-
-        #print(cmap)
-        sdens = axes.hexbin(x, y, mincnt=min_count, reduce_C_function=len, gridsize=nbins, xscale=xscale, yscale=yscale, cmap=cmap)
-        counts = sdens.get_array()  # size: (n_bins, )
-        sdens.remove()
-        #s = sdens
-
-        # Hexbin with the right color (but wrong alpha)
-        #s = axes.hexbin(x, y, C=c, mincnt=min_count, reduce_C_function=np.mean, alpha=0.99, gridsize=nbins, xscale=xscale, yscale=yscale)
-        #s = axes.hexbin(x, y, mincnt=min_count, reduce_C_function=np.mean, alpha=0.99, gridsize=nbins, xscale=xscale, yscale=yscale)
-        s = axes.hexbin(x, y, C=x, mincnt=min_count, reduce_C_function=len, alpha=0.99, gridsize=nbins, xscale=xscale, yscale=yscale, extent=extent, cmap=cmap)
-
-        #print(s.get_array())
-
-        print(counts)
-        alpha = alpha_from_densities(counts)
-        print(alpha)
-        #colors = [[0., 0., 0, alph] for alph in alpha]
-        #edgecolors = [[0., 0., 0., 0.] for alph in alpha]
-
-        #s.set_facecolor(colors)
-        #s.set_edgecolor(edgecolors)
-        #s._facecolors = colors
-        #s._edgecolors = edgecolors
-
-        #f.canvas.draw()
-        #f.canvas.draw_idle()
-
-        #cols = s.get_facecolors()
-        #print(cols)
-        #cols[:, 3] = alpha
-
-        #edgecols = cols.copy()
-        #edgecols[:, 3] = edgecols[:, 3] / 5.
-
-        #s.set_facecolor(cols)
-        #s.set_edgecolor(edgecols)
-        #s._facecolors = cols
-        #s._edgecolors = edgecols
 
     # Invalid
     else: raise ValueError("Invalid method: '" + method + "'")
@@ -3023,10 +2922,10 @@ def vmax_function(array):
 
 # -----------------------------------------------------------------
 
-def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
-                      xlimits=None, ylimits=None, show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None, color=None,
-                      cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, density_log=False,
-                      legend_location=None, aux_density=True, label=None, log_enhance=50.):
+def plot_xy_scatter_density(x, y, title=None, path=None, x_label=None, y_label=None, xlog=False, ylog=False,
+                            xlimits=None, ylimits=None, show=None, colormaps=False, colors=None, axes=None, plot=None, dpi=None, color=None,
+                            cmap=None, aux=None, aux_name=None, aux_unit=None, aux_log=False, aux_limits=None, density_log=False,
+                            legend_location=None, aux_density=True, label=None, log_enhance=50.):
 
     """
     This function is a scatter density plotting function, using Astrofrog's matplotlib scatter density package
@@ -3060,8 +2959,6 @@ def plot_xy_astrofrog(x, y, title=None, path=None, x_label=None, y_label=None, x
     :param log_enhance:
     :return:
     """
-
-    import mpl_scatter_density  # NOQA
 
     if legend_location is None: legend_location = "upper left"
 

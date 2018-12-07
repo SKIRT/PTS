@@ -28,7 +28,7 @@ from ...core.tools.utils import lazyproperty, lazyfileproperty
 from ...core.basics.scatter import Scatter2D
 from ..core.data import Data3D
 from ...magic.core.frame import Frame
-from ...magic.tools.plotting import plot_stilts, plot_scatters_astrofrog
+from ...magic.tools.plotting import plot_stilts, plot_scatters_density
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import sequences
 from ...magic.core.list import uniformize
@@ -6340,7 +6340,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                            ylimits=self.funev_limits, xlog=True, xlimits=self.ssfr_limits)
 
         # Plot using Matplotlib
-        else: plot_scatters_astrofrog(self.ssfr_salim_funev_cells_scatters, title=self.ssfr_salim_funev_cells_title, xlog=True,
+        else: plot_scatters_density(self.ssfr_salim_funev_cells_scatters, title=self.ssfr_salim_funev_cells_title, xlog=True,
                       path=self.ssfr_salim_funev_cells_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits)
 
     # -----------------------------------------------------------------
@@ -6418,7 +6418,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                            ylimits=self.funev_limits, xlog=True, xlimits=self.ssfr_limits)
 
         # Plot using Matplotlib
-        else: plot_scatters_astrofrog(self.ssfr_salim_funev_pixels_scatters, title=self.ssfr_salim_funev_pixels_title, xlog=True,
+        else: plot_scatters_density(self.ssfr_salim_funev_pixels_scatters, title=self.ssfr_salim_funev_pixels_title, xlog=True,
                       path=self.ssfr_salim_funev_pixels_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits)
 
     # -----------------------------------------------------------------
@@ -6517,7 +6517,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                             ylimits=self.funev_limits, xlog=True, xlimits=self.ssfr_limits)
 
         # Plot using Matplotlib
-        else: plot_scatters_astrofrog(self.ssfr_ke_funev_cells_scatters, title=self.ssfr_ke_funev_cells_title, xlog=True,
+        else: plot_scatters_density(self.ssfr_ke_funev_cells_scatters, title=self.ssfr_ke_funev_cells_title, xlog=True,
                           path=self.ssfr_ke_funev_cells_plot_path, xlimits=self.ssfr_limits,
                           ylimits=self.funev_limits)
 
@@ -6587,7 +6587,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                            ylimits=self.funev_limits, xlog=True, xlimits=self.ssfr_limits)
 
         # Plot using Matplotlib
-        else: plot_scatters_astrofrog(self.ssfr_ke_funev_pixels_scatters, title=self.ssfr_ke_funev_pixels_title, xlog=True,
+        else: plot_scatters_density(self.ssfr_ke_funev_pixels_scatters, title=self.ssfr_ke_funev_pixels_title, xlog=True,
                           path=self.ssfr_ke_funev_pixels_plot_path, xlimits=self.ssfr_limits,
                           ylimits=self.funev_limits)
 
@@ -6675,7 +6675,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Plot using Matplotlib
         else:
-            plot_scatters_astrofrog(self.ssfr_mappings_funev_cells_scatters, title=self.ssfr_mappings_funev_cells_title,
+            plot_scatters_density(self.ssfr_mappings_funev_cells_scatters, title=self.ssfr_mappings_funev_cells_title,
                           xlog=True, path=self.ssfr_mappings_funev_cells_plot_path, xlimits=self.ssfr_limits,
                           ylimits=self.funev_limits)
 
@@ -6737,7 +6737,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Plot using Matplotlib
         else:
-            plot_scatters_astrofrog(self.ssfr_mappings_funev_pixels_scatters, title=self.ssfr_mappings_funev_pixels_title,
+            plot_scatters_density(self.ssfr_mappings_funev_pixels_scatters, title=self.ssfr_mappings_funev_pixels_title,
                           xlog=True, path=self.ssfr_mappings_funev_pixels_plot_path, xlimits=self.ssfr_limits,
                           ylimits=self.funev_limits)
 
@@ -6822,7 +6822,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                             ylimits=self.funev_limits, xlog=True, xlimits=self.ssfr_limits)
 
         # Plot using Matplotlib
-        else: plot_scatters_astrofrog(self.ssfr_mappings_ke_funev_cells_scatters, title=self.ssfr_mappings_ke_funev_cells_title, xlog=True,
+        else: plot_scatters_density(self.ssfr_mappings_ke_funev_cells_scatters, title=self.ssfr_mappings_ke_funev_cells_title, xlog=True,
                               path=self.ssfr_mappings_ke_funev_cells_plot_path, xlimits=self.ssfr_limits,
                               ylimits=self.funev_limits)
 
@@ -6892,7 +6892,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                         ylimits=self.funev_limits, xlog=True, xlimits=self.ssfr_limits)
 
         # Plot using Matplotlib
-        else: plot_scatters_astrofrog(self.ssfr_mappings_ke_funev_pixels_scatters, title=self.ssfr_mappings_ke_funev_pixels_title, xlog=True,
+        else: plot_scatters_density(self.ssfr_mappings_ke_funev_pixels_scatters, title=self.ssfr_mappings_ke_funev_pixels_title, xlog=True,
                               path=self.ssfr_mappings_ke_funev_pixels_plot_path, xlimits=self.ssfr_limits,
                               ylimits=self.funev_limits)
 
