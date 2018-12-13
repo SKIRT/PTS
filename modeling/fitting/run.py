@@ -331,7 +331,8 @@ class FittingRun(object):
 
     @lazyproperty
     def fitting_filters(self):
-        return map(parse_filter, self.fitting_filter_names)
+        if self.fitting_filter_names is None: return None
+        else: return map(parse_filter, self.fitting_filter_names)
 
     # -----------------------------------------------------------------
 
