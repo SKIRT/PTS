@@ -68,6 +68,7 @@ _best_command_name = "best"
 _counts_command_name = "counts"
 _parameters_command_name = "parameters"
 _methods_command_name = "methods"
+_wavelengths_command_name = "wavelengths"
 _compare_command_name = "compare"
 _closest_command_name = "closest"
 _plot_command_name = "plot"
@@ -155,6 +156,7 @@ commands[_best_command_name] = ("show_best_command", True, "show best models", "
 commands[_counts_command_name] = ("show_counts_command", True, "show counts statistics", "generation")
 commands[_parameters_command_name] = ("show_parameters_command", True, "show parameters statistics", "generation")
 commands[_methods_command_name] = ("show_methods_command", True, "show the fitting method used for the simulations of a generation", "generation")
+commands[_wavelengths_command_name] = ("show_wavelengths_command", True, "show a particular wavelength grid", None)
 
 # Commands with subcommands
 commands[_compare_command_name] = compare_commands
@@ -2678,6 +2680,71 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Write simulation names for methods
         if config.write_names is not None: self.write_methods(methods, config.write_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def basic_wavelength_grid_names(self):
+        return self.fitting_run.basic_wavelength_grid_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def refined_wavelength_grid_names(self):
+        return self.fitting_run.refined_wavelength_grid_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_wavelength_grid_names(self):
+        return self.fitting_run.highres_wavelength_grid_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid_names(self):
+        return self.fitting_run.wavelength_grid_names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_wavelengths_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Name of wavelength grid
+        definition.add_required("name", "string", "wavelength grid name", choices=self.wavelength_grid_names)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_wavelengths_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the config
+        config = self.get_config_from_command(command, self.show_wavelengths_definition, **kwargs)
+
+        # Get paths
+        path = self.fitting_run.get_wavelength_grid_path(config.name)
+        data_path = self.fitting_run.get_wavelength_grid_data_path(config.name)
+
+        # Show
+        from ..build.wavelengthgrid import show_wavelength_grid_data
+        show_wavelength_grid_data(data_path)
 
     # -----------------------------------------------------------------
 

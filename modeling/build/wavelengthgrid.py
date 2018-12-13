@@ -24,8 +24,9 @@ from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ...core.tools.serialization import write_dict, write_list
-from ...core.tools.stringify import tostr, stringify_list_fancy
+from ...core.tools.serialization import write_dict, write_list, load_dict, load_list
+from ...core.tools.stringify import tostr, stringify_list_fancy, stringify_list
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -67,16 +68,16 @@ class WavelengthGridBuilder(Configurable):
         :return:
         """
 
-        # 2. Build
+        # Build
         self.build()
 
-        # 3. Show
+        # Show
         self.show()
 
-        # 4. Writing
+        # Writing
         if self.config.write: self.write()
 
-        # 5. Plotting
+        # Plotting
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -225,84 +226,42 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def nwavelengths(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return len(self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
     @property
     def nfixed(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return len(self.fixed)
 
     # -----------------------------------------------------------------
 
     @property
     def has_fixed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nfixed > 0
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fixed_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return WavelengthGrid.from_wavelengths(self.fixed)
 
     # -----------------------------------------------------------------
 
     @property
     def nfilters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.filter_wavelengths)
 
     # -----------------------------------------------------------------
 
     @property
     def has_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nfilters > 0
 
     # -----------------------------------------------------------------
 
     @property
     def nfilter_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         nwavelengths = 0
         for fltr in self.filter_wavelengths: nwavelengths += len(self.filter_wavelengths[fltr])
         return nwavelengths
@@ -311,72 +270,36 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def nreplaced(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.replaced)
 
     # -----------------------------------------------------------------
 
     @property
     def has_replaced(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nreplaced > 0
 
     # -----------------------------------------------------------------
 
     @property
     def nnew(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return len(self.new)
 
     # -----------------------------------------------------------------
 
     @property
     def has_new(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nnew > 0
 
     # -----------------------------------------------------------------
 
     @property
     def nlines(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.line_wavelengths)
 
     # -----------------------------------------------------------------
 
     @property
     def has_line_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nlines > 0
 
     # -----------------------------------------------------------------
@@ -465,12 +388,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def fixed_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.fixed)
 
     # -----------------------------------------------------------------
@@ -540,12 +457,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def grid_path(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.output_path_file("grid.dat")
 
     # -----------------------------------------------------------------
@@ -600,12 +511,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def fixed_grid_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_file("fixed_grid.dat")
 
     # -----------------------------------------------------------------
@@ -627,12 +532,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def filter_wavelengths_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_file("filter_wavelengths.dat")
 
     # -----------------------------------------------------------------
@@ -654,12 +553,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def replaced_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.output_path_file("replaced.dat")
 
     # -----------------------------------------------------------------
@@ -681,12 +574,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def new_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_file("new.dat")
 
     # -----------------------------------------------------------------
@@ -708,12 +595,6 @@ class WavelengthGridBuilder(Configurable):
 
     @property
     def line_wavelengths_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_file("line_wavelengths.dat")
 
     # -----------------------------------------------------------------
@@ -742,5 +623,168 @@ class WavelengthGridBuilder(Configurable):
 
         # Inform the user
         log.info("Plotting ...")
+
+# -----------------------------------------------------------------
+
+def load_wavelength_grid_data(data_path):
+
+    """
+    This function ...
+    :param data_path:
+    :return:
+    """
+
+    # Load grid
+    wavelength_grid_path = fs.join(data_path, "grid.dat")
+    wavelength_grid = WavelengthGrid.from_file(wavelength_grid_path)
+
+    # Load subgrids
+    subgrids = OrderedDict()
+    for filepath, filename in fs.files_in_path(data_path, startswith="subgrid_", returns=["path", "name"]):
+        name = filename.split("subgrid_")[1].split(".dat")[0]
+        grid = WavelengthGrid.from_file(filepath)
+        subgrids[name] = grid
+
+    # Load fixed grid
+    fixed_grid_path = fs.join(data_path, "fixed_grid.dat")
+    if fs.is_file(fixed_grid_path): fixed_grid = WavelengthGrid.from_file(fixed_grid_path)
+    else: fixed_grid = None
+
+    # Load filter wavelengths
+    filter_wavelengths_path = fs.join(data_path, "filter_wavelengths.dat")
+    if fs.is_file(filter_wavelengths_path): filter_wavelengths = load_dict(filter_wavelengths_path)
+    else: filter_wavelengths = None
+
+    # Replaced
+    replaced_wavelengths_path = fs.join(data_path, "replaced.dat")
+    if fs.is_file(replaced_wavelengths_path): replaced_wavelengths = load_list(replaced_wavelengths_path)
+    else: replaced_wavelengths = None
+
+    # Load new
+    new_wavelengths_path = fs.join(data_path, "new.dat")
+    if fs.is_file(new_wavelengths_path): new_wavelengths = load_list(new_wavelengths_path)
+    else: new_wavelengths = None
+
+    # Load lines
+    line_wavelengths_path = fs.join(data_path, "line_wavelengths.dat")
+    if fs.is_file(line_wavelengths_path): line_wavelengths = load_dict(line_wavelengths_path)
+    else: line_wavelengths = None
+
+    # Return the data
+    return wavelength_grid, subgrids, fixed_grid, filter_wavelengths, replaced_wavelengths, new_wavelengths, line_wavelengths
+
+# -----------------------------------------------------------------
+
+def show_wavelength_grid_data(data_path):
+
+    """
+    This function ...
+    :param data_path:
+    :return:
+    """
+
+    # Get data
+    wavelength_grid, subgrids, fixed_grid, filter_wavelengths, replaced_wavelengths, new_wavelengths, line_wavelengths = load_wavelength_grid_data(data_path)
+
+    # Get properties
+    nwavelengths = len(wavelength_grid)
+    if fixed_grid is not None:
+        fixed_npoints = len(fixed_grid)
+        has_fixed = fixed_npoints > 0
+    else: has_fixed, fixed_npoints = False, 0
+
+    # Get emission npoints
+    if line_wavelengths is not None:
+        emission_npoints = 0
+        for line_identifier in line_wavelengths:
+            emission_npoints += len(line_wavelengths[line_identifier])
+        has_lines = emission_npoints > 0
+    else: has_lines, emission_npoints = False, 0
+
+    # Subgrid
+    # Keep track of the number of points per subgrid
+    subgrid_npoints = OrderedDict()
+    for subgrid in subgrids: subgrid_npoints[subgrid] = len(subgrids[subgrid])
+
+    # Get broad resampled nwavelengths
+    if filter_wavelengths is not None:
+        broad_resampled = []
+        for fltr in filter_wavelengths:
+            if not isinstance(fltr, BroadBandFilter): continue
+            broad_resampled.append(fltr)
+        has_broad = len(broad_resampled) > 0
+    else: has_broad, broad_resampled = False, None
+
+    # Set narrow band filter added nwavelengths
+    if filter_wavelengths is not None:
+        narrow_added = []
+        for fltr in filter_wavelengths:
+            if not isinstance(fltr, NarrowBandFilter): continue
+            narrow_added.append(fltr)
+        has_narrow = len(narrow_added) > 0
+    else: has_narrow, narrow_added = False, None
+
+    # Replaced?
+    if replaced_wavelengths is not None:
+        nreplaced = len(replaced_wavelengths)
+        has_replaced = nreplaced > 0
+    else: has_replaced = False
+
+    # New?
+    if new_wavelengths is not None:
+        nnew = len(new_wavelengths)
+        has_new = nnew > 0
+    else: has_new = False
+
+    # Show
+    print("")
+    print(" - number of points: " + str(nwavelengths))
+    print(" - number of points in subgrids:")
+    for subgrid in subgrid_npoints: print("    * " + subgrid + ": " + str(subgrid_npoints[subgrid]))
+
+    # Lines
+    if has_lines:
+        print(" - number of emission lines: " + str(len(line_wavelengths)))
+        print(" - number of emission points: " + str(emission_npoints))
+
+    # Fixed
+    if has_fixed: print(" - number of fixed points: " + str(fixed_npoints))
+
+    # Broad band filters
+    if has_broad:
+        print(" - broad band filters for which extra sampling was performed (" + str(len(broad_resampled)) + "): " + stringify_list(broad_resampled)[1])
+        broad_nwavelengths = 0
+        for fltr in broad_resampled:
+            wavelengths = filter_wavelengths[fltr]
+            print("   * " + str(fltr) + "(" + str(len(wavelengths)) + "): " + stringify_list(wavelengths)[1])
+            broad_nwavelengths += len(wavelengths)
+        print("  -> total wavelengths for broad band filters: " + str(broad_nwavelengths))
+
+    # Narrow band filters
+    if has_narrow:
+        print(" - narrow band filters for which wavelength was added (" + str(len(narrow_added)) + "): " + stringify_list(narrow_added)[1])
+        narrow_nwavelengths = 0
+        for fltr in narrow_added:
+            wavelengths = filter_wavelengths[fltr]
+            print("   * " + str(fltr) + ": " + stringify_list(wavelengths)[1])
+            narrow_nwavelengths += len(wavelengths)
+        print("  -> total wavelengths for narrow band filters: " + str(narrow_nwavelengths))
+
+    # Replaced
+    if has_replaced:
+        print(" - replaced wavelengths:")
+        for old, new in replaced_wavelengths: print("    * " + str(old) + " -> " + str(new))
+
+    # New
+    if has_new:
+        print(" - new wavelengths:")
+        for line in stringify_list_fancy(new_wavelengths)[1].split("\n"): print("    " + line)
+
+    # Show the grid
+    print("")
+    print(" - all wavelengths:")
+    print("")
+    print(wavelength_grid)
+    print("")
 
 # -----------------------------------------------------------------

@@ -352,36 +352,18 @@ class WavelengthGridGenerator(Configurable):
 
     @property
     def ngrids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.grids)
 
     # -----------------------------------------------------------------
 
     @property
     def no_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ngrids == 0
 
     # -----------------------------------------------------------------
 
     @property
     def single_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.no_grids: raise RuntimeError("No grids")
         elif self.ngrids == 1: return self.grids[0]
         else: raise RuntimeError("More than one grid")
@@ -489,36 +471,18 @@ class WavelengthGridGenerator(Configurable):
 
     @property
     def has_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.table is not None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def min_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return get_min_wavelength(self.config.range.min, self.config.check_filters, self.config.adjust_minmax)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def max_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return get_max_wavelength(self.config.range.max, self.config.check_filters, self.config.adjust_minmax)
 
     # -----------------------------------------------------------------

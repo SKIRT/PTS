@@ -2569,48 +2569,24 @@ class FittingRun(object):
 
     @lazyproperty
     def basic_wavelength_grid_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.wavelength_grids_path, startswith="basic_", extension="dat", returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def refined_wavelength_grid_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.wavelength_grids_path, startswith="refined_", extension="dat", returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def highres_wavelength_grid_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.wavelength_grids_path, startswith="highres_", extension="dat", returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.ordered([int(name.split("basic_")[1]) for name in self.basic_wavelength_grid_names])
 
     # -----------------------------------------------------------------
@@ -2653,60 +2629,30 @@ class FittingRun(object):
 
     @property
     def lowest_basic_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return min(self.basic_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def lowest_basic_wavelength_grid_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_basic_wavelength_grid_name(self.lowest_basic_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_basic_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return max(self.basic_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_basic_wavelength_grid_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_basic_wavelength_grid_name(self.highest_basic_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def refined_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.ordered([int(name.split("refined_")[1]) for name in self.refined_wavelength_grid_names])
 
     # -----------------------------------------------------------------
@@ -2749,60 +2695,30 @@ class FittingRun(object):
 
     @property
     def lowest_refined_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return min(self.refined_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def lowest_refined_wavelength_grid_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_refined_wavelength_grid_name(self.lowest_refined_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_refined_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return max(self.refined_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_refined_wavelength_grid_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_refined_wavelength_grid_name(self.highest_refined_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def highres_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.ordered([int(name.split("highres_")[1]) for name in self.highres_wavelength_grid_names])
 
     # -----------------------------------------------------------------
@@ -2845,60 +2761,30 @@ class FittingRun(object):
 
     @property
     def lowest_highres_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return min(self.highres_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def lowest_highres_wavelength_grid_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_highres_wavelength_grid_name(self.lowest_highres_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_highres_wavelength_grid_npoints(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return max(self.highres_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @property
     def highest_highres_wavelength_grid_name(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.get_highres_wavelength_grid_name(self.highest_highres_wavelength_grid_npoints)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def current_model_representation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if len(self.generations_table) > 0: return self.generations_table["Model representation"][-1]
         else: return self.initial_representation_name #return None
 
