@@ -282,10 +282,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         conversion_factor = self.total_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
         luminosities_watt = self.total_contribution_absorption_luminosities * conversion_factor
 
-        # Create the data
-        return Data3D(self.total_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                       luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
-                       description=self.total_absorptions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.total_absorptions_name, luminosities_watt,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.total_absorptions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.luminosity_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # OLD
@@ -327,10 +329,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         conversion_factor = self.old_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
         luminosities_watt = self.old_contribution_absorption_luminosities * conversion_factor
 
-        # Create the data
-        return Data3D(self.old_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
-                      description=self.old_absorptions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.old_absorptions_name, luminosities_watt,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.old_absorptions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.luminosity_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # YOUNG
@@ -372,10 +376,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         conversion_factor = self.young_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
         luminosities_watt = self.young_contribution_absorption_luminosities * conversion_factor
 
-        # Create the data
-        return Data3D(self.young_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
-                      description=self.young_absorptions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.young_absorptions_name, luminosities_watt,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.young_absorptions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.luminosity_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # IONIZING
@@ -417,10 +423,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         conversion_factor = self.ionizing_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
         luminosities_watt = self.ionizing_contribution_absorption_luminosities * conversion_factor
 
-        # Create the data
-        return Data3D(self.ionizing_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
-                      description=self.ionizing_absorptions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.ionizing_absorptions_name, luminosities_watt,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ionizing_absorptions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.luminosity_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # INTERNAL
@@ -487,10 +495,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # absorptions_ionizing_internal_watt = volumes * density * absorbed_energy
         luminosities_watt = self.relative_masses_ionizing * self.internal_absorbed_luminosity
 
-        # Create the data
-        return Data3D(self.internal_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
-                      description=self.internal_absorptions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.internal_absorptions_name, luminosities_watt,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.internal_absorptions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.luminosity_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # EXTRA
@@ -522,6 +532,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyfileproperty(Data3D, "extra_absorptions_path", True, write=False)
     def extra_absorptions(self):
+
         """
         This function ...
         :return:
@@ -531,11 +542,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         conversion_factor = self.extra_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
         luminosities_watt = self.extra_contribution_absorption_luminosities * conversion_factor
 
-        # Create the data
-        return Data3D(self.extra_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates,
-                      self.cell_z_coordinates,
-                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
-                      description=self.extra_absorptions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.extra_absorptions_name, luminosities_watt,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.extra_absorptions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.luminosity_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # DIFFUSE HEATING FRACTIONS
@@ -606,10 +618,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Calculate
         fractions = self.unevolved_absorption_values_diffuse / self.total_absorption_values_diffuse
 
-        # Create and return the data
-        return Data3D(self.diffuse_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      fractions, length_unit=self.length_unit,
-                      description=self.diffuse_fractions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.diffuse_fractions_name, fractions,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.diffuse_fractions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -674,9 +687,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Calculate
         fractions = self.unevolved_absorption_values / self.total_absorption_values
 
-        # Create and return the data
-        return Data3D(self.total_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      fractions, length_unit=self.length_unit, description=self.total_fractions_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.total_fractions_name, fractions,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.total_fractions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -714,6 +729,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyfileproperty(Data3D, "extra_fractions_path", True, write=False)
     def extra_fractions(self):
+
         """
         This function ...
         :return:
@@ -722,11 +738,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Calculate
         fractions = self.extra_absorption_values / self.total_absorption_values
 
-        # Create and return the data
-        return Data3D(self.extra_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates,
-                      self.cell_z_coordinates,
-                      fractions, length_unit=self.length_unit, description=self.extra_fractions_description,
-                      distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.extra_fractions_name, fractions,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.extra_fractions_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
