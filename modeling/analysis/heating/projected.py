@@ -632,10 +632,10 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write
+        # Write absorption luminosity maps
         self.write_absorptions()
 
-        # Write maps
+        # Write heating fraction maps
         self.write_maps()
 
     # -----------------------------------------------------------------

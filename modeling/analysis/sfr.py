@@ -17,7 +17,7 @@ import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent, AnalysisRunComponent
+from .component import AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
@@ -31,6 +31,8 @@ from ...magic.tools.plotting import plot_map
 from ...magic.core.list import uniformize
 from ...core.filter.filter import parse_filter
 from ...magic.tools.colours import make_colour_map
+from ...core.basics.configuration import open_box
+from ...core.data.sed import SED
 
 # -----------------------------------------------------------------
 
@@ -1147,9 +1149,23 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sfr_intrinsic_fuv_luminosity_corrected(self):
+        uncorrected = self.sfr_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+        absorbed_internal = self.internal_absorbed_fuv_luminosity.to(self.specific_luminosity_unit, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+        return uncorrected + absorbed_internal
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sfr_intrinsic_fuv_luminosity_scalar(self):
         return self.sfr_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit, wavelength=self.fuv_wavelength, distance=self.galaxy_distance).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_intrinsic_fuv_luminosity_scalar_corrected(self):
+        return self.sfr_intrinsic_fuv_luminosity_corrected.to(self.specific_luminosity_unit, wavelength=self.fuv_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1190,8 +1206,20 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sfr_cell_fuv_luminosities_corrected(self):
+        return self.sfr_cell_normalized_mass * self.sfr_intrinsic_fuv_luminosity_scalar_corrected
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_cell_fuv_luminosities(self):
         return self.young_cell_fuv_luminosities + self.sfr_cell_fuv_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_cell_fuv_luminosities_corrected(self):
+        return self.young_cell_fuv_luminosities + self.sfr_cell_fuv_luminosities_corrected
 
     # -----------------------------------------------------------------
 
@@ -1251,10 +1279,27 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Create the data
-        return Data3D(self.fuv_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.unevolved_cell_fuv_luminosities, length_unit=self.length_unit, unit=self.specific_luminosity_unit,
-                      description=self.fuv_description, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+        # Create the data with external xyz
+        return Data3D.from_values(self.fuv_name, self.unevolved_cell_fuv_luminosities, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit, description=self.fuv_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.specific_luminosity_unit,
+                                  distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_fuv_corrected_path", True, write=False)
+    def fuv_data_corrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the data with external xyz
+        return Data3D.from_values(self.fuv_name, self.unevolved_cell_fuv_luminosities_corrected, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit, description=self.fuv_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.specific_luminosity_unit,
+                                  distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1296,10 +1341,12 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return Data3D(self.i1_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.old_cell_i1_luminosities, length_unit=self.length_unit, unit=self.specific_luminosity_unit,
-                      description=self.i1_description, distance=self.galaxy_distance,
-                      wavelength=self.i1_wavelength)
+        # Create the data with external xyz
+        return Data3D.from_values(self.i1_name, self.old_cell_i1_luminosities,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.i1_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.specific_luminosity_unit,
+                                  distance=self.galaxy_distance, wavelength=self.i1_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1377,6 +1424,12 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sfr_unit(self):
+        return "Msun/yr"
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Data3D, "cell_sfr_mappings_path", True, write=False)
     def sfr_mappings_data(self):
 
@@ -1388,10 +1441,12 @@ class SFRAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Calculating the cell star formation rate (MAPPINGS) ...")
 
-        # Create
-        return Data3D(self.sfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.sfr_mappings_values, length_unit=self.length_unit, unit="Msun/yr",
-                      description=self.sfr_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.sfr_name, self.sfr_mappings_values,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.sfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.sfr_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1421,10 +1476,12 @@ class SFRAnalyser(AnalysisRunComponent):
         # Calculate in Msun/yr
         sfr_values = self.sfr_mappings_values + kennicutt_evans_fuv_to_sfr(self.young_cell_fuv_luminosities, unit=self.specific_luminosity_unit)
 
-        # Create
-        return Data3D(self.sfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      sfr_values, length_unit=self.length_unit, unit="Msun/yr",
-                      description=self.sfr_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.sfr_name, sfr_values,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.sfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.sfr_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1475,6 +1532,8 @@ class SFRAnalyser(AnalysisRunComponent):
                                   distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def absorption_path(self):
@@ -1483,9 +1542,49 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def heating_path(self):
-        return self.analysis_run.heating_path
+    def absorption_sfr_path(self):
+        return fs.join(self.absorption_path, "sfr")
 
+    # -----------------------------------------------------------------
+    #  Internal
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_absorption_properties_path(self):
+        return fs.join(self.absorption_path, "sfr.txt")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_absorption_properties(self):
+        return open_box(self.sfr_absorption_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorbed_luminosity(self):
+        return self.sfr_absorption_properties.internal.absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorbed_fuv_luminosity(self):
+        return self.sfr_absorption_properties.internal.absorbed_fuv
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorption_sed_path(self):
+        return fs.join(self.absorption_sfr_path, "absorption_internal.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def internal_absorption_sed(self):
+        return SED.from_file(self.internal_absorption_sed_path)
+
+    # -----------------------------------------------------------------
+    #  Total
     # -----------------------------------------------------------------
 
     @property
@@ -1655,9 +1754,12 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Create the data
-        return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.cell_ssfrs_salim,
-                      length_unit=self.length_unit, unit=self.ssfr_salim_unit, description=self.ssfr_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.ssfr_name, self.cell_ssfrs_salim,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ssfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.ssfr_salim_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1705,9 +1807,12 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Create the data
-        return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.cell_ssfrs_ke,
-                      length_unit=self.length_unit, unit=self.ssfr_ke_unit, description=self.ssfr_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.ssfr_name, self.cell_ssfrs_ke,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ssfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.ssfr_ke_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1755,10 +1860,12 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Create the data
-        return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.cell_ssfrs_mappings, length_unit=self.length_unit, unit=self.ssfr_mappings_unit, description=self.ssfr_description,
-                      distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.ssfr_name, self.cell_ssfrs_mappings,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ssfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.ssfr_mappings_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1806,9 +1913,12 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Create the data
-        return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.cell_ssfrs_mappings_ke,
-                      length_unit=self.length_unit, unit=self.ssfr_mappings_ke_unit, description=self.ssfr_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.ssfr_name, self.cell_ssfrs_mappings_ke,
+                                  self.cell_x_coordinates_colname, self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ssfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, unit=self.ssfr_mappings_ke_unit,
+                                  distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
     # H luminosities
@@ -3380,6 +3490,12 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_cell_fuv_corrected(self):
+        return not self.has_cell_fuv_corrected
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_cell_i1(self):
         return not self.has_cell_i1
 
@@ -3403,6 +3519,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Intrinsic FUV luminosity
         if self.do_write_cell_fuv: self.write_cell_fuv()
+
+        # Intrinsic FUV luminosity, corrected for internal absorption
+        if self.do_write_cell_fuv_corrected: self.write_cell_fuv_corrected()
 
         # Observed I1 luminosity
         if self.do_write_cell_i1: self.write_cell_i1()
@@ -3438,10 +3557,37 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the cell intrinsic FUV luminosity ...")
+        log.info("Writing the cell intrinsic FUV luminosities ...")
 
         # Write
         self.fuv_data.saveto(self.cell_fuv_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_fuv_corrected_path(self):
+        return fs.join(self.cell_path, "fuv_corrected.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_fuv_corrected(self):
+        return fs.is_file(self.cell_fuv_corrected_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cell_fuv_corrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the cell intrinsic FUV luminosities (corrected) ...")
+
+        # Write
+        self.fuv_data_corrected.saveto(self.cell_fuv_corrected_path)
 
     # -----------------------------------------------------------------
 

@@ -575,7 +575,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     def extra_absorption_values(self):
         return self.extra_absorptions.values
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     @property
     def total_absorption_values_diffuse(self):
