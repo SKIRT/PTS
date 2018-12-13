@@ -20,13 +20,14 @@ from ...core.basics.log import log
 from ...core.basics.configurable import Configurable
 from ...core.tools.utils import lazyproperty
 from ...core.basics.emissionlines import EmissionLines, EmissionLine
-from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
+from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid, create_template_seds, get_min_wavelength, get_max_wavelength
 from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.serialization import write_dict, write_list, load_dict, load_list
 from ...core.tools.stringify import tostr, stringify_list_fancy, stringify_list
 from ...core.tools import filesystem as fs
+from ...core.plot.wavelengthgrid import WavelengthGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -786,5 +787,87 @@ def show_wavelength_grid_data(data_path):
     print("")
     print(wavelength_grid)
     print("")
+
+# -----------------------------------------------------------------
+
+def plot_wavelength_grid(data_path, wavelength_range=None, filepath=None, add_seds=None, ages=None,
+                         metallicity=None, compactness=None, pressure=None, covering_factor=None, plot_reference=False):
+
+    """
+    This function ...
+    :param data_path:
+    :param wavelength_range:
+    :param filepath:
+    :param add_seds:
+    :param ages:
+    :param metallicity:
+    :param compactness:
+    :param pressure:
+    :param covering_factor:
+    :return:
+    """
+
+    # Get the elements of this grid
+    wavelength_grid, subgrids, fixed_grid, filter_wavelengths, replaced_wavelengths, new_wavelengths, line_wavelengths = load_wavelength_grid_data(data_path)
+
+    # Get range
+    if wavelength_range is None: wavelength_range = wavelength_grid.range
+
+    # Set limits
+    check_filters = filter_wavelengths.keys()
+    plot_filters = check_filters
+    min_wavelength = get_min_wavelength(wavelength_range.min, check_filters, False)
+    max_wavelength = get_max_wavelength(wavelength_range.max, check_filters, False)
+
+    # Create seds?
+    if add_seds is not None:
+        seds = create_template_seds(add_seds, ages=ages, metallicity=metallicity,
+                                    compactness=compactness, pressure=pressure,
+                                    covering_factor=covering_factor)
+    else: seds = {}
+
+    # Create the plotter
+    plotter = WavelengthGridPlotter()
+
+    # Set settings
+    plotter.config.add_regimes = True
+    plotter.config.regimes = ["euv", "fuv", "muv", "nuv", "optical", "nir", "mir", "fir", "submm", "microwave"]
+    plotter.config.only_subregimes = True
+
+    # Filters
+    plotter.config.add_filters = True
+    #if self.config.plotting_filters is not None: plotter.config.filters = self.config.plotting_filters
+    #else: plotter.config.filters = self.config.filters
+    plotter.config.filters = plot_filters
+    plotter.config.categorize_filters = True
+
+    # Lines
+    if line_wavelengths is not None:
+        plotter.config.add_lines = True
+        lines = line_wavelengths.keys()
+        plotter.config.lines = lines
+
+    # Plot separate
+    plotter.config.separate_grids = True
+    plotter.config.group_wavelengths = True
+    # plotter.config.lines_in_group = "lines"
+    plotter.config.separate_lines = True
+    plotter.config.mark_removed = True
+
+    # Plot resampled and residuals
+    plotter.config.plot_resampled = True
+    plotter.config.plot_interpolated = False
+    plotter.config.plot_residuals = True
+
+    # Add the elements
+    plotter.add_elements(subgrids, fixed=fixed_grid, filter_wavelengths=filter_wavelengths, replaced=replaced_wavelengths, new=new_wavelengths, line_wavelengths=line_wavelengths)
+
+    # Add complete grid
+    if plot_reference:
+        plotter.add_reference_grid(wavelength_grid, label="reference", in_legend=True)
+        plotter.config.plot_differences = True
+
+    # Run the plotter
+    plotter.run(output=filepath, seds=seds, min_wavelength=min_wavelength, max_wavelength=max_wavelength)
 
 # -----------------------------------------------------------------

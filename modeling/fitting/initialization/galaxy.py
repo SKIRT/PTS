@@ -61,25 +61,25 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        # 2. Load the ski file
+        # Load the ski file
         self.load_ski()
 
-        # 3. Load the model representation
+        # Load the model representation
         self.load_representation()
 
-        # 4. Set the stellar and dust components
+        # Set the stellar and dust components
         self.set_components()
 
-        # 5. Get the wavelength grids
+        # Get the wavelength grids
         self.get_wavelength_grids()
 
-        # 6. Adjust the ski template
+        # Adjust the ski template
         self.adjust_ski()
 
-        # 7. Calculate the weight factor to give to each band
+        # Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 8. Writing
+        # Writing
         self.write()
 
     # -----------------------------------------------------------------

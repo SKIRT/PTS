@@ -429,36 +429,25 @@ class WavelengthGrid(object):
 
     @property
     def min_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.min(self.table["Wavelength"])
 
     # -----------------------------------------------------------------
 
     @property
     def max_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.max(self.table["Wavelength"])
 
     # -----------------------------------------------------------------
 
     @property
+    def range(self):
+        from ..basics.range import QuantityRange
+        return QuantityRange(self.min_wavelength, self.max_wavelength, unit=self.unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def mean_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.arithmetic_mean(*self.wavelengths(unit=self.unit, add_unit=False)) * self.unit
 
@@ -466,12 +455,6 @@ class WavelengthGrid(object):
 
     @property
     def geometric_mean_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..tools import numbers
         return numbers.geometric_mean(*self.wavelengths(unit=self.unit, add_unit=False)) * self.unit
 
@@ -685,12 +668,6 @@ class WavelengthGrid(object):
 
     @property
     def unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.table["Wavelength"].unit
 
     # -----------------------------------------------------------------

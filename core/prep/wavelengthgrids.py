@@ -33,6 +33,7 @@ from ..tools import parsing
 from ..tools.utils import lazyproperty
 from ..tools import filesystem as fs
 from ..tools.serialization import write_dict, write_list
+from ..units.parsing import parse_quantity as q
 
 # -----------------------------------------------------------------
 
@@ -336,16 +337,16 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        # 2. Generate the grids
+        # Generate the grids
         self.generate()
 
-        # 3. Show
+        # Show
         if self.config.show: self.show()
 
-        # 4. Plot
+        # Plot
         if self.config.plot: self.plot()
 
-        # 5. Write
+        # Write
         if self.config.write: self.write()
 
     # -----------------------------------------------------------------
@@ -413,6 +414,18 @@ class WavelengthGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
+    def add_seds(self, seds):
+
+        """
+        This function ...
+        :param seds:
+        :return:
+        """
+
+        self.seds.update(seds)
+
+    # -----------------------------------------------------------------
+
     def create_seds(self):
 
         """
@@ -420,52 +433,16 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        from ..plot.wavelengthgrid import get_sed_template
-
         # Inform the suer
         log.info("Creating SED templates ...")
 
-        # Loop over the template names
-        for name in self.config.seds:
+        # Create
+        seds = create_template_seds(self.config.seds, ages=self.config.ages, metallicity=self.config.metallicity,
+                                    compactness=self.config.compactness, pressure=self.config.pressure,
+                                    covering_factor=self.config.covering_factor)
 
-            # MAPPINGS
-            if name == "mappings":
-
-                # Debugging
-                log.debug("Creating MAPPINGS SED template ...")
-
-                properties = dict()
-                properties["metallicity"] = self.config.metallicity
-                properties["compactness"] = self.config.compactness
-                properties["pressure"] = self.config.pressure
-                properties["covering_factor"] = self.config.covering_factor
-
-                # Set label
-                label = "MAPPINGS"
-
-                sed = get_sed_template(name, **properties)
-                self.add_sed(sed, label=label)
-
-            # Stellar Bruzual Charlot
-            elif name == "bruzual_charlot":
-
-                # Debugging
-                log.debug("Creating Bruzual-Charlot SED templates ...")
-
-                # Loop over the ages
-                for age in self.config.ages:
-
-                    properties = dict()
-                    properties["metallicity"] = self.config.metallicity
-                    properties["age"] = age
-
-                    #label = name + "_" + str(age).replace(" ", "")
-                    label = "Bruzual-Charlot " + str(age)
-                    sed = get_sed_template(name, **properties)
-                    self.add_sed(sed, label=label)
-
-            # Invalid
-            else: raise ValueError("Invalid SED template name")
+        # Add
+        self.add_seds(seds)
 
     # -----------------------------------------------------------------
 
@@ -992,8 +969,7 @@ class WavelengthGridGenerator(Configurable):
             plotter.config.plot_residuals = self.config.plot_residuals
 
             # Add the elements
-            plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced,
-                                 new=new, line_wavelengths=line_wavelengths)
+            plotter.add_elements(subgrids, fixed=fixed, filter_wavelengths=filter_wavelengths, replaced=replaced, new=new, line_wavelengths=line_wavelengths)
 
             # Add complete grid
             if self.config.plot_reference:
@@ -2044,5 +2020,83 @@ def get_max_wavelength(maximum, check_filters=None, adjust_minmax=False):
 
     # Return the specified maximum wavelength
     else: return maximum
+
+# -----------------------------------------------------------------
+
+def create_template_seds(names, **kwargs):
+
+    """
+    This function ...
+    :param names:
+    :param kwargs:
+    :return:
+    """
+
+    from ..plot.wavelengthgrid import get_sed_template
+
+    # Get properties
+    ages = kwargs.pop("ages", None)
+    metallicity = kwargs.pop("metallicity", None)
+    compactness = kwargs.pop("compactness", None)
+    pressure = kwargs.pop("pressure", None)
+    covering_factor = kwargs.pop("covering_factor", None)
+
+    # Set defaults
+    if ages is None: ages = [q("8 Gyr"), q("0.1 Gyr")]
+    if metallicity is None: metallicity = 0.02
+    if compactness is None: compactness = 5.5
+    if pressure is None: pressure = q("1e12 K/m3")
+    if covering_factor is None: covering_factor = 0.2
+
+    # Initialize dictionary
+    seds = OrderedDict()
+
+    # Loop over the template names
+    for name in names:
+
+        # MAPPINGS
+        if name == "mappings":
+
+            # Debugging
+            log.debug("Creating MAPPINGS SED template ...")
+
+            properties = dict()
+            properties["metallicity"] = metallicity
+            properties["compactness"] = compactness
+            properties["pressure"] = pressure
+            properties["covering_factor"] = covering_factor
+
+            # Set label
+            label = "MAPPINGS"
+
+            sed = get_sed_template(name, **properties)
+            #self.add_sed(sed, label=label)
+            seds[label] = sed
+
+        # Stellar Bruzual Charlot
+        elif name == "bruzual_charlot":
+
+            # Debugging
+            log.debug("Creating Bruzual-Charlot SED templates ...")
+
+            # Loop over the ages
+            #if ages is None: raise ValueError("Ages are not specified")
+            for age in ages:
+
+                properties = dict()
+                properties["metallicity"] = metallicity
+                properties["age"] = age
+
+                # label = name + "_" + str(age).replace(" ", "")
+                label = "Bruzual-Charlot " + str(age)
+                sed = get_sed_template(name, **properties)
+                #self.add_sed(sed, label=label)
+                seds[label] = sed
+
+        # Invalid
+        else: raise ValueError("Invalid SED template name")
+
+    # Return
+    return seds
 
 # -----------------------------------------------------------------

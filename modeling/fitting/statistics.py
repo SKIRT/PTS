@@ -52,7 +52,7 @@ from .tables import ParameterProbabilitiesTable
 from ...core.basics.map import Map
 from ...core.tools import numbers
 from ...core.tools import tables
-from ...core.simulation.discover import matching_npackages
+from ...core.units.parsing import parse_quantity as q
 
 # -----------------------------------------------------------------
 
@@ -138,6 +138,9 @@ plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot 
 # Other
 plot_commands[_counts_command_name] = ("plot_counts_command", True, "plot the best parameter counts", "generation")
 plot_commands[_filters_command_name] = ("plot_filters", False, "plot the fitting filters", None)
+
+# Wavelength grids
+plot_commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot a wavelength grid", None)
 
 # -----------------------------------------------------------------
 
@@ -2745,6 +2748,53 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Show
         from ..build.wavelengthgrid import show_wavelength_grid_data
         show_wavelength_grid_data(data_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_wavelengths_definition(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Name of wavelength grid
+        definition.add_required("name", "string", "wavelength grid name", choices=self.wavelength_grid_names)
+
+        # Plot to file
+        definition.add_optional("path", "new_path", "save to plot file")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelengths_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_wavelengths_definition, **kwargs)
+
+        # Get paths
+        data_path = self.fitting_run.get_wavelength_grid_data_path(config.name)
+
+        # Set ..
+        seds = ["mappings", "bruzual_charlot"]
+        ages = [q("8.0 Gyr"), q("0.1 Gyr")]
+
+        # Plot
+        from ..build.wavelengthgrid import plot_wavelength_grid
+        plot_wavelength_grid(data_path, filepath=config.path, add_seds=seds, ages=ages)
 
     # -----------------------------------------------------------------
 
