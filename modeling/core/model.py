@@ -4860,14 +4860,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_bolometric_luminosity_cube_earth(self):
+        return self.old_simulations.has_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_bolometric_luminosity_cube_faceon(self):
         return self.old_simulations.faceon_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_old_bolometric_luminosity_cube_faceon(self):
+        return self.old_simulations.has_faceon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_bolometric_luminosity_cube_edgeon(self):
         return self.old_simulations.edgeon_oberved_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bolometric_luminosity_cube_edgeon(self):
+        return self.old_simulations.has_edgeon_observed_cube
 
     # -----------------------------------------------------------------
 
@@ -7148,7 +7166,44 @@ class RTModel(object):
         return self.has_total_bolometric_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_i1_luminosity_map_earth(self):
+        return self.old_bolometric_luminosity_cube_earth.get_frame_for_wavelength(self.i1_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_i1_luminosity_map_earth(self):
+        return self.has_old_bolometric_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_i1_luminosity_map_faceon(self):
+        return self.old_bolometric_luminosity_cube_faceon.get_frame_for_wavelength(self.i1_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_i1_luminosity_map_faceon(self):
+        return self.has_old_bolometric_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_i1_luminosity_map_edgeon(self):
+        return self.old_bolometric_luminosity_cube_edgeon.get_frame_for_wavelength(self.i1_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_i1_luminosity_map_edgeon(self):
+        return self.has_old_bolometric_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
     # 15. STELLAR MASS
+    #   Total
     # -----------------------------------------------------------------
 
     @property
@@ -7196,6 +7251,56 @@ class RTModel(object):
     @property
     def has_total_stellar_mass_map_edgeon(self):
         return self.has_observed_i1_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+    #   Old
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_mass_map(self):
+        return self.old_stellar_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_stellar_mass_map(self):
+        return self.has_old_stellar_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_stellar_mass_map_earth(self):
+        return oliver_stellar_mass(self.observed_old_i1_luminosity_map_earth, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_stellar_mass_map_earth(self):
+        return self.has_observed_old_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_stellar_mass_map_faceon(self):
+        return oliver_stellar_mass(self.observed_old_i1_luminosity_map_faceon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_stellar_mass_map_faceon(self):
+        return self.has_observed_old_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_stellar_mass_map_edgeon(self):
+        return oliver_stellar_mass(self.observed_old_i1_luminosity_map_edgeon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_stellar_mass_map_edgeon(self):
+        return self.has_observed_old_i1_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
     # 16. SPECIFIC STAR FORMATION RATE

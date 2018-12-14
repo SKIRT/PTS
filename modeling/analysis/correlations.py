@@ -1113,13 +1113,15 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def cell_ssfr_salim_path(self):
-        return fs.join(self.cell_sfr_path, "ssfr_salim.dat")
+        #return fs.join(self.cell_sfr_path, "ssfr_salim.dat")
+        return fs.join(self.cell_sfr_path, "ssfr_salim_corrected.dat")
 
     # -----------------------------------------------------------------
 
     @property
     def cell_sfr_salim_path(self):
-        return fs.join(self.cell_sfr_path, "sfr_salim.dat")
+        #return fs.join(self.cell_sfr_path, "sfr_salim.dat")
+        return fs.join(self.cell_sfr_path, "sfr_salim_corrected.dat")
 
     # -----------------------------------------------------------------
 
@@ -1338,13 +1340,15 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def cell_ssfr_ke_path(self):
-        return fs.join(self.cell_sfr_path, "ssfr_ke.dat")
+        #return fs.join(self.cell_sfr_path, "ssfr_ke.dat")
+        return fs.join(self.cell_sfr_path, "ssfr_ke_corrected.dat")
 
     # -----------------------------------------------------------------
 
     @property
     def cell_sfr_ke_path(self):
-        return fs.join(self.cell_sfr_path, "sfr_ke.dat")
+        #return fs.join(self.cell_sfr_path, "sfr_ke.dat")
+        return fs.join(self.cell_sfr_path, "sfr_ke_corrected.dat")
 
     # -----------------------------------------------------------------
 
@@ -1991,7 +1995,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def pixel_ssfr_salim_path(self):
-        return fs.join(self.projected_sfr_path, "ssfr_salim_earth.fits")
+        #return fs.join(self.projected_sfr_path, "ssfr_salim_earth.fits")
+        return fs.join(self.projected_sfr_path, "ssfr_salim_earth_corrected.fits")
 
     # -----------------------------------------------------------------
 
@@ -2076,7 +2081,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def pixel_ssfr_ke_path(self):
-        return fs.join(self.projected_sfr_path, "ssfr_ke_earth.fits")
+        #return fs.join(self.projected_sfr_path, "ssfr_ke_earth.fits")
+        return fs.join(self.projected_sfr_path, "ssfr_ke_earth_corrected.fits")
 
     # -----------------------------------------------------------------
 
