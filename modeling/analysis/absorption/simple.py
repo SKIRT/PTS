@@ -130,7 +130,7 @@ class AbsorptionBase(object):
 
         # Extrapolate?
         if extrapolate:
-            # Get maximum wavelength below 15 micron for which above zero
+            # Get maximum wavelength below 10 micron for which above zero
             start_wavelength = sed.get_max_positive_wavelength(upper=self.observed_stellar_sed_extrapolate_from)
             sed = sed.extrapolated_from(start_wavelength, regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True, replace_nan=0.)
         else: sed = sed.copy()
