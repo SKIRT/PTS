@@ -5579,7 +5579,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ssfr_funev_scatter_pixels_adjusted(self):
+    def ssfr_funev_scatter_pixels_adjusted_funev(self):
 
         # Adjust
         valid_pixels = self.ssfr_funev_scatter_pixels[self.funev_name_pixels] > self.funev_adjustment # not extremely close to zero
@@ -5592,8 +5592,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def funev_points_fit_pixels_adjusted(self):
-        return self.get_fitted_linear("pixels_adjusted", self.ssfr_funev_scatter_pixels_adjusted.x_array, self.ssfr_funev_scatter_pixels_adjusted.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted)")
+    def funev_points_fit_pixels_adjusted_funev(self):
+        return self.get_fitted_linear("pixels_adjusted_funev", self.ssfr_funev_scatter_pixels_adjusted_funev.x_array, self.ssfr_funev_scatter_pixels_adjusted_funev.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted Funev)")
 
     # -----------------------------------------------------------------
 
@@ -5613,6 +5613,27 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @lazyproperty
     def funev_points_fit_pixels_adjusted_ssfr(self):
         return self.get_fitted_linear("pixels_adjusted_ssfr", self.ssfr_funev_scatter_pixels_adjusted_ssfr.x_array, self.ssfr_funev_scatter_pixels_adjusted_ssfr.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted sSFR)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_scatter_pixels_adjusted(self):
+
+        # Adjust
+        ssfr_values = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_name_pixels])
+        funev_values = np.asarray(self.ssfr_funev_scatter_pixels[self.funev_name_pixels])
+        valid_pixels = (ssfr_values > self.ssfr_adjustment) * (funev_values > self.funev_adjustment) # both Funev and sSFR not too low
+        valid_ssfr = ssfr_values[valid_pixels]
+        valid_funev = funev_values[valid_pixels]
+
+        # Create adjusted scatter and return
+        return Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=self.ssfr_funev_scatter_pixels.x_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_pixels_adjusted(self):
+        return self.get_fitted_linear("pixels_adjusted_funevssfr", self.ssfr_funev_scatter_pixels_adjusted.x_array, self.ssfr_funev_scatter_pixels_adjusted.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted Funev & sSFR)")
 
     # -----------------------------------------------------------------
 
@@ -5789,9 +5810,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ssfr_funev_pixel_scatters_adjusted(self):
+    def ssfr_funev_pixel_scatters_adjusted_funev(self):
         scatters = OrderedDict()
-        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels_adjusted
+        scatters[self.galaxy_pixels_label] = self.ssfr_funev_scatter_pixels_adjusted_funev
         scatters["M31 pixels"] = self.m31_ssfr_funev_scatter
         scatters["M51 pixels"] = self.m51_ssfr_funev_scatter
         return scatters
@@ -6491,6 +6512,66 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def min_ssfr_value_pixels(self):
+        return np.nanmin(self.ssfr_funev_scatter_pixels[self.ssfr_name_pixels])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ssfr_value_pixels(self):
+        return np.nanmax(self.ssfr_funev_scatter_pixels[self.ssfr_name_pixels])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_funev_value_pixels(self):
+        return np.nanmin(self.ssfr_funev_scatter_pixels[self.funev_name_pixels])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_funev_value_pixels(self):
+        return np.nanmax(self.ssfr_funev_scatter_pixels[self.funev_name_pixels])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_name_cells(self):
+        return self.ssfr_funev_scatter_cells.x_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_name_cells(self):
+        return self.ssfr_funev_scatter_cells.y_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_ssfr_value_cells(self):
+        return np.nanmin(self.ssfr_funev_scatter_cells[self.ssfr_name_cells])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ssfr_value_cells(self):
+        return np.nanmax(self.ssfr_funev_scatter_cells[self.ssfr_name_cells])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_funev_value_cells(self):
+        return np.nanmin(self.ssfr_funev_scatter_cells[self.funev_name_cells])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_funev_value_cells(self):
+        return np.nanmax(self.ssfr_funev_scatter_cells[self.funev_name_cells])
+
+    # -----------------------------------------------------------------
+
     def plot_special10(self, path=None):
 
         """
@@ -6513,6 +6594,15 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         xlog = True
         ylog = True
 
+        print("Data ranges:")
+        print("pixels")
+        print("ssfr", self.min_ssfr_value_pixels, self.max_ssfr_value_pixels)
+        print("funev", self.min_funev_value_pixels, self.max_funev_value_pixels)
+        print("cells")
+        print("ssfr", self.min_ssfr_value_cells, self.max_ssfr_value_cells)
+        print("funev", self.min_funev_value_cells, self.max_funev_value_cells)
+        print("")
+
         #xlimits = (1e-14, 5e-10,)
         xlimits = (5e-14, 2e-10,)
         #ylimits = (0.01,1,)
@@ -6525,8 +6615,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot fits
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label=self.galaxy_name + " pixels", color="orange", linestyle=":")
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj)", color="black", linestyle=":")
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted_ssfr, label=self.galaxy_name + " pixels (adj ssfr)", color="dimgrey", linestyle=":")
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted_funev, label=self.galaxy_name + " pixels (adj funev)", color="dimgrey", linestyle="--")
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted_ssfr, label=self.galaxy_name + " pixels (adj ssfr)", color="dimgrey", linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj funev+ssfr)", color="black", linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label=self.galaxy_name + " cells", color=self.darker_red, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color, linestyle=":")
