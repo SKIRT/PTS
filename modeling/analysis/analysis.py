@@ -4551,6 +4551,27 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def add_fits_parameters(self, name, slope, intercept):
+
+        """
+        This function ...
+        :param name:
+        :param slope:
+        :param intercept:
+        :return:
+        """
+
+        # Check
+        if name in self.fits_names: raise ValueError("Already an entry in the fits table with the name '" + name + "'")
+
+        # Add row
+        self.fits_table.add_row([name, slope, intercept])
+
+        # Save the table
+        self.fits_table.save()
+
+    # -----------------------------------------------------------------
+
     def has_fit(self, name):
         return name in self.fits_names
 
@@ -4570,14 +4591,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Set label
+        if description is not None: label = description
+        else: label = name.capitalize()
+
         # Has fit parameters?
         if self.has_fit(name):
 
+            # Debugging
+            log.debug("Loading the fit parameters from file ...")
+
             # Get parameters
             slope, intercept = self.get_fits_parameters(name)
-
-            #print(slope, intercept)
-            #print(new_x)
 
             # Calculate the fitted
             fitted = get_linear_values(new_x, slope, intercept, xlog=xlog, ylog=ylog)
@@ -4585,16 +4610,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Doesn't have parameters yet
         else:
 
+            # Debugging
+            log.debug("Performing the fit ...")
+
             # Perform the fit
             fitted, slope, intercept = get_linear_fitted_values(x_array, y_array, new_x, xlog=xlog, ylog=ylog, return_parameters=True)
 
-            # Set label
-            if description is not None: label = description
-            else: label = name.capitalize()
+            # Set the parameters
+            self.add_fits_parameters(name, slope, intercept)
 
-            # Show the parameters
-            print(label + " slope =", slope)
-            print(label + " intercept =", intercept)
+        # Show the parameters
+        log.debug(label + " slope = " + tostr(slope))
+        log.debug(label + " intercept = " + tostr(intercept))
 
         # Return
         return fitted
@@ -6464,7 +6491,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                           plot=plot, colors=self.ssfr_funev_all_colors, dpi=72, density_log=True)
 
         # Plot fits
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label="M81 cells", color=self.darker_red, linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label=self.galaxy_name + " pixels", color="orange", linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj)", color="black", linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label=self.galaxy_name + " cells", color=self.darker_red, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color, linestyle=":")
 
