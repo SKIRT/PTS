@@ -783,7 +783,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        sfr, old_stellar_mass = uniformize(self.sfr_salim_faceon_map_corrected, self.model.old_stellar_mass_map_faceon)
+        sfr, old_stellar_mass = uniformize(self.sfr_salim_faceon_map_corrected, self.model.old_stellar_mass_map_faceon, convert=False)
         return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
@@ -834,7 +834,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        sfr, old_stellar_mass = uniformize(self.sfr_ke_earth_map_corrected, self.model.old_stellar_mass_map_earth)
+        sfr, old_stellar_mass = uniformize(self.sfr_ke_earth_map_corrected, self.model.old_stellar_mass_map_earth, convert=False)
         return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
@@ -883,7 +883,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        sfr, old_stellar_mass = uniformize(self.sfr_ke_faceon_map_corrected, self.model.old_stellar_mass_map_faceon)
+        sfr, old_stellar_mass = uniformize(self.sfr_ke_faceon_map_corrected, self.model.old_stellar_mass_map_faceon, convert=False)
         return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
