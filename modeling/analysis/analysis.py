@@ -870,7 +870,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def property_names(self):
-        return ["inner_radius", "outer_radius", "max_radius", "sfr_method", "funev_adjustment", "min_ssfr", "max_ssfr", "fit_npoints", "midplane_component", "midplane_factor"]
+        return ["inner_radius", "outer_radius", "max_radius", "sfr_method", "funev_adjustment", "ssfr_adjustment", "min_ssfr", "max_ssfr", "min_funev_linear", "min_funev_log", "fit_npoints", "midplane_component", "midplane_factor"]
 
     # -----------------------------------------------------------------
 
@@ -907,17 +907,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         config = self.get_config_from_command(command, self.set_property_definition, **kwargs)
 
         # Set
-        if config.which == "inner_radius": self.set_inner_radius(config.value)
-        elif config.which == "outer_radius": self.set_outer_radius(config.value)
-        elif config.which == "max_radius": self.set_max_radius(config.value)
-        if config.which == "sfr_method": self.set_sfr_method(config.value)
-        elif config.which == "funev_adjustment": self.set_funev_adjustment(config.value)
-        elif config.which == "min_ssfr": self.set_min_ssfr(config.value)
-        elif config.which == "max_ssfr": self.set_max_ssfr(config.value)
-        elif config.which == "fit_npoints": self.set_fit_npoints(config.value)
-        elif config.which == "midplane_component": self.set_midplane_component(config.value)
-        elif config.which == "midplane_factor": self.set_midplane_factor(config.value)
-        else: raise ValueError("Invalid value for 'which'")
+        self.set_property(config.which, config.value)
 
     # -----------------------------------------------------------------
 
@@ -4701,16 +4691,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_inner_radius(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        # Set and save
-        self.properties["inner_radius"] = value
-        self.save_properties()
+        self.set_property("inner_radius", value)
 
     # -----------------------------------------------------------------
 
@@ -4727,16 +4708,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_outer_radius(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        # Set and save
-        self.properties["outer_radius"] = value
-        self.save_properties()
+        self.set_property("outer_radius", value)
 
     # -----------------------------------------------------------------
 
@@ -4759,16 +4731,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_max_radius(self, value):
-
-        """
-        This fnction ...
-        :param value:
-        :return:
-        """
-
-        # Set and save
-        self.properties["max_radius"] = value
-        self.save_properties()
+        self.set_property("max_radius", value)
 
     # -----------------------------------------------------------------
 
@@ -4797,6 +4760,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def default_min_funev_linear(self):
+        return 0.0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def default_min_funev_log(self):
+        return 0.01
+
+    # -----------------------------------------------------------------
+
+    @property
     def default_ssfr_fit_npoints(self):
         return 100
 
@@ -4814,6 +4789,49 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def set_property(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        # Set and save
+        self.properties[name] = value
+
+        # Save
+        self.save_properties()
+
+    # -----------------------------------------------------------------
+
+    def get_property(self, name, default=None, set_default=False):
+        
+        """
+        This function ...
+        :param name: 
+        :param default: 
+        :param set_default:
+        :return: 
+        """
+        
+        # Present?
+        if name in self.properties: return self.properties[name]
+        
+        # Not present, default is given
+        elif default is not None:
+            if set_default: self.set_property(name, default)
+            return default
+
+        # Not present, no default,
+        elif name in self.property_names: raise ValueError("The value of the '" + name + "' property is not defined")
+
+        # INvalid property name
+        else: raise ValueError("Invalid property name: '" + name + "'")
+
+    # -----------------------------------------------------------------
+
     @property
     def sfr_method(self):
         return self.properties["sfr_method"]
@@ -4821,16 +4839,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_sfr_method(self, method):
-
-        """
-        This function ...
-        :param method:
-        :return:
-        """
-
-        # Set and save
-        self.properties["sfr_method"] = method
-        self.save_properties()
+        self.set_property("sfr_method", method)
 
     # -----------------------------------------------------------------
 
@@ -4841,16 +4850,46 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_funev_adjustment(self, adjustment):
+        self.set_property("funev_adjustment", adjustment)
 
-        """
-        This function ...
-        :param adjustment:
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        # Set and save
-        self.properties["funev_adjustment"] = adjustment
-        self.save_properties()
+    @property
+    def default_ssfr_adjustment(self):
+        return 1e-13
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_adjustment(self):
+        return self.get_property("ssfr_adjustment", self.default_ssfr_adjustment)
+
+    # -----------------------------------------------------------------
+
+    def set_ssfr_adjustment(self, adjustment):
+        self.set_property("ssfr_adjustment", adjustment)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_funev_linear(self):
+        return self.get_property("min_funev_linear", self.default_min_funev_linear)
+
+    # -----------------------------------------------------------------
+
+    def set_min_funev_linear(self, value):
+        self.set_property("min_funev_linear", value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_funev_log(self):
+        return self.get_property("min_funev_log", self.default_min_funev_log)
+
+    # -----------------------------------------------------------------
+
+    def set_min_funev_log(self, value):
+        self.set_property("min_funev_log", value)
 
     # -----------------------------------------------------------------
 
@@ -4861,16 +4900,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_min_ssfr(self, value):
-
-        """
-        Thisn function ...
-        :param value:
-        :return:
-        """
-
-        # Set and save
-        self.properties["min_ssfr"] = value
-        self.save_properties()
+        self.set_property("min_ssfr", value)
 
     # -----------------------------------------------------------------
 
@@ -4881,16 +4911,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_max_ssfr(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        # Set and save
-        self.properties["max_ssfr"] = value
-        self.save_properties()
+        self.set_property("max_ssfr", value)
 
     # -----------------------------------------------------------------
 
@@ -4901,16 +4922,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_fit_npoints(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        # Set and save
-        self.properties["fit_npoints"] = value
-        self.save_properties()
+        self.set_property("fit_npoints", value)
 
     # -----------------------------------------------------------------
 
@@ -4937,16 +4949,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_midplane_component(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Set and save
-        self.properties["midplane_component"] = name
-        self.save_properties()
+        self.set_property("midplane_component", name)
 
     # -----------------------------------------------------------------
 
@@ -4957,16 +4960,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def set_midplane_factor(self, factor):
-
-        """
-        This function ...
-        :param factor:
-        :return:
-        """
-
-        # Set
-        self.properties["midplane_factor"] = factor
-        self.save_properties()
+        self.set_property("midplane_factor", factor)
 
     # -----------------------------------------------------------------
 
@@ -5572,13 +5566,25 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ssfr_name_pixels(self):
+        return self.ssfr_funev_scatter_pixels.x_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_name_pixels(self):
+        return self.ssfr_funev_scatter_pixels.y_name
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def ssfr_funev_scatter_pixels_adjusted(self):
 
         # Adjust
-        valid_pixels = self.ssfr_funev_scatter_pixels[self.ssfr_funev_scatter_pixels.y_name] > self.funev_adjustment # not extremely close to zero
-        valid_ssfr = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_funev_scatter_pixels.x_name])[valid_pixels]
-        valid_funev = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_funev_scatter_pixels.y_name])[valid_pixels]
+        valid_pixels = self.ssfr_funev_scatter_pixels[self.funev_name_pixels] > self.funev_adjustment # not extremely close to zero
+        valid_ssfr = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_name_pixels])[valid_pixels]
+        valid_funev = np.asarray(self.ssfr_funev_scatter_pixels[self.funev_name_pixels])[valid_pixels]
 
         # Create adjusted scatter and return
         return Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=self.ssfr_funev_scatter_pixels.x_unit)
@@ -5588,6 +5594,25 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     @lazyproperty
     def funev_points_fit_pixels_adjusted(self):
         return self.get_fitted_linear("pixels_adjusted", self.ssfr_funev_scatter_pixels_adjusted.x_array, self.ssfr_funev_scatter_pixels_adjusted.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted)")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_funev_scatter_pixels_adjusted_ssfr(self):
+
+        # Adjust
+        valid_pixels = self.ssfr_funev_scatter_pixels[self.ssfr_name_pixels] > self.ssfr_adjustment # not too low
+        valid_ssfr = np.asarray(self.ssfr_funev_scatter_pixels[self.ssfr_name_pixels])[valid_pixels]
+        valid_funev = np.asarray(self.ssfr_funev_scatter_pixels[self.funev_name_pixels])[valid_pixels]
+
+        # Create adjusted scatter and return
+        return Scatter2D.from_xy(valid_ssfr, valid_funev, "sSFR", "Funev", x_unit=self.ssfr_funev_scatter_pixels.x_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def funev_points_fit_pixels_adjusted_ssfr(self):
+        return self.get_fitted_linear("pixels_adjusted_ssfr", self.ssfr_funev_scatter_pixels_adjusted_ssfr.x_array, self.ssfr_funev_scatter_pixels_adjusted_ssfr.y_array, self.ssfr_points_fit, xlog=True, ylog=True, description="sSFR-Funev (pixels, adjusted sSFR)")
 
     # -----------------------------------------------------------------
 
@@ -5816,14 +5841,20 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def max_funev(self):
+        return 1
+
+    # -----------------------------------------------------------------
+
+    @property
     def funev_limits_linear(self):
-        return (0,1,)
+        return (self.min_funev_linear, self.max_funev,)
 
     # -----------------------------------------------------------------
 
     @property
     def funev_limits_log(self):
-        return (0.0015,1,)
+        return (self.min_funev_log, self.max_funev,)
 
     # -----------------------------------------------------------------
 
@@ -6484,15 +6515,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         #xlimits = (1e-14, 5e-10,)
         xlimits = (5e-14, 2e-10,)
-        ylimits = (0.01,1,)
+        #ylimits = (0.01,1,)
+        #ylimits = (0.001, 1,)
+        ylimits = self.funev_limits_log
 
         output0 = plot_scatters_density(self.ssfr_funev_all_scatters, xlimits=xlimits,
                                           ylimits=ylimits, xlog=xlog, ylog=ylog, colormaps=False,
                                           plot=plot, colors=self.ssfr_funev_all_colors, dpi=72, density_log=True)
 
         # Plot fits
-        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label=self.galaxy_name + " pixels", color="orange", linestyle=":")
-        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj)", color="black", linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label=self.galaxy_name + " pixels", color="orange", linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj)", color="black", linestyle=":")
+        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted_ssfr, label=self.galaxy_name + " pixels (adj ssfr)", color="dimgrey", linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label=self.galaxy_name + " cells", color=self.darker_red, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color, linestyle=":")
@@ -8607,7 +8641,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Limits
         settings.xlimits = (1e-15, 1e-10,)
-        settings.ylimits = (0.01, 1) #self.funev_limits_log
+        settings.ylimits = self.funev_limits_log
 
         # Return
         return settings
