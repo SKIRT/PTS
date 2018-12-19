@@ -372,7 +372,7 @@ class Data3D(Data3DBase):
         else: x, y, z, x_colname, y_colname, z_colname = get_xyz(x, y, z, filepath=xyz_filepath)
 
         # Create and return
-        return cls(name, x, y, z, values, weights=weights, length_unit=None, unit=unit, description=description,
+        return cls(name, x, y, z, values, weights=weights, length_unit=length_unit, unit=unit, description=description,
                    distance=distance, wavelength=wavelength, solid_angle=solid_angle, xyz_filepath=xyz_filepath,
                    x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 

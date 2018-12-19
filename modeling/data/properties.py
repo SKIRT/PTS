@@ -69,28 +69,25 @@ class PropertyFetcher(DataComponent):
         :return:
         """
 
-        # 2. Get the NGC name
+        # Get the NGC name
         self.get_ngc_name()
 
-        # 3. Get the basic galaxy information listed on the database
+        # Get the basic galaxy information listed on the database
         self.get_dustpedia_info()
 
-        # 4. Get properties from NED
+        # Get properties from NED
         self.get_ned_properties()
 
-        # 4. Get the basic properties from S4G
+        # Get the basic properties from S4G
         self.get_s4g_properties()
 
-        # 5. Get the inclination of the galaxy
+        # Get the inclination of the galaxy
         self.get_inclination()
-
-        # 6. Get spiral properties
-        #self.get_spiral_properties()
 
         # Show
         self.show()
 
-        # 7. Writing
+        # Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -314,56 +311,6 @@ class PropertyFetcher(DataComponent):
 
         # Set
         self.properties.inclination = inclination
-
-    # -----------------------------------------------------------------
-
-    def get_spiral_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # http://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=J/A+A/582/A86
-
-        # J/A+A/582/A86: Catalogue of features in the S4G (Herrera-Endoqui+, 2015)
-
-        # - J/A+A/582/A86/table2: Properties of bars, ring- and lens-structures in the S4G (2387 rows)
-        # - J/A+A/582/A86/table3: Properties of spiral arms in the S4G (1854 rows)
-
-        # The Vizier querying object
-        vizier = Vizier()
-        vizier.ROW_LIMIT = -1
-
-        # Get table2
-        result = self.vizier.query_object(self.galaxy_name, catalog=["J/A+A/582/A86/table2"])
-        table = result[0]
-
-        # Name: Galaxy name
-        # Class: Morphological classification
-        # Type: Type of feature
-        # sma: Semi-major axis [arcsec]
-        # PA: Position angle [deg]
-        # Ell: Ellipticity
-        # smaEll: Semi-major axis from ellipticity [arcsec]
-        # dsma: Deprojected semi-major axis [arcsec]
-        # dPA: Deprojected position angle [deg]
-        # dEll: Deprojected ellipticity
-        # dsmaEll: Deprojexted semi-major axis from Ell [arcsec]
-        # Qual: [1/3] Quality flag
-
-        # Get table 3
-        result = self.vizier.query_object(self.galaxy_name, catalog=["J/A+A/582/A86/table3"])
-        table = result[0]
-
-        # Name: Galaxy name
-        # Class: Morphological classification
-        # Type: Type of arms
-        # Segment: Segment
-        # Pitchang: Pitch angle [deg]
-        # ri: Inner radius [arcsec]
-        # ro: Outer radius [arcsec]
-        # Qual: [1/2] Quality flag
 
     # -----------------------------------------------------------------
 

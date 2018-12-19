@@ -61,23 +61,12 @@ class ImageFetcher(DataComponent):
 
     @property
     def has_halpha_url(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.config.halpha_url is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_urls(self):
-
-        """
-        This function ..
-        """
-
         return self.config.other_urls is not None and len(self.config.other_urls) > 0
 
     # -----------------------------------------------------------------

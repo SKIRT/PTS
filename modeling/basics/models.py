@@ -2324,84 +2324,42 @@ class SersicModel2D(Model2D):
 
     @property
     def xmin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.truncation * self.effective_radius
 
     # -----------------------------------------------------------------
 
     @property
     def xmax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.truncation * self.effective_radius
 
     # -----------------------------------------------------------------
 
     @property
     def xrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.xmin, self.xmax)
 
     # -----------------------------------------------------------------
 
     @property
     def ymin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.truncation * self.effective_radius
 
     # -----------------------------------------------------------------
 
     @property
     def ymax(self):
-
-        """
-        This ufnction ...
-        :return:
-        """
-
         return self.truncation * self.effective_radius
 
     # -----------------------------------------------------------------
 
     @property
     def yrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.ymin, self.ymax)
 
     # -----------------------------------------------------------------
 
     @property
     def position_angle_radian(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.position_angle.to("rad").value
 
     # -----------------------------------------------------------------
@@ -2469,72 +2427,36 @@ class ExponentialDiskModel2D(Model2D):
 
     @property
     def xmin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.truncation * self.scalelength
 
     # -----------------------------------------------------------------
 
     @property
     def xmax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.truncation * self.scalelength
 
     # -----------------------------------------------------------------
 
     @property
     def xrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.xmin, self.xmax)
 
     # -----------------------------------------------------------------
 
     @property
     def ymin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return - self.truncation * self.scalelength
 
     # -----------------------------------------------------------------
 
     @property
     def ymax(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.truncation * self.scalelength
 
     # -----------------------------------------------------------------
 
     @property
     def yrange(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.ymin, self.ymax)
 
 # -----------------------------------------------------------------
