@@ -6491,8 +6491,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                                           plot=plot, colors=self.ssfr_funev_all_colors, dpi=72, density_log=True)
 
         # Plot fits
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label=self.galaxy_name + " pixels", color="orange", linestyle=":")
-        plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj)", color="black", linestyle=":")
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels, label=self.galaxy_name + " pixels", color="orange", linestyle=":")
+        #plot.plot(self.ssfr_points_fit, self.funev_points_fit_pixels_adjusted, label=self.galaxy_name + " pixels (adj)", color="black", linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_cells, label=self.galaxy_name + " cells", color=self.darker_red, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m51, label="M51", color=self.darker_m51_color, linestyle=":")
         plot.plot(self.ssfr_points_fit, self.funev_points_fit_m31, label="M31", color=self.darker_m31_color, linestyle=":")
