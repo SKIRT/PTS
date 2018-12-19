@@ -3201,6 +3201,9 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         #print(type(correction_factor))
         #exit()
 
+        # Debugging
+        log.debug("Frame '" + name + "' will be corrected after rebinning with a factor of " + str(correction_factor) + " to account for the changing pixelscale ...")
+
     # UNIT IS NOT DEFINED
     else:
         if not unitless: log.warning("The unit of the '" + name + "' frame is not defined: make sure it is per unit of angular or intrinsic area (or only the relative variation is important)")

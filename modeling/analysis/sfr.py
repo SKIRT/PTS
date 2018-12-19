@@ -734,7 +734,8 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.sfr_salim_earth_map_corrected / self.model.old_stellar_mass_map_earth
+        sfr, old_stellar_mass = uniformize(self.sfr_salim_earth_map_corrected, self.model.old_stellar_mass_map_earth, convert=False)
+        return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
 
@@ -782,7 +783,8 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.sfr_salim_faceon_map_corrected / self.model.old_stellar_mass_map_faceon
+        sfr, old_stellar_mass = uniformize(self.sfr_salim_faceon_map_corrected, self.model.old_stellar_mass_map_faceon)
+        return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
     #   2. KENNICUTT & EVANS
@@ -832,7 +834,8 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.sfr_ke_earth_map_corrected / self.model.old_stellar_mass_map_earth
+        sfr, old_stellar_mass = uniformize(self.sfr_ke_earth_map_corrected, self.model.old_stellar_mass_map_earth)
+        return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
 
@@ -880,7 +883,8 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.sfr_ke_faceon_map_corrected / self.model.old_stellar_mass_map_faceon
+        sfr, old_stellar_mass = uniformize(self.sfr_ke_faceon_map_corrected, self.model.old_stellar_mass_map_faceon)
+        return sfr / old_stellar_mass
 
     # -----------------------------------------------------------------
     #   3. MAPPINGS

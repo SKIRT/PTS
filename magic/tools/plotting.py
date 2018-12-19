@@ -1095,10 +1095,11 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     if plot is not None: axes = plot.axes
     only_axes = False
     if axes is None:
-        plt.figure(figsize=(xsize,ysize))
+        fig = plt.figure(figsize=(xsize,ysize))
         plt.xlim(0, nxpix - 1)
         plt.ylim(0, nypix - 1)
         axes = plt.gca()
+        output.figure = fig
     else: only_axes = True
     output.axes = axes
 
@@ -1143,7 +1144,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         else: plt.savefig(path, format=format, transparent=transparent)
 
         # Close the figure
-        plt.close()
+        plt.close(output.figure)
 
     # Return
     return output
