@@ -46,7 +46,7 @@ from pts.eagle.skirtrun import runids_in_range
 if len(sys.argv) != 3:
     raise ValueError("This script expects exactly two command-line arguments: outputtype runidspec")
 
-vistypes = ('bandimages', 'densities', 'fastimages', 'greybodyfit', 'infofile',
+vistypes = ('gepimages', 'bandimages', 'densities', 'fastimages', 'greybodyfit', 'infofile',
             'particles', 'seds', 'temperature', 'wavemovie')
 inputtype = sys.argv[1].lower()
 found = False
@@ -64,6 +64,45 @@ runids = runids_in_range(runidspec)
 skirtruns = [ SkirtRun(runid) for runid in runids ]
 
 # =================================================================
+
+# build GEP-band-integrated gray-scale images
+if vistype=='gepimages':
+    from pts.core.plot.rgbimages import makeintegratedrgbimages
+    from pts.core.filter.broad import BroadBandFilter
+    print "Building GEP-band-integrated gray-scale images for {} SKIRT-runs".format(len(skirtruns))
+    # List of filter objects
+    bandedges = (
+    ( 1,  10.00,  11.33),
+    ( 2,  11.33,  12.84),
+    ( 3,  12.84,  14.56),
+    ( 4,  14.56,  16.50),
+    ( 5,  16.50,  18.70),
+    ( 6,  18.70,  21.19),
+    ( 7,  21.19,  24.02),
+    ( 8,  24.02,  27.22),
+    ( 9,  27.22,  30.85),
+    (10,  30.85,  34.96),
+    (11,  34.96,  39.62),
+    (12,  39.62,  44.90),
+    (13,  44.90,  50.89),
+    (14,  50.89,  57.68),
+    (15,  57.68,  65.37),
+    (16,  65.37,  74.08),
+    (17,  74.08,  83.96),
+    (18,  83.96,  95.16),
+    (19,  95.16, 127.00),
+    (20, 127.00, 169.00),
+    (21, 169.00, 225.00),
+    (22, 225.00, 300.00),
+    (23, 300.00, 400.00) )
+    for skirtrun in skirtruns:
+        print "Building GEP-band-integrated gray-scale images for SKIRT-run {}...".format(skirtrun.runid())
+        for n,wmin,wmax in bandedges:
+            makeintegratedrgbimages(skirtrun.simulation(),
+                [ (BroadBandFilter((wmin,wmax)), 1,1,1) ],
+                postfix="_gep{:02d}".format(n), output_path=skirtrun.vispath())
+
+# -----------------------------------------------------------------
 
 # build band-integrated images
 if vistype=='bandimages':
