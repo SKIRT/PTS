@@ -41,11 +41,11 @@ parallel = arguments.parallel
 # -----------------------------------------------------------------
 
 # Create the full path to the SKIRTtests directory
-suitename = "SKIRTtests"
+suitename = "SKIRT/Functional8"
 suitepath = os.path.join(os.getenv("HOME"), suitename)
 
 # Check whether a development SKIRT repository is present, otherwise use the standard SKIRT path
-devskirtpath = os.path.join(os.getenv("HOME"), "Development", "SKIRT", "release", "SKIRTmain", "skirt")
+devskirtpath = os.path.join(os.getenv("HOME"), "SKIRT", "SKIRT8", "release", "SKIRT", "main", "skirt")
 skirtpath = devskirtpath if os.path.isfile(devskirtpath) else ""
 
 # Create the test suite instance
