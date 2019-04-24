@@ -1,1 +1,0 @@
-git archive --format zip --output ../pts.zip master
